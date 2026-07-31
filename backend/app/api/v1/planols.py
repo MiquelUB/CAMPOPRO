@@ -4,7 +4,8 @@ from sqlalchemy import select
 from typing import List, Any
 from uuid import UUID
 
-from app.api.deps import get_db, get_current_user
+from app.dependencies import get_db
+from app.core.security import get_current_user
 from app.models.user import User
 from app.models.planol import Planol
 from app.schemas.planols import PlanolCreate, PlanolUpdate, PlanolResponse

@@ -5,7 +5,8 @@ from typing import List
 from uuid import UUID
 import datetime
 
-from app.api.deps import get_db, get_current_user
+from app.dependencies import get_db
+from app.core.security import get_current_user
 from app.models.user import User
 from app.models.feina import Feina
 from app.schemas.feines import FeinaCreate, FeinaUpdate, FeinaResponse

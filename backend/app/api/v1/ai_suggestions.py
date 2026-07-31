@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import List, Any
 import json
 
-from app.api.deps import get_current_user
+from app.core.security import get_current_user
 from app.models.user import User
 from app.services.openrouter import process_prompt_with_openrouter, OpenRouterRequest
 
