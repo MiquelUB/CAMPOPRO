@@ -4,7 +4,7 @@ import base64
 import json
 import os
 from pydantic import BaseModel, StrictInt, field_validator
-from backend.app.core.upload import validate_uploaded_image
+from app.core.upload import validate_uploaded_image
 
 router = APIRouter()
 
