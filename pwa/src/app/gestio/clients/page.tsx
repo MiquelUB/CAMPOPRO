@@ -75,7 +75,7 @@ export default function ClientsPage() {
                 filteredClients.map(client => (
                   <tr key={client.id} className="hover:bg-neutral-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-neutral-900">
-                      <Link href={`/clients/${client.id}`} className="hover:text-primary hover:underline">
+                      <Link href={`/gestio/clients/${client.id}`} className="hover:text-primary hover:underline">
                         {client.name}
                       </Link>
                     </td>
