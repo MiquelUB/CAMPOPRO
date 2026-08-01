@@ -27,7 +27,7 @@ export default function OperariLogin() {
           const tokens = await loginWithPin(newPin);
           if (tokens) {
             setTokens(tokens);
-            router.push('/operari/dashboard');
+            router.push('/operari/feines');
           }
         } catch (error) {
           console.error("Login failed:", error);

@@ -20,7 +20,7 @@ export default function SuperadminLogin() {
       const tokens = await superAdminLogin(email, password, totp, impersonateTenantId);
       if (tokens) {
         setTokens(tokens);
-        router.push("/superadmin/dashboard");
+        router.push("/superadmin");
       }
     } catch (error) {
       console.error(error);
