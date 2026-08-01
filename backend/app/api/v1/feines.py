@@ -1,30 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from typing import List
+from typing import List, Any
 from uuid import UUID
 import datetime
+import asyncpg
 
 from app.dependencies import get_db
-from app.core.security import get_current_user
-from app.models.user import User
-from app.models.feina import Feina
+from app.core.security import get_current_user, TokenPayload
 from app.schemas.feines import FeinaCreate, FeinaUpdate, FeinaResponse
 
 router = APIRouter()
 
-async def generate_feina_codi(db: AsyncSession, empresa_id: UUID) -> str:
+async def generate_feina_codi(db: asyncpg.Connection, empresa_id: str) -> str:
     current_year = datetime.datetime.now().year
     prefix = f"F-{current_year}-"
     
-    # Use func.max to get the highest code for the current year
-    query = select(Feina.codi).where(
-        Feina.empresa_id == empresa_id,
-        Feina.codi.like(f"{prefix}%")
-    ).order_by(Feina.codi.desc()).limit(1)
-    
-    result = await db.execute(query)
-    last_codi = result.scalar_one_or_none()
+    query = """
+        SELECT codi FROM feines
+        WHERE empresa_id = $1 AND codi LIKE $2
+        ORDER BY codi DESC LIMIT 1
+    """
+    last_codi = await db.fetchval(query, empresa_id, f"{prefix}%")
     
     if last_codi:
         try:
@@ -37,105 +32,114 @@ async def generate_feina_codi(db: AsyncSession, empresa_id: UUID) -> str:
         
     return f"{prefix}{new_num:04d}"
 
-@router.post("/", response_model=FeinaResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_feina(
-    *,
-    db: AsyncSession = Depends(get_db),
     feina_in: FeinaCreate,
-    current_user: User = Depends(get_current_user),
-) -> Any:
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
+):
     empresa_id = current_user.empresa_id
     codi = await generate_feina_codi(db, empresa_id)
     
-    feina = Feina(
-        **feina_in.dict(),
-        empresa_id=empresa_id,
-        codi=codi
-    )
-    
-    db.add(feina)
-    await db.commit()
-    await db.refresh(feina)
-    return feina
+    query = """
+        INSERT INTO feines (
+            empresa_id, client_id, codi, titol, descripcio, tipus, estat,
+            prioritat, lat, lng, adreca, data_programada,
+            hora_inici_prevista, hora_fi_prevista, hores_estimades,
+            material_assignat, area_m2
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        RETURNING *
+    """
+    try:
+        record = await db.fetchrow(
+            query,
+            empresa_id, feina_in.client_id, codi, feina_in.titol,
+            feina_in.descripcio, feina_in.tipus, feina_in.estat or "pendent",
+            feina_in.prioritat or 2, feina_in.lat, feina_in.lng,
+            feina_in.adreca, feina_in.data_programada,
+            feina_in.hora_inici_prevista, feina_in.hora_fi_prevista,
+            feina_in.hores_estimades, feina_in.material_assignat,
+            feina_in.area_m2
+        )
+        return dict(record)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/", response_model=List[FeinaResponse])
+@router.get("/")
 async def read_feines(
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Any:
-    query = select(Feina).where(
-        Feina.empresa_id == current_user.empresa_id,
-        Feina.actiu == True
-    ).offset(skip).limit(limit)
-    
-    result = await db.execute(query)
-    return result.scalars().all()
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
+):
+    query = """
+        SELECT * FROM feines
+        WHERE empresa_id = $1 AND actiu = true
+        ORDER BY created_at DESC
+        OFFSET $2 LIMIT $3
+    """
+    records = await db.fetch(query, current_user.empresa_id, skip, limit)
+    return [dict(r) for r in records]
 
-@router.get("/{id}", response_model=FeinaResponse)
+@router.get("/{id}")
 async def read_feina(
-    id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Any:
-    query = select(Feina).where(
-        Feina.id == id,
-        Feina.empresa_id == current_user.empresa_id
-    )
-    result = await db.execute(query)
-    feina = result.scalar_one_or_none()
-    
-    if not feina:
+    id: str,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
+):
+    query = """
+        SELECT * FROM feines
+        WHERE id = $1 AND empresa_id = $2
+    """
+    record = await db.fetchrow(query, id, current_user.empresa_id)
+    if not record:
         raise HTTPException(status_code=404, detail="Feina no trobada")
-        
-    return feina
+    return dict(record)
 
-@router.put("/{id}", response_model=FeinaResponse)
+@router.put("/{id}")
 async def update_feina(
-    id: UUID,
+    id: str,
     feina_in: FeinaUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Any:
-    query = select(Feina).where(
-        Feina.id == id,
-        Feina.empresa_id == current_user.empresa_id
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
+):
+    existing = await db.fetchrow(
+        "SELECT * FROM feines WHERE id = $1 AND empresa_id = $2",
+        id, current_user.empresa_id
     )
-    result = await db.execute(query)
-    feina = result.scalar_one_or_none()
-    
-    if not feina:
+    if not existing:
         raise HTTPException(status_code=404, detail="Feina no trobada")
-        
-    update_data = feina_in.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(feina, field, value)
-        
-    db.add(feina)
-    await db.commit()
-    await db.refresh(feina)
-    return feina
+    
+    update_data = feina_in.model_dump(exclude_unset=True)
+    if not update_data:
+        return dict(existing)
+
+    set_clauses = []
+    values = [id, current_user.empresa_id]
+    for i, (key, value) in enumerate(update_data.items(), start=3):
+        set_clauses.append(f"{key} = ${i}")
+        values.append(value)
+
+    query = f"""
+        UPDATE feines
+        SET {', '.join(set_clauses)}, updated_at = now()
+        WHERE id = $1 AND empresa_id = $2
+        RETURNING *
+    """
+    record = await db.fetchrow(query, *values)
+    return dict(record)
 
 @router.delete("/{id}")
 async def delete_feina(
-    id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Any:
-    query = select(Feina).where(
-        Feina.id == id,
-        Feina.empresa_id == current_user.empresa_id
+    id: str,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
+):
+    result = await db.execute(
+        "UPDATE feines SET actiu = false WHERE id = $1 AND empresa_id = $2",
+        id, current_user.empresa_id
     )
-    result = await db.execute(query)
-    feina = result.scalar_one_or_none()
-    
-    if not feina:
+    if result == "UPDATE 0":
         raise HTTPException(status_code=404, detail="Feina no trobada")
-        
-    # Soft delete
-    feina.actiu = False
-    db.add(feina)
-    await db.commit()
-    
     return {"message": "Feina esborrada correctament"}

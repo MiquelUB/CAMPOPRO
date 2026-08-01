@@ -3,8 +3,7 @@ from pydantic import BaseModel, Field
 from typing import List, Any
 import json
 
-from app.core.security import get_current_user
-from app.models.user import User
+from app.core.security import get_current_user, TokenPayload
 from app.services.openrouter import process_prompt_with_openrouter, OpenRouterRequest
 
 router = APIRouter()
@@ -24,7 +23,7 @@ class SuggestionResponse(BaseModel):
 @router.post("/", response_model=SuggestionResponse)
 async def get_ai_suggestions(
     request: SuggestionRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: TokenPayload = Depends(get_current_user),
 ) -> Any:
     system_prompt = """
     Ets un assistent per a una empresa d'instal·lacions i manteniment (jardineria, muntatge, manteniment).
@@ -41,7 +40,7 @@ async def get_ai_suggestions(
     No incloguis text abans ni després del JSON. No facis servir blocs de codi markdown (```json).
     """
     
-    # Sanititzem/escapem l'entrada per evitar Prompt Injection (simplement com a mesura bàsica)
+    # Sanititzem/escapem l'entrada per evitar Prompt Injection
     safe_desc = request.feina_descripcio.replace('"', "'").strip()
     
     user_prompt = f"Descripció de la feina:\n{safe_desc}"

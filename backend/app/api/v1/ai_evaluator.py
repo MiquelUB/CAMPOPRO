@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.db.session import get_db
-from app.models.incidencia import Incidencia
 from typing import Dict, Any
+import asyncpg
 import json
-import random
+
+from app.dependencies import get_db
+from app.core.security import get_current_user, TokenPayload
 
 router = APIRouter()
 
@@ -33,25 +33,21 @@ FORMAT DE SORTIDA ESPERAT (MANDATORI, NOMÉS JSON):
 """
 
 def call_kimi_k2_vision(transcription: str, photo_url: str) -> Dict[str, Any]:
-    # Aquest és un servei simulat per al model Kimi K2 Vision.
-    # Utilitza EVALUATOR_SYSTEM_PROMPT com a context del sistema.
-    print(f"Enviant dades a Kimi K2 Vision - Transcripció: {transcription}, Foto URL: {photo_url}")
-    print(f"Utilitzant Prompt del Sistema (Presó Algorítmica): {EVALUATOR_SYSTEM_PROMPT[:100]}...")
+    """Servei simulat per al model Kimi K2 Vision (Mock)."""
+    import random
     
-    # Simulem l'anàlisi de l'IA (Mock de la integració)
     paraules_clau_pressupost = ["trencat", "substituir", "nou", "comprar", "reparació major", "greu"]
     requires_budget = False
     
     if transcription:
         requires_budget = any(paraula in transcription.lower() for paraula in paraules_clau_pressupost)
     
-    # En cas que no hi hagi transcripció però sí foto, podria decidir de manera aleatòria per la demo
     if not transcription and photo_url:
         requires_budget = random.choice([True, False])
         
     resum = f"Segons l'anàlisi, s'ha detectat una incidència que {'requereix' if requires_budget else 'no requereix'} pressupost addicional."
     
-    memondum = {
+    return {
         "avaluacio_ia": {
             "resum": resum,
             "detalls_detectats": ["Dany estructural", "Manteniment necessari"] if requires_budget else ["Manteniment rutinari"],
@@ -62,34 +58,42 @@ def call_kimi_k2_vision(transcription: str, photo_url: str) -> Dict[str, Any]:
             "motiu": "Els elements detectats requereixen adquisició de nou material o hores extra" if requires_budget else "La resolució s'inclou dins del manteniment estàndard"
         }
     }
-    
-    return memondum
 
 @router.post("/evaluate/{incidencia_id}")
-def evaluate_incidencia(incidencia_id: int, db: Session = Depends(get_db)):
-    db_incidencia = db.query(Incidencia).filter(Incidencia.id == incidencia_id).first()
-    if not db_incidencia:
-        raise HTTPException(status_code=404, detail="Incidencia not found")
-        
-    transcripcio = db_incidencia.transcripcio_audio or ""
-    foto_url = db_incidencia.foto_url or ""
+async def evaluate_incidencia(
+    incidencia_id: str,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
+):
+    record = await db.fetchrow(
+        "SELECT * FROM incidencies WHERE id = $1 AND empresa_id = $2",
+        incidencia_id, current_user.empresa_id
+    )
+    if not record:
+        raise HTTPException(status_code=404, detail="Incidència no trobada")
+
+    transcripcio = record.get('transcripcio_audio') or ""
+    foto_url = record.get('foto_url') or ""
     
     if not transcripcio and not foto_url:
         raise HTTPException(status_code=400, detail="L'incidència no té transcripció ni foto per avaluar")
-        
-    # Crida al servei revolucionari de Kimi K2 Vision
+    
+    # Crida al servei de Kimi K2 Vision
     memondum_result = call_kimi_k2_vision(transcripcio, foto_url)
     
     # Actualitza l'incidència amb els resultats
-    db_incidencia.memondum = memondum_result
-    db_incidencia.requires_budget = memondum_result["decisio_financera"]["requires_budget"]
-    
-    db.commit()
-    db.refresh(db_incidencia)
+    await db.execute(
+        """UPDATE incidencies 
+           SET memondum = $1, requires_budget = $2 
+           WHERE id = $3""",
+        json.dumps(memondum_result),
+        memondum_result["decisio_financera"]["requires_budget"],
+        incidencia_id
+    )
     
     return {
         "message": "Avaluació completada correctament",
         "incidencia_id": incidencia_id,
-        "requires_budget": db_incidencia.requires_budget,
-        "memondum": db_incidencia.memondum
+        "requires_budget": memondum_result["decisio_financera"]["requires_budget"],
+        "memondum": memondum_result
     }
