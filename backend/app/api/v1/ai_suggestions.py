@@ -4,7 +4,7 @@ from typing import List, Any
 import json
 
 from app.core.security import get_current_user, TokenPayload
-from app.services.openrouter import process_prompt_with_openrouter, OpenRouterRequest
+from app.services.openrouter import process_ai_request, AIRequest
 
 router = APIRouter()
 
@@ -45,14 +45,12 @@ async def get_ai_suggestions(
     
     user_prompt = f"Descripció de la feina:\n{safe_desc}"
     
-    or_req = OpenRouterRequest(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        max_tokens=1000
+    ai_req = AIRequest(
+        user_prompt=f"[SYSTEM CONTEXT: {system_prompt}]\n\n{user_prompt}",
     )
     
     try:
-        response_text = await process_prompt_with_openrouter(or_req)
+        response_text = await process_ai_request(ai_req)
         # Netegem per si l'IA ha afegit markdown block
         response_text = response_text.strip()
         if response_text.startswith("```json"):
