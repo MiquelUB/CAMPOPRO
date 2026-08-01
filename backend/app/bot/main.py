@@ -9,10 +9,15 @@ from app.bot.handlers import router as main_router
 settings = get_settings()
 
 # Initialize Bot and Dispatcher
-bot = Bot(
-    token=settings.TELEGRAM_BOT_TOKEN, 
-    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
-)
+try:
+    bot = Bot(
+        token=settings.TELEGRAM_BOT_TOKEN, 
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
+except Exception as e:
+    logging.warning(f"Telegram Bot disabled or token invalid: {e}")
+    bot = None
+
 dp = Dispatcher()
 
 # Include routers
