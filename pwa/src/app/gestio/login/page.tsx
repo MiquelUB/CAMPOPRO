@@ -19,7 +19,7 @@ export default function GestioLogin() {
       const tokens = await loginWithEmail(email, password);
       if (tokens) {
         setTokens(tokens);
-        router.push("/gestio/feines");
+        router.push("/gestio/clients");
       }
     } catch (error) {
       console.error(error);
