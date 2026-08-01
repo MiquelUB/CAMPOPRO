@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   title: "CampoPro",
   description: "Aplicació de gestió de camps i tasques agrícoles",
   manifest: "/manifest.json",
+};
+
+export const viewport = {
   themeColor: "#16a34a",
 };
 
