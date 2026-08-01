@@ -20,7 +20,8 @@ export default function OperariVehiclesPage() {
 
     try {
       // Simulate OCR backend request
-      const response = await fetch('http://localhost:8000/api/ocr/odometer', {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+      const response = await fetch(`${apiBase}/ocr/comptador`, {
         method: 'POST',
         body: formData,
       });
