@@ -2,19 +2,81 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Package, PenTool, Truck, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, Wrench, Calendar, Gauge } from 'lucide-react';
+import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, ShoppingCart, History, ExternalLink, Phone, Mail, User } from 'lucide-react';
 
 export default function MagatzemDashboard() {
-  const [activeTab, setActiveTab] = useState<'materials' | 'eines' | 'vehicles'>('materials');
+  const [activeTab, setActiveTab] = useState<'materials' | 'eines' | 'vehicles' | 'proveidors'>('materials');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  
+  // Selected Product Detail Modal State
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
-  // Initial Mock Database for Materials
+  // Initial Mock Database for Materials with Supplier & Purchase History
   const [materials, setMaterials] = useState([
-    { id: 'm1', code: 'MAT-001', name: 'Tub PE 25mm High-Density', stock: 120, minStock: 20, unit: 'm', location: 'Prestatgeria A-1' },
-    { id: 'm2', code: 'MAT-002', name: 'Vàlvula d\'Esfera 1" Inox', stock: 4, minStock: 10, unit: 'u', location: 'Caixa B-4' },
-    { id: 'm3', code: 'MAT-003', name: 'Cinta de Teflon Professional', stock: 35, minStock: 5, unit: 'u', location: 'Armari C-2' },
-    { id: 'm4', code: 'MAT-004', name: 'Adobat Foliar Nitrogenat 25kg', stock: 2, minStock: 15, unit: 'sacs', location: 'Palet N-3' },
+    { 
+      id: 'm1', 
+      code: 'MAT-001', 
+      name: 'Tub PE 25mm High-Density', 
+      stock: 120, 
+      minStock: 20, 
+      unit: 'm', 
+      location: 'Prestatgeria A-1',
+      supplier: 'AgroSubministres Ponent SL',
+      unitPrice: 4.50,
+      lastPurchaseDate: '12/04/2026',
+      purchaseHistory: [
+        { id: 'h1', date: '12/04/2026', qty: '100m', price: '450,00 €', supplier: 'AgroSubministres Ponent SL', buyer: 'Marc (Enginyer)' },
+        { id: 'h2', date: '02/02/2026', qty: '50m', price: '225,00 €', supplier: 'AgroSubministres Ponent SL', buyer: 'Marc (Enginyer)' },
+        { id: 'h3', date: '15/11/2025', qty: '80m', price: '360,00 €', supplier: 'RiegoRegen Cat', buyer: 'Miquel Riera' }
+      ]
+    },
+    { 
+      id: 'm2', 
+      code: 'MAT-002', 
+      name: 'Vàlvula d\'Esfera 1" Inox', 
+      stock: 4, 
+      minStock: 10, 
+      unit: 'u', 
+      location: 'Caixa B-4',
+      supplier: 'RiegoRegen Cat',
+      unitPrice: 18.20,
+      lastPurchaseDate: '20/03/2026',
+      purchaseHistory: [
+        { id: 'h4', date: '20/03/2026', qty: '10u', price: '182,00 €', supplier: 'RiegoRegen Cat', buyer: 'Marc (Enginyer)' },
+        { id: 'h5', date: '10/01/2026', qty: '5u', price: '91,00 €', supplier: 'RiegoRegen Cat', buyer: 'Jordi Soler' }
+      ]
+    },
+    { 
+      id: 'm3', 
+      code: 'MAT-003', 
+      name: 'Cinta de Teflon Professional', 
+      stock: 35, 
+      minStock: 5, 
+      unit: 'u', 
+      location: 'Armari C-2',
+      supplier: 'Subministraments Industrials Manresa',
+      unitPrice: 1.20,
+      lastPurchaseDate: '05/05/2026',
+      purchaseHistory: [
+        { id: 'h6', date: '05/05/2026', qty: '40u', price: '48,00 €', supplier: 'Subministraments Industrials Manresa', buyer: 'Marc (Enginyer)' }
+      ]
+    },
+    { 
+      id: 'm4', 
+      code: 'MAT-004', 
+      name: 'Adobat Foliar Nitrogenat 25kg', 
+      stock: 2, 
+      minStock: 15, 
+      unit: 'sacs', 
+      location: 'Palet N-3',
+      supplier: 'Fertilitzants del Segre SA',
+      unitPrice: 32.50,
+      lastPurchaseDate: '18/02/2026',
+      purchaseHistory: [
+        { id: 'h7', date: '18/02/2026', qty: '20 sacs', price: '650,00 €', supplier: 'Fertilitzants del Segre SA', buyer: 'Miquel Riera' }
+      ]
+    },
   ]);
 
   // Initial Mock Database for Tools (Eines)
@@ -31,12 +93,21 @@ export default function MagatzemDashboard() {
     { id: 'v3', plate: '3341-KLM', name: 'Toyota Hilux 4x4', type: 'Pickup 4x4', unitType: 'Km', counterValue: 88900, itvDate: '2027-02-01', insuranceDate: '2026-10-15', status: 'OK' },
   ]);
 
+  // Initial Mock Database for Proveïdors (Suppliers)
+  const [proveidors, setProveidors] = useState([
+    { id: 'p1', nif: 'B25889911', name: 'AgroSubministres Ponent SL', contact: 'Albert Pons', phone: '973 11 22 33', email: 'ventes@agrosubministres.cat', address: 'Polígon Industrial El Segre, Nau 14, Lleida', products: 'Tubs, Canonades, Reg' },
+    { id: 'p2', nif: 'A08112233', name: 'RiegoRegen Cat', contact: 'Laura Mas', phone: '938 44 55 66', email: 'laura@riegoregen.cat', address: 'Av. del Reg 88, Granollers', products: 'Vàlvules, Electrovàlvules, Solenoides' },
+    { id: 'p3', nif: 'B66778899', name: 'Fertilitzants del Segre SA', contact: 'Joan Carles Valls', phone: '973 55 66 77', email: 'comercial@fertisegre.cat', address: 'Ctra. de Balaguer km 4, Lleida', products: 'Adobs, Fertilitzants, Fitosanitaris' },
+    { id: 'p4', nif: 'B08991122', name: 'Subministraments Industrials Manresa', contact: 'Ricard Torres', phone: '938 77 88 99', email: 'ricard@submanresa.cat', address: 'C/ Sallent 12, Manresa', products: 'Eines, Cinta Teflon, Cargoleria' },
+  ]);
+
   // New Item Form States
-  const [newMat, setNewMat] = useState({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '' });
+  const [newMat, setNewMat] = useState({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '', supplier: '', unitPrice: '' });
   const [newEin, setNewEin] = useState({ name: '', brand: '', serial: '', status: 'BO', assignedTo: 'Magatzem Central', location: 'Magatzem Central' });
   const [newVeh, setNewVeh] = useState({ plate: '', name: '', type: 'Furgoneta', unitType: 'Km', counterValue: '', itvDate: '', insuranceDate: '' });
+  const [newProv, setNewProv] = useState({ name: '', nif: '', contact: '', phone: '', email: '', address: '', products: '' });
 
-  // Add Item Handlers
+  // Add Handlers
   const handleAddMaterial = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMat.name.trim()) return;
@@ -48,11 +119,24 @@ export default function MagatzemDashboard() {
       stock: Number(newMat.stock) || 0,
       minStock: Number(newMat.minStock) || 5,
       unit: newMat.unit,
-      location: newMat.location.trim() || 'Magatzem Central'
+      location: newMat.location.trim() || 'Magatzem Central',
+      supplier: newMat.supplier.trim() || 'AgroSubministres Ponent SL',
+      unitPrice: Number(newMat.unitPrice) || 0,
+      lastPurchaseDate: new Date().toLocaleDateString('ca-ES'),
+      purchaseHistory: [
+        {
+          id: `h${Date.now()}`,
+          date: new Date().toLocaleDateString('ca-ES'),
+          qty: `${newMat.stock} ${newMat.unit}`,
+          price: `${(Number(newMat.stock) * Number(newMat.unitPrice)).toFixed(2)} €`,
+          supplier: newMat.supplier.trim() || 'AgroSubministres Ponent SL',
+          buyer: 'Marc (Enginyer)'
+        }
+      ]
     };
 
     setMaterials([item, ...materials]);
-    setNewMat({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '' });
+    setNewMat({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '', supplier: '', unitPrice: '' });
     setShowAddModal(false);
   };
 
@@ -97,15 +181,49 @@ export default function MagatzemDashboard() {
     setShowAddModal(false);
   };
 
-  // Delete Item Handlers
-  const deleteMaterial = (id: string) => setMaterials(materials.filter((m) => m.id !== id));
-  const deleteEina = (id: string) => setEines(eines.filter((e) => e.id !== id));
-  const deleteVehicle = (id: string) => setVehicles(vehicles.filter((v) => v.id !== id));
+  const handleAddProveidor = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProv.name.trim()) return;
 
-  // Search Filters
+    const item = {
+      id: `p${Date.now()}`,
+      nif: newProv.nif.trim().toUpperCase() || 'B00000000',
+      name: newProv.name.trim(),
+      contact: newProv.contact.trim() || 'Persona de Contacte',
+      phone: newProv.phone.trim() || '600000000',
+      email: newProv.email.trim() || 'info@proveidor.cat',
+      address: newProv.address.trim() || 'Direcció comercial',
+      products: newProv.products.trim() || 'Materials Diversos'
+    };
+
+    setProveidors([item, ...proveidors]);
+    setNewProv({ name: '', nif: '', contact: '', phone: '', email: '', address: '', products: '' });
+    setShowAddModal(false);
+  };
+
+  // Delete Handlers
+  const deleteMaterial = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMaterials(materials.filter((m) => m.id !== id));
+  };
+  const deleteEina = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEines(eines.filter((eina) => eina.id !== id));
+  };
+  const deleteVehicle = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setVehicles(vehicles.filter((v) => v.id !== id));
+  };
+  const deleteProveidor = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setProveidors(proveidors.filter((p) => p.id !== id));
+  };
+
+  // Filters
   const filteredMaterials = materials.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.code.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredEines = eines.filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) || e.code.toLowerCase().includes(searchTerm.toLowerCase()) || e.brand.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredEines = eines.filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) || e.code.toLowerCase().includes(searchTerm.toLowerCase()));
   const filteredVehicles = vehicles.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.plate.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredProveidors = proveidors.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.nif.toLowerCase().includes(searchTerm.toLowerCase()) || p.contact.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="p-6 pt-32 max-w-7xl mx-auto flex flex-col gap-6">
@@ -113,14 +231,14 @@ export default function MagatzemDashboard() {
       <nav className="flex items-center text-xs text-neutral-500 gap-1">
         <Link href="/gestio" className="hover:text-primary">Dashboard</Link>
         <span>/</span>
-        <span className="text-primary font-semibold">Magatzem, Eines i Flota</span>
+        <span className="text-primary font-semibold">Magatzem, Flota i Proveïdors</span>
       </nav>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Control de Magatzem i Flota</h1>
-          <p className="text-sm text-neutral-500 mt-1">Gestió centralitzada de materials, eines i fleet de vehicles de CampoPro.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Control de Magatzem, Flota i Proveïdors</h1>
+          <p className="text-sm text-neutral-500 mt-1">Gestió centralitzada de productes, eines, vehicles i la xarxa de proveïdors de CampoPro.</p>
         </div>
 
         <button
@@ -131,12 +249,13 @@ export default function MagatzemDashboard() {
           {activeTab === 'materials' && 'Donar d\'Alta Nou Material'}
           {activeTab === 'eines' && 'Donar d\'Alta Nova Eina'}
           {activeTab === 'vehicles' && 'Donar d\'Alta Nou Vehicle'}
+          {activeTab === 'proveidors' && 'Donar d\'Alta Nou Proveïdor'}
         </button>
       </div>
 
-      {/* 3 Main Tabs: Materials, Eines, Vehicles */}
+      {/* 4 Main Tabs: Materials, Eines, Vehicles, Proveïdors */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex bg-neutral-100 p-1.5 rounded-xl border border-neutral-200">
+        <div className="flex bg-neutral-100 p-1.5 rounded-xl border border-neutral-200 flex-wrap">
           <button 
             onClick={() => setActiveTab('materials')}
             className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
@@ -166,13 +285,23 @@ export default function MagatzemDashboard() {
             <Truck size={18} />
             Vehicles ({vehicles.length})
           </button>
+
+          <button 
+            onClick={() => setActiveTab('proveidors')}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+              activeTab === 'proveidors' ? 'bg-white shadow-md text-primary scale-105' : 'text-neutral-500 hover:text-neutral-900'
+            }`}
+          >
+            <Building2 size={18} />
+            Proveïdors ({proveidors.length})
+          </button>
         </div>
 
         {/* Search Bar */}
         <div className="relative w-full md:w-72">
           <input 
             type="text"
-            placeholder="Cercar al magatzem..."
+            placeholder="Cercar al magatzem o proveïdor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary"
@@ -184,6 +313,9 @@ export default function MagatzemDashboard() {
       {/* TAB 1: MATERIALS CONTENT */}
       {activeTab === 'materials' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold">
+            💡 Prem qualsevol fila per obrir la Fitxa Completa del Producte (Proveïdor, Preu, Històric de Compres).
+          </div>
           <table className="w-full text-sm text-left">
             <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase font-semibold text-xs">
               <tr>
@@ -201,9 +333,16 @@ export default function MagatzemDashboard() {
                 filteredMaterials.map((item) => {
                   const isLowStock = item.stock <= item.minStock;
                   return (
-                    <tr key={item.id} className="hover:bg-neutral-50 transition-colors">
+                    <tr 
+                      key={item.id} 
+                      onClick={() => setSelectedProduct(item)}
+                      className="hover:bg-primary/5 transition-colors cursor-pointer group"
+                    >
                       <td className="px-6 py-4 font-mono text-xs text-neutral-500 font-bold">{item.code}</td>
-                      <td className="px-6 py-4 font-semibold text-neutral-900">{item.name}</td>
+                      <td className="px-6 py-4 font-semibold text-neutral-900 group-hover:text-primary transition-colors flex items-center gap-2">
+                        {item.name}
+                        <ExternalLink size={14} className="text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </td>
                       <td className="px-6 py-4 text-center font-bold text-base text-neutral-900">
                         {item.stock} <span className="text-xs font-normal text-neutral-500">{item.unit}</span>
                       </td>
@@ -221,7 +360,7 @@ export default function MagatzemDashboard() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button onClick={() => deleteMaterial(item.id)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
+                        <button onClick={(e) => deleteMaterial(item.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -270,7 +409,7 @@ export default function MagatzemDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => deleteEina(item.id)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
+                      <button onClick={(e) => deleteEina(item.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
                         <Trash2 size={16} />
                       </button>
                     </td>
@@ -314,7 +453,7 @@ export default function MagatzemDashboard() {
                     <td className="px-6 py-4 text-neutral-700 font-medium">{item.itvDate}</td>
                     <td className="px-6 py-4 text-neutral-700 font-medium">{item.insuranceDate}</td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => deleteVehicle(item.id)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
+                      <button onClick={(e) => deleteVehicle(item.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
                         <Trash2 size={16} />
                       </button>
                     </td>
@@ -330,7 +469,153 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* MODAL: DONAR D'ALTA PRODUCTES (DYNAMICALLY FOR THE ACTIVE TAB) */}
+      {/* TAB 4: PROVEÏDORS CONTENT */}
+      {activeTab === 'proveidors' && (
+        <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase font-semibold text-xs">
+              <tr>
+                <th className="px-6 py-4">Nom Fiscal del Proveïdor</th>
+                <th className="px-6 py-4">NIF / CIF</th>
+                <th className="px-6 py-4">Persona de Contacte</th>
+                <th className="px-6 py-4">Telèfon / Email</th>
+                <th className="px-6 py-4">Productes Subministrats</th>
+                <th className="px-6 py-4 text-right">Accions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {filteredProveidors.length > 0 ? (
+                filteredProveidors.map((prov) => (
+                  <tr key={prov.id} className="hover:bg-neutral-50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-neutral-900">{prov.name}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-neutral-500 font-semibold">{prov.nif}</td>
+                    <td className="px-6 py-4 text-neutral-800 flex items-center gap-1.5">
+                      <User size={14} className="text-neutral-400" />
+                      {prov.contact}
+                    </td>
+                    <td className="px-6 py-4 text-neutral-600">
+                      <div className="flex items-center gap-1">
+                        <Phone size={12} className="text-neutral-400" />
+                        {prov.phone}
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-neutral-400 mt-0.5">
+                        <Mail size={12} />
+                        {prov.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-neutral-700">
+                      <span className="bg-primary/10 text-primary font-medium text-xs px-2.5 py-1 rounded-full">
+                        {prov.products}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button onClick={(e) => deleteProveidor(prov.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-neutral-400">Cap proveïdor trobat.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* MODAL DETALL PRODUCTE (FITXA DEL PRODUCTE AMB PROVEÏDOR, PREU I HISTÒRIC DE COMPRES) */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
+              <div>
+                <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+                  #{selectedProduct.code}
+                </span>
+                <h3 className="text-xl font-bold text-neutral-900 mt-2">{selectedProduct.name}</h3>
+                <p className="text-xs text-neutral-500">Ubicació actual: {selectedProduct.location}</p>
+              </div>
+              <button onClick={() => setSelectedProduct(null)} className="p-1 text-neutral-400 hover:text-neutral-700 rounded-full">
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Product Key Details Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-neutral-50 p-4 rounded-xl border border-neutral-200/80 mb-6">
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Estoc Actual</span>
+                <span className="text-lg font-bold text-neutral-900">{selectedProduct.stock} {selectedProduct.unit}</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Preu Unitari</span>
+                <span className="text-lg font-bold text-primary">{selectedProduct.unitPrice.toFixed(2)} €</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Proveïdor Principal</span>
+                <span className="text-xs font-bold text-neutral-800 truncate block mt-1">{selectedProduct.supplier}</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Última Compra</span>
+                <span className="text-xs font-bold text-neutral-800 block mt-1">{selectedProduct.lastPurchaseDate}</span>
+              </div>
+            </div>
+
+            {/* Purchase History Section */}
+            <div className="space-y-3">
+              <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2">
+                <History size={16} className="text-primary" />
+                Històric de Compres i Entrades d'Stock
+              </h4>
+
+              <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
+                    <tr>
+                      <th className="p-3">Data</th>
+                      <th className="p-3">Quantitat</th>
+                      <th className="p-3">Import Total</th>
+                      <th className="p-3">Proveïdor</th>
+                      <th className="p-3">Comprat Per</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-200">
+                    {selectedProduct.purchaseHistory && selectedProduct.purchaseHistory.length > 0 ? (
+                      selectedProduct.purchaseHistory.map((h: any) => (
+                        <tr key={h.id} className="hover:bg-neutral-50">
+                          <td className="p-3 font-semibold text-neutral-900">{h.date}</td>
+                          <td className="p-3 font-bold text-emerald-700">+{h.qty}</td>
+                          <td className="p-3 font-bold text-neutral-900">{h.price}</td>
+                          <td className="p-3 text-neutral-700">{h.supplier}</td>
+                          <td className="p-3 text-neutral-500">{h.buyer}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="p-4 text-center text-neutral-400">Cap registre de compra previ.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="mt-6 pt-4 border-t border-neutral-100 flex justify-end">
+              <button 
+                onClick={() => setSelectedProduct(null)} 
+                className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90"
+              >
+                Tancar Fitxa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DONAR D'ALTA PRODUCTES O PROVEÏDORS */}
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200">
@@ -340,6 +625,7 @@ export default function MagatzemDashboard() {
                 {activeTab === 'materials' && 'Donar d\'Alta Nou Material'}
                 {activeTab === 'eines' && 'Donar d\'Alta Nova Eina'}
                 {activeTab === 'vehicles' && 'Donar d\'Alta Nou Vehicle'}
+                {activeTab === 'proveidors' && 'Donar d\'Alta Nou Proveïdor'}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="text-neutral-400 hover:text-neutral-700">
                 <X size={20} />
@@ -407,6 +693,33 @@ export default function MagatzemDashboard() {
                       placeholder="10"
                       value={newMat.minStock}
                       onChange={(e) => setNewMat({ ...newMat, minStock: e.target.value })}
+                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Proveïdor Principal</label>
+                    <select
+                      value={newMat.supplier}
+                      onChange={(e) => setNewMat({ ...newMat, supplier: e.target.value })}
+                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary bg-white"
+                    >
+                      <option value="">Seleccionar Proveïdor...</option>
+                      {proveidors.map((p) => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Preu Unitari (€)</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      placeholder="Ex: 4.50"
+                      value={newMat.unitPrice}
+                      onChange={(e) => setNewMat({ ...newMat, unitPrice: e.target.value })}
                       className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary"
                     />
                   </div>
@@ -586,6 +899,84 @@ export default function MagatzemDashboard() {
 
                 <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold shadow-md hover:bg-primary/90 mt-2">
                   Guardar i Donar d'Alta Vehicle
+                </button>
+              </form>
+            )}
+
+            {/* FORM 4: PROVEÏDORS */}
+            {activeTab === 'proveidors' && (
+              <form onSubmit={handleAddProveidor} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Nom Fiscal del Proveïdor</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Ex: AgroSubministres Ponent SL"
+                    value={newProv.name}
+                    onChange={(e) => setNewProv({ ...newProv, name: e.target.value })}
+                    className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">NIF / CIF</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: B25889911"
+                      value={newProv.nif}
+                      onChange={(e) => setNewProv({ ...newProv, nif: e.target.value })}
+                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary font-mono uppercase"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Persona de Contacte</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Albert Pons"
+                      value={newProv.contact}
+                      onChange={(e) => setNewProv({ ...newProv, contact: e.target.value })}
+                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Telèfon de Contacte</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: 973 11 22 33"
+                      value={newProv.phone}
+                      onChange={(e) => setNewProv({ ...newProv, phone: e.target.value })}
+                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Email de Contacte</label>
+                    <input 
+                      type="email" 
+                      placeholder="Ex: ventes@proveidor.cat"
+                      value={newProv.email}
+                      onChange={(e) => setNewProv({ ...newProv, email: e.target.value })}
+                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Productes Subministrats</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: Tubs, Canonades, Reg, Adobs..."
+                    value={newProv.products}
+                    onChange={(e) => setNewProv({ ...newProv, products: e.target.value })}
+                    className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary"
+                  />
+                </div>
+
+                <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold shadow-md hover:bg-primary/90 mt-2">
+                  Guardar i Donar d'Alta Proveïdor
                 </button>
               </form>
             )}
