@@ -2,83 +2,84 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import DynamicMap from '@/components/map/DynamicMap';
 
 export default function Page() {
   const [filter, setFilter] = useState<'TOTS' | 'ACTIUS' | 'INCIDÈNCIES'>('TOTS');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Map Mode Toggle: 'VECTOR' (100% robust vector satellite), 'LEAFLET' (OpenStreetMap/CartoDB tiles)
-  const [mapMode, setMapMode] = useState<'VECTOR' | 'LEAFLET'>('VECTOR');
-
-  // Selected Crew State
+  // Selected Crew State (Highlights marker and zooms canvas)
   const [selectedCrewId, setSelectedCrewId] = useState<string | null>('js');
+  const [mapZoom, setMapZoom] = useState<number>(1);
 
   // Live Mobile GPS State
   const [userGps, setUserGps] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [isGpsActive, setIsGpsActive] = useState(false);
 
-  // Active Crews Dataset with Coordinates
+  // Active Crews Dataset with Map Coordinates
   const crews = [
     {
       id: 'js',
       initials: 'JS',
       name: 'Jordi Soler',
-      task: 'Parcel·la 42 - Sega i Manteniment',
+      task: 'Parcel·la 42 - Sega',
       status: 'TREBALLANT',
       vehicle: 'Tractor John Deere 6R',
       time: '2 min',
+      top: 32,
+      left: 45,
       lat: 41.6521,
       lng: 1.8322,
-      topPercent: 34,
-      leftPercent: 48,
-      colorHex: '#16a34a',
-      badgeColor: 'bg-green-100 text-green-800 border-green-300'
+      avatarClass: 'bg-emerald-50 border-2 border-emerald-600 text-emerald-700',
+      badgeClass: 'bg-emerald-500 text-white font-bold',
+      markerClass: 'bg-emerald-600'
     },
     {
       id: 'ma',
       initials: 'MA',
       name: 'Marc Andreu',
-      task: 'Ruta: Sector Nord • Fertilització',
+      task: 'Ruta: Sector Nord',
       status: 'EN TRÀNSIT',
       vehicle: 'Ford Transit B-1234-CD',
       time: 'Ara mateix',
+      top: 60,
+      left: 25,
       lat: 41.6710,
       lng: 1.8150,
-      topPercent: 58,
-      leftPercent: 28,
-      colorHex: '#2563eb',
-      badgeColor: 'bg-blue-100 text-blue-800 border-blue-300'
+      avatarClass: 'bg-blue-50 border-2 border-blue-600 text-blue-700',
+      badgeClass: 'bg-blue-600 text-white font-bold',
+      markerClass: 'bg-blue-600'
     },
     {
       id: 'pr',
       initials: 'PR',
       name: 'Pau Ribas',
-      task: 'Avaria: Escomesa principal d\'aigua',
+      task: 'Avaria: Tractor T-12',
       status: 'INCIDÈNCIES',
       vehicle: 'Toyota Hilux 3341-KLM',
       time: 'ALERTA',
+      top: 45,
+      left: 75,
       lat: 41.6400,
       lng: 1.8600,
-      topPercent: 42,
-      leftPercent: 76,
-      colorHex: '#dc2626',
-      badgeColor: 'bg-red-100 text-red-800 border-red-300'
+      avatarClass: 'bg-rose-50 border-2 border-rose-600 text-rose-700',
+      badgeClass: 'bg-rose-600 text-white font-bold',
+      markerClass: 'bg-rose-600'
     },
     {
       id: 'lc',
       initials: 'LC',
       name: 'Laia Costa',
-      task: 'Magatzem Central • Preparació Material',
+      task: 'Magatzem Central',
       status: 'INACTIU',
       vehicle: 'Furgoneta Magatzem 02',
       time: '15 min',
+      top: 75,
+      left: 52,
       lat: 41.6300,
       lng: 1.8400,
-      topPercent: 72,
-      leftPercent: 54,
-      colorHex: '#6b7280',
-      badgeColor: 'bg-gray-100 text-gray-800 border-gray-300'
+      avatarClass: 'bg-slate-100 border-2 border-slate-400 text-slate-600',
+      badgeClass: 'bg-slate-500 text-white font-bold',
+      markerClass: 'bg-slate-500'
     }
   ];
 
@@ -94,9 +95,7 @@ export default function Page() {
           });
           setIsGpsActive(true);
         },
-        () => {
-          setIsGpsActive(false);
-        },
+        () => setIsGpsActive(false),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
 
@@ -114,9 +113,10 @@ export default function Page() {
 
   const handleCenterOnUserGps = () => {
     if (userGps) {
-      alert(`📍 Centrant el mapa interactiu al teu GPS mòbil en temps real:\nLat: ${userGps.lat.toFixed(4)}° N | Lng: ${userGps.lng.toFixed(4)}° E\nPrecisió: ${userGps.accuracy} metres`);
+      alert(`📍 Centrant mapa al teu GPS en temps real:\nLat: ${userGps.lat.toFixed(4)}° N | Lng: ${userGps.lng.toFixed(4)}° E\nPrecisió: ${userGps.accuracy}m`);
+      setMapZoom(1.2);
     } else {
-      alert("Obtinint la ubicació del GPS del mòbil...");
+      alert("Llegint posició GPS del mòbil...");
     }
   };
 
@@ -127,19 +127,19 @@ export default function Page() {
         <span>/</span>
         <Link href="/gestio" className="hover:text-primary cursor-pointer">Dashboard</Link>
         <span>/</span>
-        <span className="text-primary font-body-strong">Mapa en Temps Real de CampoPro</span>
+        <span className="text-primary font-body-strong">Mapa en Temps Real</span>
       </nav>
 
       <div className="flex flex-col w-full gap-lg">
-        {/* Header Controls, Filters & Map Mode Switcher */}
+        {/* Header Controls & Filters */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-md bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-sm">
           <div className="flex flex-wrap items-center gap-md">
             <div className="bg-surface-container-low border border-outline-variant rounded-xl px-md py-sm flex items-center gap-sm">
               <span className="material-symbols-outlined text-outline text-[18px]">calendar_today</span>
               <span className="font-body-strong text-on-surface text-sm">Avui, 24 de Maig</span>
+              <span className="material-symbols-outlined text-outline text-[18px]">expand_more</span>
             </div>
 
-            {/* Filter Pills */}
             <div className="flex bg-surface-container-high rounded-xl p-xs border border-outline-variant/20">
               {(['TOTS', 'ACTIUS', 'INCIDÈNCIES'] as const).map((f) => (
                 <button 
@@ -154,35 +154,6 @@ export default function Page() {
               ))}
             </div>
 
-            {/* Map Mode Toggle Switch (Vector Satellite vs Leaflet Tiles) */}
-            <div className="flex items-center gap-1 bg-primary/10 p-1 rounded-xl border border-primary/20">
-              <button
-                onClick={() => setMapMode('VECTOR')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  mapMode === 'VECTOR' 
-                    ? 'bg-primary text-white shadow-md scale-105' 
-                    : 'text-primary hover:bg-primary/10'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">map</span>
-                🛰️ Satèl·lit Vactorial
-              </button>
-
-              <button
-                onClick={() => setMapMode('LEAFLET')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  mapMode === 'LEAFLET' 
-                    ? 'bg-primary text-white shadow-md scale-105' 
-                    : 'text-primary hover:bg-primary/10'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">layers</span>
-                🗺️ Leaflet OpenStreetMap
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-md w-full md:w-auto">
             {/* Mobile GPS Status Badge */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold">
               <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
@@ -191,36 +162,43 @@ export default function Page() {
                 ? `GPS Mòbil: ${userGps.lat.toFixed(3)}°, ${userGps.lng.toFixed(3)}°`
                 : 'GPS Mòbil Actiu'}
             </div>
+          </div>
 
+          <div className="flex items-center gap-md w-full md:w-auto">
             <div className="relative flex-1 md:flex-initial">
               <input 
                 type="text" 
-                placeholder="Cercar operari, vehicle..."
+                placeholder="Filtrar per operari o zona..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full md:w-64 bg-surface-container-low border border-outline-variant rounded-xl pl-10 pr-md py-2.5 text-sm focus:outline-none focus:border-primary transition-all" 
               />
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
             </div>
+
+            <Link
+              href="/gestio/feines/crear"
+              className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-body-strong flex items-center gap-2 hover:bg-primary-container transition-all shadow-md text-sm whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined text-[18px]">person_add</span>
+              Assignar Nou
+            </Link>
           </div>
         </div>
 
-        {/* Main Workspace Layout */}
-        <div className="flex flex-col lg:flex-row gap-lg w-full items-start">
+        {/* Main Map Workspace (Stitch Design 1:1 - Fully Visible on Maximized Screens) */}
+        <div className="flex flex-col lg:flex-row gap-lg h-[calc(100vh-280px)] min-h-[620px] w-full relative">
           
           {/* Left Panel: Active Crew List */}
-          <div className="w-full lg:w-88 flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30 flex-shrink-0 min-h-[620px]">
-            <div className="p-md border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low">
-              <div>
-                <h3 className="font-section-title text-sm uppercase tracking-wider text-primary font-bold">Equips Actius</h3>
-                <p className="text-[11px] text-on-surface-variant">Prem qualsevol equip per destacar-lo al mapa</p>
-              </div>
-              <span className="bg-primary text-white px-2.5 py-1 rounded-full text-xs font-bold">
-                {filteredCrews.length} Actius
+          <div className="w-full lg:w-80 flex flex-col bg-surface-container-low rounded-xl overflow-hidden shadow-sm border border-surface-container-highest flex-shrink-0">
+            <div className="p-md border-b border-surface-container-highest flex justify-between items-center bg-surface-container-lowest/50">
+              <h3 className="font-section-title text-sm uppercase tracking-wider text-outline font-bold">Equips Actius</h3>
+              <span className="bg-primary-container text-on-primary-container px-2.5 py-0.5 rounded text-[10px] font-bold">
+                {filteredCrews.length} TOTAL
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-outline-variant/20">
+            <div className="flex-1 overflow-y-auto divide-y divide-surface-container-highest">
               {filteredCrews.map((crew) => {
                 const isSelected = selectedCrewId === crew.id;
                 return (
@@ -229,33 +207,28 @@ export default function Page() {
                     onClick={() => setSelectedCrewId(crew.id)}
                     className={`p-md transition-all cursor-pointer group flex items-start gap-md ${
                       isSelected 
-                        ? 'bg-primary-container/15 border-l-4 border-primary font-bold shadow-inner' 
-                        : 'hover:bg-surface-container-low border-l-4 border-transparent'
+                        ? 'bg-surface-container-lowest border-l-4 border-primary font-bold shadow-sm' 
+                        : 'hover:bg-surface-container-lowest border-l-4 border-transparent'
                     }`}
                   >
-                    <div 
-                      style={{ backgroundColor: crew.colorHex }}
-                      className="w-11 h-11 rounded-full text-white flex items-center justify-center font-bold text-sm shadow-md flex-shrink-0"
-                    >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display-lg text-sm flex-shrink-0 ${crew.avatarClass}`}>
                       {crew.initials}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
-                        <p className="font-headline-md text-sm text-primary truncate">{crew.name}</p>
+                        <p className="font-body-strong text-on-surface truncate">{crew.name}</p>
                         <span className="text-[10px] text-outline">{crew.time}</span>
                       </div>
-                      <p className="text-xs text-on-surface-variant truncate mt-0.5">{crew.task}</p>
-                      <p className="text-[11px] text-outline truncate">{crew.vehicle}</p>
+                      <p className="text-xs text-on-surface-variant truncate">{crew.task}</p>
 
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${crew.badgeColor}`}>
+                      <div className="mt-xs flex items-center gap-1">
+                        <span className={`w-2 h-2 rounded-full ${crew.markerClass}`}></span>
+                        <span className="text-[10px] font-label-caps text-on-surface font-bold">
                           {crew.status}
                         </span>
                         {isSelected && (
-                          <span className="text-xs text-primary font-bold flex items-center gap-1 animate-pulse">
-                            Destacat al mapa <span className="material-symbols-outlined text-[14px]">my_location</span>
-                          </span>
+                          <span className="ml-auto text-[10px] text-primary font-bold">✓ Al mapa</span>
                         )}
                       </div>
                     </div>
@@ -264,178 +237,204 @@ export default function Page() {
               })}
             </div>
 
-            {/* Workload Indicator */}
-            <div className="p-md bg-surface-container-low border-t border-outline-variant/20">
-              <div className="flex items-center justify-between text-xs font-label-caps text-on-surface-variant mb-1">
-                <span>Càrrega de treball de la flota</span>
+            {/* Workload Progress Bar */}
+            <div className="p-md bg-surface-container-highest/30">
+              <div className="flex items-center justify-between text-[11px] font-label-caps text-on-surface-variant mb-xs">
+                <span>Càrrega de treball</span>
                 <span className="font-bold text-primary">84%</span>
               </div>
-              <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
-                <div className="bg-primary h-full w-[84%] rounded-full"></div>
+              <div className="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+                <div className="bg-secondary-container h-full w-[84%] rounded-full"></div>
               </div>
             </div>
           </div>
 
-          {/* Right Panel: Universal Responsive Interactive Map Container */}
-          <div className="flex-1 w-full min-w-0 relative rounded-2xl overflow-hidden shadow-2xl border border-outline-variant/40 min-h-[620px] bg-slate-900">
+          {/* Map Viewport Area (100% Reliable Aerial Satellite Stitch Canvas) */}
+          <div className="flex-1 min-w-0 relative rounded-xl overflow-hidden shadow-xl border border-surface-container-highest group bg-slate-900 h-full">
             
-            {/* Mode 1: High-Performance Vector Satellite Canvas Map (100% Robust across all screens & maximize) */}
-            {mapMode === 'VECTOR' ? (
-              <div className="w-full h-[620px] min-h-[620px] relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black border-0">
-                
-                {/* Topo Satellite Grid Background Effect */}
-                <div 
-                  className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity scale-105 transition-all duration-700" 
-                  style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlm9jUfgnuweYEJ-Ww6p0-5mXPnyp0zXCLllonK5Qegx18rx94wdqGJI_ntB1_e0udMbidzpT5RLBQ1z_UNctJvsP90nPLwbZo1iOpplpn_jYp2zck0S52xgvq_XcN0tp_wMezFkUKREo_hgnXMFkdW_kpfhKAymAZfc0KjY44ZlbOD8PpiuEn46P61w00hOIcU2prSwejTH9B8GYZqpwCSRNyqdKobNk0lNzQbt2yt5kGDTrR6t_U')` }}
-                ></div>
+            {/* Satellite Map Container */}
+            <div 
+              className="w-full h-full bg-cover bg-center grayscale-[0.1] brightness-95 transition-transform duration-500 origin-center"
+              style={{ 
+                backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlm9jUfgnuweYEJ-Ww6p0-5mXPnyp0zXCLllonK5Qegx18rx94wdqGJI_ntB1_e0udMbidzpT5RLBQ1z_UNctJvsP90nPLwbZo1iOpplpn_jYp2zck0S52xgvq_XcN0tp_wMezFkUKREo_hgnXMFkdW_kpfhKAymAZfc0KjY44ZlbOD8PpiuEn46P61w00hOIcU2prSwejTH9B8GYZqpwCSRNyqdKobNk0lNzQbt2yt5kGDTrR6t_U')`,
+                transform: `scale(${mapZoom})`
+              }}
+            >
+              {/* Overlay for Contrast */}
+              <div className="absolute inset-0 bg-primary/10 pointer-events-none"></div>
 
-                {/* Radar Grid Overlay Lines */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#38bdf8" strokeWidth="0.5" />
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#grid)" />
-                  {/* Tactical GPS Connecting Route Line */}
-                  <path d="M 280 350 L 480 210 L 760 260 L 540 440" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeDasharray="6 6" className="animate-pulse" />
-                </svg>
-
-                {/* Interactive Map Crew Markers */}
-                {filteredCrews.map((crew) => {
-                  const isSelected = selectedCrewId === crew.id;
-                  return (
-                    <div
-                      key={crew.id}
-                      onClick={() => setSelectedCrewId(crew.id)}
-                      style={{ top: `${crew.topPercent}%`, left: `${crew.leftPercent}%` }}
-                      className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer transition-all duration-300 z-20 ${
-                        isSelected ? 'scale-125 z-30' : 'hover:scale-110 opacity-90'
-                      }`}
-                    >
-                      {/* Badge Header */}
-                      <div className={`px-3 py-1 rounded-xl shadow-2xl mb-1 flex items-center gap-1.5 transition-all text-xs border ${
-                        isSelected 
-                          ? 'bg-primary text-white font-bold ring-4 ring-primary/30 scale-105 border-white' 
-                          : 'bg-white/95 text-slate-900 border-slate-200'
-                      }`}>
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        <span className="font-body-strong">{crew.initials} • {crew.name}</span>
-                      </div>
-
-                      {/* Circular Pin */}
-                      <div 
-                        style={{ backgroundColor: crew.colorHex }}
-                        className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-2xl text-white font-bold text-sm relative"
-                      >
-                        {crew.initials}
-                        {isSelected && (
-                          <div className="absolute -inset-2 rounded-full border-4 border-green-400 animate-ping"></div>
-                        )}
-                      </div>
-                      <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-white -mt-1 shadow-md"></div>
-                    </div>
-                  );
-                })}
-
-                {/* Mobile Live GPS Marker */}
-                {userGps && (
+              {/* Render Animated Crew Markers */}
+              {filteredCrews.map((crew) => {
+                const isSelected = selectedCrewId === crew.id;
+                return (
                   <div 
-                    style={{ top: '50%', left: '50%' }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer z-30"
-                    onClick={handleCenterOnUserGps}
+                    key={crew.id}
+                    onClick={() => setSelectedCrewId(crew.id)}
+                    style={{ top: `${crew.top}%`, left: `${crew.left}%` }}
+                    className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer transition-all duration-300 z-20 ${
+                      isSelected ? 'scale-125 z-30' : 'hover:scale-110'
+                    }`}
                   >
-                    <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-xl mb-1 flex items-center gap-1 border border-white">
-                      <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
-                      📍 El Teu GPS (Mòbil)
+                    {/* Header Label Pill */}
+                    <div className={`px-2.5 py-1 rounded-lg shadow-xl mb-1 flex items-center gap-1.5 transition-all text-xs ${
+                      isSelected ? 'bg-primary text-white font-bold ring-4 ring-white/40' : 'bg-surface-container-lowest text-primary'
+                    }`}>
+                      <span className="text-[10px] font-body-strong">{crew.initials} - {crew.task.split('-')[0]}</span>
                     </div>
-                    <div className="w-11 h-11 rounded-full bg-blue-500 flex items-center justify-center border-4 border-white shadow-2xl text-white relative">
-                      <span className="material-symbols-outlined text-[22px]">my_location</span>
-                      <div className="absolute -inset-3 rounded-full border-2 border-blue-400 animate-ping"></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Mode 2: Leaflet Dynamic Map Component */
-              <div className="w-full h-[620px] min-h-[620px]">
-                <DynamicMap
-                  locations={filteredCrews}
-                  selectedId={selectedCrewId}
-                  onSelectLocation={(id) => setSelectedCrewId(id)}
-                  userGps={userGps}
-                  center={[selectedCrew.lat, selectedCrew.lng]}
-                  zoom={14}
-                />
-              </div>
-            )}
 
-            {/* Floating Info Card for Currently Selected Crew */}
+                    {/* Circular Marker */}
+                    <div className={`w-10 h-10 rounded-full ${crew.markerClass} flex items-center justify-center border-4 border-surface-container-lowest shadow-xl text-white font-body-strong relative`}>
+                      {crew.initials}
+                      {isSelected && (
+                        <div className="absolute -inset-2 rounded-full border-4 border-secondary-container animate-ping"></div>
+                      )}
+                    </div>
+                    <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-surface-container-lowest -mt-1"></div>
+                  </div>
+                );
+              })}
+
+              {/* Live User Mobile GPS Marker */}
+              {userGps && (
+                <div 
+                  style={{ top: '50%', left: '50%' }}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer z-30"
+                  onClick={handleCenterOnUserGps}
+                >
+                  <div className="bg-blue-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold shadow-lg mb-1 flex items-center gap-1 border border-white">
+                    <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                    📍 El Teu GPS (Mòbil)
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center border-4 border-white shadow-2xl text-white relative">
+                    <span className="material-symbols-outlined text-[20px]">my_location</span>
+                    <div className="absolute -inset-3 rounded-full border-2 border-blue-400 animate-ping"></div>
+                  </div>
+                </div>
+              )}
+
+              {/* SVG Route Connection Path */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-60" viewBox="0 0 800 600">
+                <path d="M200,360 L250,400 L300,380 L350,420" fill="none" stroke="rgba(254, 147, 44, 0.8)" strokeDasharray="8,8" strokeWidth="3.5" />
+              </svg>
+            </div>
+
+            {/* Selected Crew Info Card Overlay */}
             {selectedCrew && (
-              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-outline-variant/30 max-w-xs z-[400]">
+              <div className="absolute top-md left-md bg-surface-container-lowest/95 backdrop-blur-md p-md rounded-2xl shadow-2xl border border-surface-container-highest max-w-xs z-30 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                    Equip Seleccionat
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    Equip Destacat al Mapa
                   </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${selectedCrew.badgeColor}`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedCrew.badgeClass}`}>
                     {selectedCrew.status}
                   </span>
                 </div>
                 <h4 className="font-headline-md text-base text-primary font-bold">{selectedCrew.name}</h4>
                 <p className="text-xs text-on-surface-variant font-medium mt-0.5">{selectedCrew.task}</p>
                 <p className="text-[11px] text-outline mt-1">{selectedCrew.vehicle}</p>
-                <div className="mt-3 pt-2 border-t border-outline-variant/20 flex justify-between items-center text-[11px] text-on-surface-variant">
+                <div className="mt-2 pt-2 border-t border-outline-variant/20 flex justify-between items-center text-[11px] text-on-surface-variant">
                   <span>GPS: {selectedCrew.lat.toFixed(4)}° N, {selectedCrew.lng.toFixed(4)}° E</span>
-                  <span className="text-primary font-bold">Temps real ✓</span>
+                  <span className="text-primary font-bold">Actiu ✓</span>
                 </div>
               </div>
             )}
 
-            {/* GPS Mobile Location Trigger Button */}
-            <button
-              onClick={handleCenterOnUserGps}
-              className="absolute top-4 right-4 bg-white text-primary px-4 py-3 rounded-xl shadow-2xl z-[400] hover:bg-primary hover:text-white transition-all active:scale-95 flex items-center gap-2 text-xs font-bold border border-slate-200"
-              title="Centrar al Teu GPS Mòbil"
-            >
-              <span className="material-symbols-outlined text-[20px]">my_location</span>
-              Centrar al Teu GPS
-            </button>
+            {/* Map Controls Overlay (Zoom In, Zoom Out, My Location) */}
+            <div className="absolute top-md right-md flex flex-col gap-xs z-30">
+              <button 
+                onClick={() => setMapZoom(prev => Math.min(prev + 0.2, 1.8))}
+                className="w-10 h-10 bg-surface-container-lowest rounded-lg shadow-md flex items-center justify-center text-on-surface hover:text-primary transition-colors active:scale-90"
+                title="Apropar Zoom"
+              >
+                <span className="material-symbols-outlined">add</span>
+              </button>
+              <button 
+                onClick={() => setMapZoom(prev => Math.max(prev - 0.2, 0.8))}
+                className="w-10 h-10 bg-surface-container-lowest rounded-lg shadow-md flex items-center justify-center text-on-surface hover:text-primary transition-colors active:scale-90"
+                title="Allunyar Zoom"
+              >
+                <span className="material-symbols-outlined">remove</span>
+              </button>
+              <div className="h-2"></div>
+              <button 
+                onClick={handleCenterOnUserGps}
+                className="w-10 h-10 bg-primary text-white rounded-lg shadow-md flex items-center justify-center hover:bg-primary-container transition-colors active:scale-90"
+                title="Centrar al Teu GPS Mòbil"
+              >
+                <span className="material-symbols-outlined">my_location</span>
+              </button>
+            </div>
+
+            {/* Legend Overlay */}
+            <div className="absolute bottom-md left-md bg-surface-container-lowest/90 backdrop-blur-md p-md rounded-xl shadow-2xl border border-surface-container-highest min-w-[180px] z-30">
+              <p className="font-label-caps text-on-surface-variant mb-sm text-xs font-bold">LLEGENDA D'ESTATS</p>
+              <div className="space-y-xs text-xs">
+                <div className="flex items-center gap-sm">
+                  <span className="w-3 h-3 rounded-full bg-emerald-600"></span>
+                  <span className="text-on-surface">Treballant</span>
+                </div>
+                <div className="flex items-center gap-sm">
+                  <span className="w-3 h-3 rounded-full bg-blue-600"></span>
+                  <span className="text-on-surface">En trànsit</span>
+                </div>
+                <div className="flex items-center gap-sm">
+                  <span className="w-3 h-3 rounded-full bg-slate-500"></span>
+                  <span className="text-on-surface">Inactiu / Pausa</span>
+                </div>
+                <div className="flex items-center gap-sm">
+                  <span className="w-3 h-3 rounded-full bg-rose-600"></span>
+                  <span className="text-on-surface font-bold text-rose-600">Incidència</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Telemetry Status Bar */}
+            <div className="absolute bottom-md right-md bg-primary text-on-primary px-md py-sm rounded-full flex items-center gap-sm shadow-xl animate-pulse z-30">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary-container"></span>
+              </span>
+              <span className="text-xs font-label-caps tracking-widest">TRANSMISSIÓ EN DIRECTE</span>
+            </div>
           </div>
         </div>
 
         {/* Bottom Fleet Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-md mt-sm">
-          <div className="bg-surface-container-lowest p-md rounded-xl flex items-center justify-between border border-outline-variant/30 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-lg mt-lg">
+          <div className="bg-surface-container-low p-lg rounded-xl flex items-center justify-between border border-surface-container-highest">
             <div>
-              <p className="font-label-caps text-xs text-on-surface-variant">OPERARIS EN PARCEL·LA</p>
-              <p className="font-display-lg text-2xl text-primary font-bold">8 <span className="text-xs text-on-surface-variant font-normal">/ 12</span></p>
+              <p className="font-label-caps text-on-surface-variant">OPERARIS ACTIUS</p>
+              <p className="font-display-lg text-primary">8<span className="text-lg text-on-surface-variant">/12</span></p>
             </div>
-            <span className="material-symbols-outlined text-primary text-3xl opacity-30">engineering</span>
+            <span className="material-symbols-outlined text-primary-container text-4xl opacity-20">engineering</span>
           </div>
 
-          <div className="bg-surface-container-lowest p-md rounded-xl flex items-center justify-between border border-outline-variant/30 shadow-sm">
+          <div className="bg-surface-container-low p-lg rounded-xl flex items-center justify-between border border-surface-container-highest">
             <div>
-              <p className="font-label-caps text-xs text-on-surface-variant">CONSUM COMBUSTIBLE</p>
-              <p className="font-display-lg text-2xl text-primary font-bold">142 L</p>
+              <p className="font-label-caps text-on-surface-variant">CONSUM COMBUSTIBLE</p>
+              <p className="font-display-lg text-primary">142L</p>
             </div>
-            <span className="material-symbols-outlined text-primary text-3xl opacity-30">local_gas_station</span>
+            <span className="material-symbols-outlined text-primary-container text-4xl opacity-20">local_gas_station</span>
           </div>
 
-          <div className="bg-surface-container-lowest p-md rounded-xl flex items-center justify-between border border-outline-variant/30 shadow-sm">
+          <div className="bg-surface-container-low p-lg rounded-xl flex items-center justify-between border border-surface-container-highest">
             <div>
-              <p className="font-label-caps text-xs text-on-surface-variant">TEMPS MITJÀ RUTA</p>
-              <p className="font-display-lg text-2xl text-primary font-bold">18 min</p>
+              <p className="font-label-caps text-on-surface-variant">TEMPS MITJÀ RUTA</p>
+              <p className="font-display-lg text-primary">18m</p>
             </div>
-            <span className="material-symbols-outlined text-primary text-3xl opacity-30">timer</span>
+            <span className="material-symbols-outlined text-primary-container text-4xl opacity-20">timer</span>
           </div>
 
-          <div className="bg-surface-container-lowest p-md rounded-xl flex items-center justify-between border border-outline-variant/30 shadow-sm">
+          <div className="bg-surface-container-low p-lg rounded-xl flex items-center justify-between border border-surface-container-highest">
             <div>
-              <p className="font-label-caps text-xs text-on-surface-variant">TASQUES COMPLETADES</p>
-              <p className="font-display-lg text-2xl text-green-600 font-bold">24</p>
+              <p className="font-label-caps text-on-surface-variant">TASQUES COMPLETADES</p>
+              <p className="font-display-lg text-emerald-600 font-bold">24</p>
             </div>
-            <span className="material-symbols-outlined text-green-600 text-3xl opacity-30">task_alt</span>
+            <div className="flex items-center text-emerald-600">
+              <span className="material-symbols-outlined">trending_up</span>
+              <span className="text-xs font-bold">+12%</span>
+            </div>
           </div>
         </div>
       </div>
