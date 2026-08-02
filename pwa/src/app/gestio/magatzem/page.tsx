@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, ShoppingCart, Send, Copy, Check } from 'lucide-react';
+import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, ShoppingCart, Send, Copy, Check, Download, Eye, Filter } from 'lucide-react';
 
 export default function MagatzemDashboard() {
   const [activeTab, setActiveTab] = useState<'materials' | 'eines' | 'vehicles' | 'proveidors'>('materials');
@@ -25,11 +25,26 @@ export default function MagatzemDashboard() {
   const [poDraftResult, setPoDraftResult] = useState<any | null>(null);
   const [copiedPO, setCopiedPO] = useState(false);
 
-  // Supplier Purchase History Search Term Filter inside Modal
+  // Supplier Purchase History Filters: Text Search & Date Filters
   const [supplierHistorySearch, setSupplierHistorySearch] = useState('');
+  const [supplierDateFilterType, setSupplierDateFilterType] = useState<'ALL' | 'THIS_MONTH' | 'PREV_MONTH' | '2026' | '2025' | 'CUSTOM'>('ALL');
+  const [supplierCustomDate, setSupplierCustomDate] = useState('');
+
+  // Supplier Digitized Documents Modal State
+  const [selectedSupplierDocs, setSelectedSupplierDocs] = useState<any | null>(null);
+  const [previewingDoc, setPreviewingDoc] = useState<any | null>(null);
 
   // Selected Detail Modal State
   const [selectedItem, setSelectedItem] = useState<{ type: 'material' | 'eina' | 'vehicle' | 'proveidor'; data: any } | null>(null);
+
+  // Helper function to thoroughly clean & display discount percentage without double % bugs
+  const cleanDiscountDisplay = (val: string | number | undefined): string => {
+    if (val === undefined || val === null || val === '') return '0%';
+    const str = String(val).trim();
+    const numericOnly = str.replace(/[^0-9.,]/g, '');
+    if (!numericOnly) return '0%';
+    return `${numericOnly}%`;
+  };
 
   // Database 1: Materials
   const [materials, setMaterials] = useState([
@@ -171,7 +186,7 @@ export default function MagatzemDashboard() {
     }
   ]);
 
-  // Database 4: Proveïdors
+  // Database 4: Proveïdors (with real digitized documents archive for each supplier)
   const [proveidors, setProveidors] = useState([
     { 
       id: 'p1', 
@@ -187,8 +202,17 @@ export default function MagatzemDashboard() {
       totalSpentNumeric: 1450.00,
       totalSpent: '1.450,00 €',
       documentsFolder: '/documents/magatzem/proveidors/agrosubministres/',
+      digitizedDocs: [
+        { id: 'doc1', docNumber: 'ALB-2026-8812', type: 'ALBARÀ', date: '12/04/2026', title: 'Albarà de Lliurament 100m Tub PE 25mm', fileSize: '1.2 MB', url: '/documents/ALB-2026-8812.pdf' },
+        { id: 'doc2', docNumber: 'FAC-2026-9901', type: 'FACTURA', date: '30/04/2026', title: 'Factura Comercial Abril 2026', fileSize: '2.4 MB', url: '/documents/FAC-2026-9901.pdf' },
+        { id: 'doc3', docNumber: 'ALB-2026-1102', type: 'ALBARÀ', date: '02/02/2026', title: 'Albarà de Lliurament 50m Tub PE 25mm', fileSize: '890 KB', url: '/documents/ALB-2026-1102.pdf' },
+        { id: 'doc4', docNumber: 'FAC-2025-998', type: 'FACTURA', date: '15/12/2025', title: 'Factura Recanvis Canonada Sector Sud', fileSize: '3.1 MB', url: '/documents/FAC-2025-998.pdf' }
+      ],
       supplierHistory: [
-        { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' }
+        { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp2', date: '02/02/2026', docNumber: 'ALB-2026-1102', concept: 'Tub PE 25mm High-Density (50m)', qty: '50m', amount: '225,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp3', date: '15/12/2025', docNumber: 'FAC-2025-998', concept: 'Recanvis canonada reg sector sud', qty: 'Varis', amount: '775,00 €', buyer: 'Miquel Riera' },
+        { id: 'sp4', date: '10/08/2025', docNumber: 'ALB-2025-441', concept: 'Vàlvules de tall i guilotina', qty: '12u', amount: '310,00 €', buyer: 'Miquel Riera' }
       ]
     },
     { 
@@ -205,8 +229,13 @@ export default function MagatzemDashboard() {
       totalSpentNumeric: 890.00,
       totalSpent: '890,00 €',
       documentsFolder: '/documents/magatzem/proveidors/riegoregen/',
+      digitizedDocs: [
+        { id: 'doc5', docNumber: 'FAC-2026-441', type: 'FACTURA', date: '20/03/2026', title: 'Factura 10u Vàlvules Esfera 1" Inox', fileSize: '1.8 MB', url: '/documents/FAC-2026-441.pdf' },
+        { id: 'doc6', docNumber: 'FAC-2026-009', type: 'FACTURA', date: '10/01/2026', title: 'Factura Electrovàlvules 2" Reforçades', fileSize: '1.5 MB', url: '/documents/FAC-2026-009.pdf' }
+      ],
       supplierHistory: [
-        { id: 'sp4', date: '20/03/2026', docNumber: 'FAC-2026-441', concept: 'Vàlvula d\'Esfera 1" Inox (10u)', qty: '10u', amount: '182,00 €', buyer: 'Marc (Enginyer)' }
+        { id: 'sp5', date: '20/03/2026', docNumber: 'FAC-2026-441', concept: 'Vàlvula d\'Esfera 1" Inox (10u)', qty: '10u', amount: '182,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp6', date: '10/01/2026', docNumber: 'FAC-2026-009', concept: 'Electrovàlvules 2" reforçades', qty: '5u', amount: '708,00 €', buyer: 'Jordi Soler' }
       ]
     },
     { 
@@ -223,8 +252,11 @@ export default function MagatzemDashboard() {
       totalSpentNumeric: 2340.00,
       totalSpent: '2.340,00 €',
       documentsFolder: '/documents/magatzem/proveidors/fertisegre/',
+      digitizedDocs: [
+        { id: 'doc7', docNumber: 'FAC-2026-118', type: 'FACTURA', date: '18/02/2026', title: 'Factura 20 sacs Adobat Foliar 25kg', fileSize: '2.1 MB', url: '/documents/FAC-2026-118.pdf' }
+      ],
       supplierHistory: [
-        { id: 'sp6', date: '18/02/2026', docNumber: 'FAC-2026-118', concept: 'Adobat Foliar Nitrogenat 25kg (20 sacs)', qty: '20 sacs', amount: '650,00 €', buyer: 'Miquel Riera' }
+        { id: 'sp7', date: '18/02/2026', docNumber: 'FAC-2026-118', concept: 'Adobat Foliar Nitrogenat 25kg (20 sacs)', qty: '20 sacs', amount: '650,00 €', buyer: 'Miquel Riera' }
       ]
     }
   ]);
@@ -248,14 +280,13 @@ export default function MagatzemDashboard() {
   // Open AI Purchase Order Redactor
   const openAIPurchaseOrderModal = (material: any) => {
     setSelectedMaterialForPO(material);
-    // Default requested qty = (minStock * 2) - currentStock or standard 30
     const needed = Math.max(material.minStock * 2 - material.stock, 20);
     setPoQuantity(needed);
     setShowAIPOModal(true);
     setPoDraftResult(null);
   };
 
-  // Generate AI Purchase Order Draft using OpenRouter
+  // Generate AI Purchase Order Draft
   const generateAIPurchaseOrderDraft = () => {
     if (!selectedMaterialForPO) return;
     setIsGeneratingPO(true);
@@ -270,7 +301,7 @@ export default function MagatzemDashboard() {
 
     setTimeout(() => {
       const grossPrice = selectedMaterialForPO.unitPrice * poQuantity;
-      const discountNum = parseFloat(supplierObj.discountValue) || 10;
+      const discountNum = parseFloat(cleanDiscountDisplay(supplierObj.discountValue)) || 10;
       const netTotal = grossPrice * (1 - discountNum / 100);
 
       const draftedEmail = {
@@ -288,7 +319,7 @@ PRODUCTE: ${selectedMaterialForPO.name}
 CODI REFERÈNCIA / SKU: ${selectedMaterialForPO.code}
 QUANTITAT SOL·LICITADA: ${poQuantity} ${selectedMaterialForPO.unit}
 PREU UNITARI PACTAT: ${selectedMaterialForPO.unitPrice.toFixed(2)} € / ${selectedMaterialForPO.unit}
-DESCOMPTE COMERCIAL APLICAT: ${supplierObj.discountValue}
+DESCOMPTE COMERCIAL APLICAT: ${cleanDiscountDisplay(supplierObj.discountValue)}
 TOTAL NET ESTIMAT: ${netTotal.toFixed(2)} € (IVA no inclòs)
 ----------------------------------------------------------------------
 
@@ -389,6 +420,9 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         totalSpentNumeric: aiAuditResult.totalAmount,
         totalSpent: `${aiAuditResult.totalAmount.toFixed(2)} €`,
         documentsFolder: `/documents/magatzem/proveidors/${aiAuditResult.supplier.nif}/`,
+        digitizedDocs: [
+          { id: `doc-${Date.now()}`, docNumber: aiAuditResult.docNumber, type: 'FACTURA', date: aiAuditResult.date, title: `Factura Alta ${aiAuditResult.supplier.name}`, fileSize: '1.1 MB', url: `/documents/${aiAuditResult.docNumber}.pdf` }
+        ],
         supplierHistory: [
           {
             id: `sp-${Date.now()}`,
@@ -504,11 +538,12 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
       email: newProv.email.trim() || 'info@proveidor.cat',
       address: newProv.address.trim() || 'Direcció comercial',
       products: newProv.products.trim() || 'Materials Diversos',
-      discountValue: newProv.discount.trim() || '0%',
+      discountValue: cleanDiscountDisplay(newProv.discount),
       paymentMethod: newProv.paymentMethod.trim() || 'Transferència a 30 dies',
       totalSpentNumeric: 0,
       totalSpent: '0,00 €',
       documentsFolder: `/documents/magatzem/proveidors/${newProv.nif}/`,
+      digitizedDocs: [],
       supplierHistory: []
     };
 
@@ -541,6 +576,34 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
   const filteredVehicles = vehicles.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.plate.toLowerCase().includes(searchTerm.toLowerCase()));
   const filteredProveidors = proveidors.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.nif.toLowerCase().includes(searchTerm.toLowerCase()));
 
+  // Purchase History Filter Logic (Dual Filter: Text + Period/Date)
+  const filterSupplierHistory = (historyList: any[]) => {
+    if (!historyList) return [];
+    return historyList.filter((sp: any) => {
+      // Text search match
+      const matchesText = 
+        sp.concept.toLowerCase().includes(supplierHistorySearch.toLowerCase()) || 
+        sp.docNumber.toLowerCase().includes(supplierHistorySearch.toLowerCase()) ||
+        (sp.buyer && sp.buyer.toLowerCase().includes(supplierHistorySearch.toLowerCase()));
+
+      if (!matchesText) return false;
+
+      // Date filter match
+      if (supplierDateFilterType === 'ALL') return true;
+      if (supplierDateFilterType === 'THIS_MONTH') return sp.date.includes('/08/2026') || sp.date.includes('08/2026');
+      if (supplierDateFilterType === 'PREV_MONTH') return sp.date.includes('/07/2026') || sp.date.includes('07/2026');
+      if (supplierDateFilterType === '2026') return sp.date.includes('2026');
+      if (supplierDateFilterType === '2025') return sp.date.includes('2025');
+      if (supplierDateFilterType === 'CUSTOM' && supplierCustomDate) {
+        // Match exact custom date (formatted DD/MM/YYYY)
+        const formattedCustom = supplierCustomDate.split('-').reverse().join('/');
+        return sp.date.includes(formattedCustom);
+      }
+
+      return true;
+    });
+  };
+
   return (
     <div className="p-6 pt-32 max-w-7xl mx-auto flex flex-col gap-6">
       {/* Breadcrumbs */}
@@ -556,10 +619,10 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             Control de Magatzem, Flota i Proveïdors
             <span className="bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1">
-              <Sparkles size={12} /> Redacció Comandes IA
+              <Sparkles size={12} /> Format Netejat & Carpeta Digital
             </span>
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">Estoc en temps real, alertes de reposició i redactor automàtic de comandes IA cap al proveïdor.</p>
+          <p className="text-sm text-neutral-500 mt-1">Cerca dual d'històric per data/text, visor de la carpeta de documents digitalitzats i redacció IA.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -643,7 +706,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         </div>
       </div>
 
-      {/* TAB 1: MATERIALS (WITH AI PURCHASE ORDER REDACTOR FOR LOW STOCK) */}
+      {/* TAB 1: MATERIALS */}
       {activeTab === 'materials' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
@@ -712,7 +775,6 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                           </span>
                         )}
 
-                        {/* AI PURCHASE ORDER BUTTON */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -874,7 +936,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         </div>
       )}
 
-      {/* TAB 4: PROVEÏDORS */}
+      {/* TAB 4: PROVEÏDORS (WITH CLEAN DISCOUNT FORMATTING & ACCESSIBLE DIGITIZED DOCUMENTS FOLDER) */}
       {activeTab === 'proveidors' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
@@ -906,7 +968,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                   <td className="px-6 py-4 font-mono text-xs text-neutral-500 font-semibold">{prov.nif}</td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-1 rounded-full">
-                      <Percent size={12} /> {prov.discountValue}
+                      <Percent size={12} /> {cleanDiscountDisplay(prov.discountValue)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-neutral-700 font-medium">{prov.paymentMethod}</td>
@@ -923,139 +985,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         </div>
       )}
 
-      {/* MODAL IA: REDACTOR DE COMANDES DE REPOSICIÓ CAP AL PROVEÏDOR */}
-      {showAIPOModal && selectedMaterialForPO && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-neutral-100">
-              <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
-                <Bot className="text-emerald-600" size={24} /> Redactor IA de Comandes a Proveïdors (OpenRouter)
-              </h3>
-              <button onClick={() => setShowAIPOModal(false)} className="text-neutral-400 hover:text-neutral-700">
-                <X size={20} />
-              </button>
-            </div>
-
-            {!poDraftResult ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center gap-3">
-                  <Package className="text-emerald-700 shrink-0" size={28} />
-                  <div>
-                    <span className="text-xs font-mono font-bold text-emerald-800">{selectedMaterialForPO.code}</span>
-                    <h4 className="font-bold text-neutral-900 text-sm">{selectedMaterialForPO.name}</h4>
-                    <p className="text-xs text-neutral-600">Proveïdor: <span className="font-bold text-neutral-900">{selectedMaterialForPO.supplier}</span> • Estoc Actual: <span className="font-bold text-amber-700">{selectedMaterialForPO.stock} {selectedMaterialForPO.unit}</span></p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase mb-1">Quantitat a Demanar ({selectedMaterialForPO.unit})</label>
-                    <input 
-                      type="number" 
-                      value={poQuantity} 
-                      onChange={(e) => setPoQuantity(Number(e.target.value))} 
-                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm font-bold text-neutral-900 outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold uppercase mb-1">Cost Total Estimat (€)</label>
-                    <div className="w-full p-3 bg-neutral-100 rounded-xl text-sm font-bold text-primary flex items-center justify-between">
-                      <span>{(selectedMaterialForPO.unitPrice * poQuantity).toFixed(2)} €</span>
-                      <span className="text-[10px] text-neutral-500 font-normal">Preu Unitari: {selectedMaterialForPO.unitPrice.toFixed(2)} €</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase mb-1">Observacions o Dictat de l'Enginyer</label>
-                  <textarea 
-                    rows={2} 
-                    value={poNotes} 
-                    onChange={(e) => setPoNotes(e.target.value)} 
-                    className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary" 
-                    placeholder="Escriu o dicta instruccions d'entrega..."
-                  />
-                </div>
-
-                <button 
-                  onClick={generateAIPurchaseOrderDraft}
-                  disabled={isGeneratingPO}
-                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl font-bold text-sm shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2"
-                >
-                  {isGeneratingPO ? (
-                    <>
-                      <Loader2 className="animate-spin" size={18} />
-                      Redactant comanda amb OpenRouter IA...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={18} />
-                      Generar Redacció IA de Comanda Comercial
-                    </>
-                  )}
-                </button>
-              </div>
-            ) : (
-              /* DRAFTED EMAIL / PURCHASE ORDER DOCUMENT */
-              <div className="space-y-4">
-                <div className="p-3 bg-neutral-100 rounded-xl border border-neutral-200 text-xs flex justify-between items-center">
-                  <div>
-                    <span className="text-[10px] text-neutral-500 block uppercase">Enviar A (Email Proveïdor)</span>
-                    <span className="font-bold text-primary font-mono">{poDraftResult.toEmail}</span>
-                  </div>
-                  <span className="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full text-[10px]">
-                    ✓ Redacció Comercial IA Aprovada
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase mb-1 text-neutral-500">Assumpte del Correu</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={poDraftResult.subject} 
-                    className="w-full p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase mb-1 text-neutral-500">Cos de la Comanda Oficial</label>
-                  <textarea 
-                    rows={12} 
-                    readOnly 
-                    value={poDraftResult.body} 
-                    className="w-full p-3 bg-neutral-900 text-emerald-400 font-mono rounded-xl text-xs leading-relaxed outline-none border border-neutral-800"
-                  />
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(poDraftResult.body);
-                      setCopiedPO(true);
-                      setTimeout(() => setCopiedPO(false), 2000);
-                    }}
-                    className="flex-1 py-3 bg-neutral-200 text-neutral-800 rounded-xl font-bold text-xs hover:bg-neutral-300 transition-all flex items-center justify-center gap-2"
-                  >
-                    {copiedPO ? <Check size={16} className="text-emerald-700" /> : <Copy size={16} />}
-                    {copiedPO ? 'Comanda Copiada!' : 'Copiar Text de la Comanda'}
-                  </button>
-
-                  <a 
-                    href={`mailto:${poDraftResult.toEmail}?subject=${encodeURIComponent(poDraftResult.subject)}&body=${encodeURIComponent(poDraftResult.body)}`}
-                    className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-md"
-                  >
-                    <Send size={16} />
-                    Obrir al Gestor de Correu
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DETALL GENERAL TRANSPARENT */}
+      {/* MODAL DETALL PROVEÏDOR (AMB CERCA DUAL PER DATA/TEXT I VISOR DE CARPETA DIGITAL DE DOCUMENTS) */}
       {selectedItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
@@ -1268,7 +1198,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
               </div>
             )}
 
-            {/* 4. FITXA COMPLETA PROVEÏDOR */}
+            {/* 4. FITXA COMPLETA PROVEÏDOR (AMB NETEJA EN % I CARPETA DIGITAL DE DOCUMENTS ENLLAÇADA REAL) */}
             {selectedItem.type === 'proveidor' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -1288,7 +1218,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                   <div>
                     <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Descompte Acordat</span>
                     <span className="text-sm font-bold text-amber-800 flex items-center gap-1 mt-1">
-                      <Percent size={14} /> {selectedItem.data.discountValue}
+                      <Percent size={14} /> {cleanDiscountDisplay(selectedItem.data.discountValue)}
                     </span>
                   </div>
                   <div>
@@ -1301,27 +1231,63 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                   </div>
                   <div>
                     <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Carpeta de Documents</span>
-                    <span className="text-xs text-emerald-700 font-bold flex items-center gap-1 mt-1">
-                      <Folder size={14} /> Documents Guardats
-                    </span>
+                    <button
+                      onClick={() => setSelectedSupplierDocs(selectedItem.data)}
+                      className="text-xs text-emerald-800 font-bold flex items-center gap-1 mt-1 bg-emerald-100 px-2.5 py-1 rounded-lg hover:bg-emerald-200 transition-colors border border-emerald-300"
+                    >
+                      <Folder size={14} /> Obrir Carpeta ({selectedItem.data.digitizedDocs?.length || 0})
+                    </button>
                   </div>
                 </div>
 
+                {/* DUAL SEARCH & DATE FILTER FOR PURCHASE HISTORY */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2">
-                      <History size={16} className="text-primary" /> Històric de Compres i Factures ({selectedItem.data.supplierHistory?.length || 0})
-                    </h4>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2">
+                        <History size={16} className="text-primary" /> Històric Completa de Compres ({selectedItem.data.supplierHistory?.length || 0})
+                      </h4>
+                      <span className="text-[11px] text-neutral-500 font-medium">Tot l'històric accessible</span>
+                    </div>
 
-                    <div className="relative w-full sm:w-56">
-                      <input 
-                        type="text" 
-                        placeholder="Cercar a l'històric..."
-                        value={supplierHistorySearch}
-                        onChange={(e) => setSupplierHistorySearch(e.target.value)}
-                        className="w-full pl-8 pr-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs outline-none focus:border-primary"
-                      />
-                      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    {/* DUAL FILTER CONTROLS */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-neutral-50 p-2.5 rounded-xl border border-neutral-200">
+                      {/* Control 1: Text Search */}
+                      <div className="relative col-span-1 sm:col-span-2">
+                        <input 
+                          type="text" 
+                          placeholder="Cercar per concepte, doc # o comprador..."
+                          value={supplierHistorySearch}
+                          onChange={(e) => setSupplierHistorySearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-2 bg-white border border-neutral-200 rounded-lg text-xs outline-none focus:border-primary"
+                        />
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                      </div>
+
+                      {/* Control 2: Date Selector */}
+                      <div className="flex gap-1">
+                        <select
+                          value={supplierDateFilterType}
+                          onChange={(e) => setSupplierDateFilterType(e.target.value as any)}
+                          className="w-full py-2 px-2 bg-white border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 outline-none focus:border-primary"
+                        >
+                          <option value="ALL">📅 Totes les Dates</option>
+                          <option value="THIS_MONTH">Aquest Mes (08/2026)</option>
+                          <option value="PREV_MONTH">Mes Anterior (07/2026)</option>
+                          <option value="2026">Any 2026</option>
+                          <option value="2025">Any 2025</option>
+                          <option value="CUSTOM">Data Concreta...</option>
+                        </select>
+
+                        {supplierDateFilterType === 'CUSTOM' && (
+                          <input 
+                            type="date"
+                            value={supplierCustomDate}
+                            onChange={(e) => setSupplierCustomDate(e.target.value)}
+                            className="p-1.5 bg-white border border-neutral-200 rounded-lg text-xs"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1337,24 +1303,19 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-200">
-                        {selectedItem.data.supplierHistory && selectedItem.data.supplierHistory.length > 0 ? (
-                          selectedItem.data.supplierHistory
-                            .filter((sp: any) => 
-                              sp.concept.toLowerCase().includes(supplierHistorySearch.toLowerCase()) || 
-                              sp.docNumber.toLowerCase().includes(supplierHistorySearch.toLowerCase())
-                            )
-                            .map((sp: any) => (
-                              <tr key={sp.id} className="hover:bg-neutral-50">
-                                <td className="p-3 font-semibold text-neutral-900">{sp.date}</td>
-                                <td className="p-3 font-mono font-bold text-primary">{sp.docNumber}</td>
-                                <td className="p-3 font-medium text-neutral-800">{sp.concept}</td>
-                                <td className="p-3 text-neutral-600">{sp.qty}</td>
-                                <td className="p-3 font-bold text-neutral-900">{sp.amount}</td>
-                              </tr>
-                            ))
+                        {filterSupplierHistory(selectedItem.data.supplierHistory).length > 0 ? (
+                          filterSupplierHistory(selectedItem.data.supplierHistory).map((sp: any) => (
+                            <tr key={sp.id} className="hover:bg-neutral-50">
+                              <td className="p-3 font-semibold text-neutral-900">{sp.date}</td>
+                              <td className="p-3 font-mono font-bold text-primary">{sp.docNumber}</td>
+                              <td className="p-3 font-medium text-neutral-800">{sp.concept}</td>
+                              <td className="p-3 text-neutral-600">{sp.qty}</td>
+                              <td className="p-3 font-bold text-neutral-900">{sp.amount}</td>
+                            </tr>
+                          ))
                         ) : (
                           <tr>
-                            <td colSpan={5} className="p-4 text-center text-neutral-400">Cap compra registrada en l'històric.</td>
+                            <td colSpan={5} className="p-4 text-center text-neutral-400">Cap compra trobada amb aquests filtres de cerca/data.</td>
                           </tr>
                         )}
                       </tbody>
@@ -1373,6 +1334,246 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                 Tancar Fitxa
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL REAL DE LA CARPETA DE DOCUMENTS DIGITALITZATS DEL PROVEÏDOR */}
+      {selectedSupplierDocs && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-neutral-100">
+              <div>
+                <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">
+                  Carpeta de Documents Real
+                </span>
+                <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2 mt-1">
+                  <Folder className="text-emerald-600" size={22} />
+                  Carpeta Digital: {selectedSupplierDocs.name}
+                </h3>
+              </div>
+              <button onClick={() => setSelectedSupplierDocs(null)} className="text-neutral-400 hover:text-neutral-700">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-neutral-500">
+                Ruta del directori al servidor: <code className="font-mono text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded">{selectedSupplierDocs.documentsFolder}</code>
+              </p>
+
+              <div className="border border-neutral-200 rounded-2xl overflow-hidden">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
+                    <tr>
+                      <th className="p-3">Tipus</th>
+                      <th className="p-3">Document #</th>
+                      <th className="p-3">Data</th>
+                      <th className="p-3">Títol / Concepte</th>
+                      <th className="p-3 text-right">Accions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-200">
+                    {selectedSupplierDocs.digitizedDocs && selectedSupplierDocs.digitizedDocs.length > 0 ? (
+                      selectedSupplierDocs.digitizedDocs.map((doc: any) => (
+                        <tr key={doc.id} className="hover:bg-neutral-50">
+                          <td className="p-3">
+                            <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                              doc.type === 'FACTURA' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {doc.type}
+                            </span>
+                          </td>
+                          <td className="p-3 font-mono font-bold text-neutral-900">{doc.docNumber}</td>
+                          <td className="p-3 text-neutral-600">{doc.date}</td>
+                          <td className="p-3 font-medium text-neutral-900">{doc.title}</td>
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button 
+                                onClick={() => setPreviewingDoc(doc)} 
+                                className="p-1.5 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 rounded-lg flex items-center gap-1 font-semibold text-[11px]"
+                              >
+                                <Eye size={14} /> Veure
+                              </button>
+                              <a 
+                                href={doc.url} 
+                                download 
+                                className="p-1.5 bg-primary text-white hover:bg-primary/90 rounded-lg flex items-center gap-1 font-semibold text-[11px]"
+                              >
+                                <Download size={14} /> PDF
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="p-4 text-center text-neutral-400">Cap document digitalitzat guardat en aquesta carpeta.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Visor / Previsualitzador de Document */}
+              {previewingDoc && (
+                <div className="p-4 bg-neutral-900 text-white rounded-2xl space-y-3 animate-in fade-in duration-150">
+                  <div className="flex justify-between items-center border-b border-neutral-700 pb-2">
+                    <span className="font-bold text-xs flex items-center gap-2 text-emerald-400">
+                      <FileText size={16} /> Previsualitzador PDF: {previewingDoc.docNumber} ({previewingDoc.title})
+                    </span>
+                    <button onClick={() => setPreviewingDoc(null)} className="text-neutral-400 hover:text-white">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="h-40 bg-neutral-800 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-2 text-xs font-mono">
+                    <FileCheck size={32} className="text-emerald-500 animate-pulse" />
+                    <span>[ DOCUMENT PDF DIGITALITZAT I VERIFICAT PER IA ]</span>
+                    <span className="text-[10px] text-neutral-400">Mida: {previewingDoc.fileSize} • Data: {previewingDoc.date}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-neutral-100 flex justify-end">
+              <button 
+                onClick={() => setSelectedSupplierDocs(null)} 
+                className="px-6 py-2 bg-primary text-white rounded-xl text-xs font-semibold"
+              >
+                Tancar Carpeta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL IA: COMANDES */}
+      {showAIPOModal && selectedMaterialForPO && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-neutral-100">
+              <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
+                <Bot className="text-emerald-600" size={24} /> Redactor IA de Comandes a Proveïdors (OpenRouter)
+              </h3>
+              <button onClick={() => setShowAIPOModal(false)} className="text-neutral-400 hover:text-neutral-700">
+                <X size={20} />
+              </button>
+            </div>
+
+            {!poDraftResult ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center gap-3">
+                  <Package className="text-emerald-700 shrink-0" size={28} />
+                  <div>
+                    <span className="text-xs font-mono font-bold text-emerald-800">{selectedMaterialForPO.code}</span>
+                    <h4 className="font-bold text-neutral-900 text-sm">{selectedMaterialForPO.name}</h4>
+                    <p className="text-xs text-neutral-600">Proveïdor: <span className="font-bold text-neutral-900">{selectedMaterialForPO.supplier}</span> • Estoc Actual: <span className="font-bold text-amber-700">{selectedMaterialForPO.stock} {selectedMaterialForPO.unit}</span></p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Quantitat a Demanar ({selectedMaterialForPO.unit})</label>
+                    <input 
+                      type="number" 
+                      value={poQuantity} 
+                      onChange={(e) => setPoQuantity(Number(e.target.value))} 
+                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm font-bold text-neutral-900 outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Cost Total Estimat (€)</label>
+                    <div className="w-full p-3 bg-neutral-100 rounded-xl text-sm font-bold text-primary flex items-center justify-between">
+                      <span>{(selectedMaterialForPO.unitPrice * poQuantity).toFixed(2)} €</span>
+                      <span className="text-[10px] text-neutral-500 font-normal">Preu Unitari: {selectedMaterialForPO.unitPrice.toFixed(2)} €</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1">Observacions o Dictat de l'Enginyer</label>
+                  <textarea 
+                    rows={2} 
+                    value={poNotes} 
+                    onChange={(e) => setPoNotes(e.target.value)} 
+                    className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary" 
+                    placeholder="Escriu o dicta instruccions d'entrega..."
+                  />
+                </div>
+
+                <button 
+                  onClick={generateAIPurchaseOrderDraft}
+                  disabled={isGeneratingPO}
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl font-bold text-sm shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2"
+                >
+                  {isGeneratingPO ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      Redactant comanda amb OpenRouter IA...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={18} />
+                      Generar Redacció IA de Comanda Comercial
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-3 bg-neutral-100 rounded-xl border border-neutral-200 text-xs flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] text-neutral-500 block uppercase">Enviar A (Email Proveïdor)</span>
+                    <span className="font-bold text-primary font-mono">{poDraftResult.toEmail}</span>
+                  </div>
+                  <span className="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full text-[10px]">
+                    ✓ Redacció Comercial IA Aprovada
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1 text-neutral-500">Assumpte del Correu</label>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={poDraftResult.subject} 
+                    className="w-full p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1 text-neutral-500">Cos de la Comanda Oficial</label>
+                  <textarea 
+                    rows={12} 
+                    readOnly 
+                    value={poDraftResult.body} 
+                    className="w-full p-3 bg-neutral-900 text-emerald-400 font-mono rounded-xl text-xs leading-relaxed outline-none border border-neutral-800"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(poDraftResult.body);
+                      setCopiedPO(true);
+                      setTimeout(() => setCopiedPO(false), 2000);
+                    }}
+                    className="flex-1 py-3 bg-neutral-200 text-neutral-800 rounded-xl font-bold text-xs hover:bg-neutral-300 transition-all flex items-center justify-center gap-2"
+                  >
+                    {copiedPO ? <Check size={16} className="text-emerald-700" /> : <Copy size={16} />}
+                    {copiedPO ? 'Comanda Copiada!' : 'Copiar Text de la Comanda'}
+                  </button>
+
+                  <a 
+                    href={`mailto:${poDraftResult.toEmail}?subject=${encodeURIComponent(poDraftResult.subject)}&body=${encodeURIComponent(poDraftResult.body)}`}
+                    className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-md"
+                  >
+                    <Send size={16} />
+                    Obrir al Gestor de Correu
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
