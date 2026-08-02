@@ -24,9 +24,9 @@ export default function OperariLayout({ children }: { children: React.ReactNode 
             <span className="material-symbols-outlined">photo_camera</span>
             <span className="font-label-bold text-[10px] uppercase tracking-wider">Càmera</span>
           </Link>
-          <Link href="/operari/material" className={`flex flex-col items-center justify-center gap-1 w-16 h-16 transition-colors ${pathname.includes('/material') || pathname.includes('/eines') ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>
+          <Link href="/operari/eines/checkin" className={`flex flex-col items-center justify-center gap-1 w-16 h-16 transition-colors ${pathname.includes('/material') || pathname.includes('/eines') ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>
             <span className="material-symbols-outlined">inventory_2</span>
-            <span className="font-label-bold text-[10px] uppercase tracking-wider">Material</span>
+            <span className="font-label-bold text-[10px] uppercase tracking-wider">Eines</span>
           </Link>
           <Link href="/operari/perfil" className={`flex flex-col items-center justify-center gap-1 w-16 h-16 transition-colors ${pathname.includes('/perfil') ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>
             <span className="material-symbols-outlined">person</span>

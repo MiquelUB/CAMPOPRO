@@ -13,8 +13,15 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
-export const viewport = {
-  themeColor: "#16a34a",
+import type { Viewport } from 'next';
+
+export const viewport: Viewport = {
+  themeColor: "#022448",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

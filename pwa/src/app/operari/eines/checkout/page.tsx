@@ -97,15 +97,25 @@ export default function Page() {
 <span className="font-label-bold text-[12px] text-on-surface-variant uppercase tracking-tight">Pendent de carregar</span>
 </div>
 </label>
+{/* Botó per demanar una eina que no és a la llista */}
+<button className="flex items-center gap-4 p-4 mt-2 border-2 border-dashed border-primary/30 bg-primary/5 rounded-xl transition-colors active:bg-primary/10 text-primary group">
+<div className="w-12 h-12 flex items-center justify-center bg-primary rounded-lg text-white">
+<span className="material-symbols-outlined">add</span>
+</div>
+<div className="flex flex-col flex-1 min-w-0 text-left">
+<span className="font-button-text text-button-text">Agafar eina extra</span>
+<span className="font-label-bold text-[12px] opacity-80 uppercase tracking-tight">Afegir fora del llistat</span>
+</div>
+</button>
 </div>
 {/* Bottom Action Scrim */}
 <div className="fixed bottom-20 inset-x-0 h-32 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-10"></div>
 {/* Final Action Button */}
 <div className="fixed bottom-24 inset-x-0 px-margin-mobile z-20">
-<button className="w-full h-14 bg-secondary-container text-on-secondary-fixed font-button-text text-button-text rounded-xl shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-transform" id="confirm-btn">
+<Link href="/operari/feines" className="w-full h-14 bg-secondary-container text-on-secondary-fixed font-button-text text-button-text rounded-xl shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-transform" id="confirm-btn">
 <span className="material-symbols-outlined">task_alt</span>
       CONFIRMAR EINES
-    </button>
+    </Link>
 </div>
 
 </div></main>

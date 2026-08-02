@@ -5,7 +5,7 @@ import Link from 'next/link';
 export default function Page() {
   return (
     <>
-<header className="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div className="h-16 px-4 flex items-center justify-between"><div className="flex items-center gap-1"><button className="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary" onClick={() => { /* history.back() */ }}><span className="material-symbols-outlined">chevron_left</span></button><h1 className="font-headline-md text-headline-md text-primary">Detall De La Feina</h1></div><div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-secondary-container rounded-full animate-pulse"></div><img alt="Perfil" className="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtwAZlJ75l9Gw7pVmLavb2QKnvmYPQzuB7phJke9yAcUDJ0ztQ8WKH1aqTSsG9RjFbewqzbEh-lpqwTHesciQLh-qbsV4tYLsupEKFm7oOf0sL5pPPZZfit0r2O40scG79F3SCHYEILi2EYMC9D21dG8DnWYtR4tBbsR8N2U6Oy6eYrwYpqtfZnePxyU5FByZqiyvjMKkJtFc53nau3eo2EdKYZf_iDBhz7w5J3AxQQ7sEhi2PPI3N"/></div></div></header><main className="flex flex-col relative w-full pt-16 pb-safe bg-surface"><div className="flex flex-col w-full pb-stack-lg">
+<header className="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div className="h-16 px-4 flex items-center justify-between"><div className="flex items-center gap-1"><Link href="/operari/feines/1" className="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary"><span className="material-symbols-outlined">chevron_left</span></Link><h1 className="font-headline-md text-headline-md text-primary">Detall De La Feina</h1></div><div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-secondary-container rounded-full animate-pulse"></div><img alt="Perfil" className="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtwAZlJ75l9Gw7pVmLavb2QKnvmYPQzuB7phJke9yAcUDJ0ztQ8WKH1aqTSsG9RjFbewqzbEh-lpqwTHesciQLh-qbsV4tYLsupEKFm7oOf0sL5pPPZZfit0r2O40scG79F3SCHYEILi2EYMC9D21dG8DnWYtR4tBbsR8N2U6Oy6eYrwYpqtfZnePxyU5FByZqiyvjMKkJtFc53nau3eo2EdKYZf_iDBhz7w5J3AxQQ7sEhi2PPI3N"/></div></div></header><main className="flex flex-col relative w-full pt-16 pb-safe bg-surface"><div className="flex flex-col w-full pb-stack-lg">
 {/* Timer & Status Section */}
 <div className="px-margin-mobile flex items-center justify-between mb-stack-md bg-surface-container-low py-4 shadow-sm">
 <div className="flex flex-col">
@@ -42,33 +42,33 @@ export default function Page() {
 <h2 className="font-label-bold text-label-bold text-outline uppercase mb-stack-sm ml-1">Accions ràpides</h2>
 <div className="grid grid-cols-2 gap-4">
 {/* Foto */}
-<button className="flex flex-col items-center justify-center aspect-square bg-primary-container rounded-2xl shadow-sm active:scale-95 transition-transform">
+<Link href="/operari/camera" className="flex flex-col items-center justify-center aspect-square bg-primary-container rounded-2xl shadow-sm active:scale-95 transition-transform">
 <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-on-primary mb-2">
 <span className="material-symbols-outlined">photo_camera</span>
 </div>
 <span className="font-button-text text-button-text text-on-primary-container">Foto</span>
-</button>
+</Link>
 {/* Material */}
-<button className="flex flex-col items-center justify-center aspect-square bg-surface-container-high rounded-2xl shadow-sm active:scale-95 transition-transform">
+<Link href="/operari/eines/checkout" className="flex flex-col items-center justify-center aspect-square bg-surface-container-high rounded-2xl shadow-sm active:scale-95 transition-transform">
 <div className="w-12 h-12 rounded-full bg-[#5d3fd3] flex items-center justify-center text-white mb-2">
 <span className="material-symbols-outlined">inventory_2</span>
 </div>
 <span className="font-button-text text-button-text text-on-surface">Material</span>
-</button>
+</Link>
 {/* Incidència */}
-<button className="flex flex-col items-center justify-center aspect-square bg-error-container rounded-2xl shadow-sm active:scale-95 transition-transform">
+<Link href="/operari/incidencies/nova" className="flex flex-col items-center justify-center aspect-square bg-error-container rounded-2xl shadow-sm active:scale-95 transition-transform">
 <div className="w-12 h-12 rounded-full bg-error flex items-center justify-center text-on-error mb-2">
 <span className="material-symbols-outlined">report_problem</span>
 </div>
 <span className="font-button-text text-button-text text-on-error-container">Incidència</span>
-</button>
+</Link>
 {/* Plànol */}
-<button className="flex flex-col items-center justify-center aspect-square bg-surface-container-high rounded-2xl shadow-sm active:scale-95 transition-transform">
+<Link href="/operari/planols/1/anotar" className="flex flex-col items-center justify-center aspect-square bg-surface-container-high rounded-2xl shadow-sm active:scale-95 transition-transform">
 <div className="w-12 h-12 rounded-full bg-[#008080] flex items-center justify-center text-white mb-2">
 <span className="material-symbols-outlined">architecture</span>
 </div>
 <span className="font-button-text text-button-text text-on-surface">Plànol</span>
-</button>
+</Link>
 {/* Notes */}
 <button className="flex flex-col items-center justify-center aspect-square bg-surface-container-high rounded-2xl shadow-sm active:scale-95 transition-transform">
 <div className="w-12 h-12 rounded-full bg-outline flex items-center justify-center text-white mb-2">
@@ -84,10 +84,10 @@ export default function Page() {
 </div>
 {/* Finalitzar Button */}
 <div className="px-margin-mobile mt-auto">
-<button className="w-full h-16 bg-[#2e7d32] text-white rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] transition-all">
+<Link href="/operari/feines/1/signatura" className="w-full h-16 bg-[#2e7d32] text-white rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] transition-all">
 <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>stop_circle</span>
 <span className="font-headline-md text-headline-md uppercase tracking-tight">Finalitzar Feina</span>
-</button>
+</Link>
 </div>
 
 </div></main>
