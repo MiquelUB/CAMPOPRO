@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -66,19 +66,30 @@ function MapRecenter({ center, zoom }: { center: [number, number]; zoom: number 
   return null;
 }
 
-// Component to automatically invalidate map size on window resize / screen maximize
-function MapResizeHandler() {
+// Robust ResizeObserver Component for Fullscreen/Maximized Resizing
+function MapResizeObserver() {
   const map = useMap();
+
   useEffect(() => {
-    const handleResize = () => {
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 100);
+    const container = map.getContainer();
+    if (!container) return;
+
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+
+    observer.observe(container);
+
+    // Initial resize trigger
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
+    return () => {
+      observer.disconnect();
     };
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
   }, [map]);
+
   return null;
 }
 
@@ -130,20 +141,19 @@ export default function Map({
     <MapContainer 
       center={activeCenter} 
       zoom={activeZoom} 
-      className="h-full w-full rounded-2xl z-0" 
+      className="h-full w-full rounded-2xl z-0 relative" 
       style={{ width: "100%", height: "100%", minHeight: "580px" }}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
       />
 
       <MapRecenter center={activeCenter} zoom={activeZoom} />
-      <MapResizeHandler />
+      <MapResizeObserver />
 
       {/* Render Crew Markers */}
       {locations.map((loc) => {
-        const isSelected = loc.id === selectedId;
         const icon = createCustomIcon(loc.colorHex, loc.initials);
 
         return (

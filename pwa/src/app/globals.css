@@ -63,13 +63,33 @@
   }
 }
 
-/* Ensure Leaflet Container Always Fills its Parent */
+/* CRITICAL FIX: Prevent Tailwind from overriding Leaflet Tile Image Dimensions */
 .leaflet-container {
   width: 100% !important;
   height: 100% !important;
-  min-height: 500px !important;
+  min-height: 580px !important;
   border-radius: 1rem;
   z-index: 10;
+  position: relative !important;
+}
+
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-tile-pane {
+  max-width: none !important;
+  max-height: none !important;
 }
 
 ::-webkit-scrollbar { 
