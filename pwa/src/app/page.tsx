@@ -1,71 +1,75 @@
 import Link from "next/link";
-import { Sprout, HardHat, ShieldUser } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-extrabold text-green-700 tracking-tight mb-4 flex items-center justify-center gap-3">
-          <Sprout className="w-12 h-12" />
-          CampoPro
-        </h1>
-        <p className="text-slate-600 text-lg max-w-lg mx-auto">
-          Sistema integral de gestió agrícola. Selecciona el teu portal d'accés per continuar.
-        </p>
+    <main className="w-full min-h-screen bg-surface font-body-base text-on-surface flex items-center justify-center">
+      {/* Interactive Background Layer */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-br from-primary-container to-on-primary-fixed overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] rounded-full bg-secondary/10 blur-[100px]" style={{ animation: 'pulse 8s infinite alternate' }}></div>
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
-        {/* Portal Enginyer / Gestió */}
-        <Link href="/gestio/login" className="group relative bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all hover:-translate-y-1">
-          <div className="h-2 bg-green-600 w-full absolute top-0 left-0"></div>
-          <div className="p-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-green-100 text-green-700 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Sprout className="w-8 h-8" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Enginyer / Gestió</h2>
-            <p className="text-slate-500 text-sm">
-              Accés a CRM, planificació de feines, gestió d'stock, mapes interactius i administració de flota.
-            </p>
-            <div className="mt-6 text-green-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-              Entrar al portal &rarr;
-            </div>
+      
+      {/* Container */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-md w-full max-w-5xl">
+        {/* Branding */}
+        <div className="flex flex-col items-center mb-12">
+          <div className="w-24 h-24 mb-6 drop-shadow-md transform transition-transform hover:scale-105 duration-500">
+            <img alt="CampoPro Logo" className="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLsEXFuQ4rmmM6G9GiP2Wc1vF-mvbIxAj1gCebc33OvQEY7pafglJcHcVF_69XfQ1M8JO4wJAGm547Zj0L19kbIe10YNOcBQmYBueHpTMNBGCnoXSQ_alln7Z5WFWt5-Cn97yJ9ffWW7LBpeIOnWV8-8x8PXbHS-fNYeuGaX55ts_6UD_U6P0o4YF6hNTWbkFh-qoGbwhbYw1ZCycoonB_94NWgX5mSb5y8Pa65DRzMGc9oydmf8LpzkT7I"/>
           </div>
-        </Link>
+          <h1 className="font-display-lg text-4xl text-on-surface tracking-tight text-center">
+            Selecciona el teu accés
+          </h1>
+        </div>
 
-        {/* Portal Operari */}
-        <Link href="/operari/login" className="group relative bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all hover:-translate-y-1">
-          <div className="h-2 bg-amber-500 w-full absolute top-0 left-0"></div>
-          <div className="p-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <HardHat className="w-8 h-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+          {/* Portal Enginyer */}
+          <Link href="/gestio/login" className="group relative bg-surface-container-lowest/95 backdrop-blur-sm shadow-xl rounded-xl overflow-hidden p-8 border-t border-white/10 transition-all hover:shadow-2xl hover:-translate-y-1">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-md">
+                <span className="material-symbols-outlined text-3xl">dashboard</span>
+              </div>
+              <h2 className="font-section-title text-2xl text-on-surface mb-3">Enginyer / Gestió</h2>
+              <p className="font-body-base text-on-surface-variant mb-6">
+                Accés al portal de gestió completa, mapes, operaris i flota.
+              </p>
+              <div className="w-full bg-primary hover:bg-primary/90 text-on-primary py-3 rounded-lg font-body-strong transition-all flex items-center justify-center gap-2">
+                Accedir <span className="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Operari de Camp</h2>
-            <p className="text-slate-500 text-sm">
-              App dissenyada per a ús al camp: lectura de feines offline, pujada de fotos OCR i rutes GPS.
-            </p>
-            <div className="mt-6 text-amber-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-              Entrar al portal &rarr;
-            </div>
-          </div>
-        </Link>
+          </Link>
 
-        {/* Portal SuperAdmin */}
-        <Link href="/superadmin/login" className="group relative bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all hover:-translate-y-1">
-          <div className="h-2 bg-slate-800 w-full absolute top-0 left-0"></div>
-          <div className="p-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <ShieldUser className="w-8 h-8" />
+          {/* Portal Operari */}
+          <Link href="/operari/login" className="group relative bg-surface-container-lowest/95 backdrop-blur-sm shadow-xl rounded-xl overflow-hidden p-8 border-t border-white/10 transition-all hover:shadow-2xl hover:-translate-y-1">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-md">
+                <span className="material-symbols-outlined text-3xl">engineering</span>
+              </div>
+              <h2 className="font-section-title text-2xl text-on-surface mb-3">Operari de Camp</h2>
+              <p className="font-body-base text-on-surface-variant mb-6">
+                PWA dissenyada per tasques de camp, mode offline i Kimi Vision.
+              </p>
+              <div className="w-full bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-white py-3 rounded-lg font-body-strong transition-all flex items-center justify-center gap-2">
+                Accedir <span className="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">SuperAdmin</h2>
-            <p className="text-slate-500 text-sm">
-              Accés exclusiu per als desenvolupadors: gestió Multi-Tenant, facturació i monitorització.
-            </p>
-            <div className="mt-6 text-slate-700 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-              Entrar al portal &rarr;
-            </div>
-          </div>
-        </Link>
+          </Link>
+        </div>
+
+        {/* Portal SuperAdmin (Circular discret) */}
+        <div className="fixed bottom-6 right-6">
+          <Link href="/superadmin/login" className="flex items-center justify-center w-12 h-12 rounded-full bg-surface-variant/50 hover:bg-surface-variant text-on-surface-variant backdrop-blur-md transition-all shadow-sm hover:shadow-md border border-outline-variant/30 opacity-70 hover:opacity-100" title="Super Admin">
+            <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+          </Link>
+        </div>
       </div>
-    </div>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes pulse {
+          from { transform: scale(1) translate(0, 0); opacity: 0.15; }
+          to { transform: scale(1.1) translate(20px, 10px); opacity: 0.25; }
+        }
+      `}} />
+    </main>
   );
 }

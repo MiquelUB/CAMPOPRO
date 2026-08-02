@@ -6,26 +6,9 @@ import Image from 'next/image';
 export default function GestioLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handlePasswordToggle = () => {
     setShowPassword(!showPassword);
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -85,30 +68,6 @@ export default function GestioLogin() {
                     <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
                   </button>
                 </div>
-              </div>
-            </div>
-            
-            {/* Field Group: 2FA */}
-            <div className="pt-4 border-t border-surface-container-highest">
-              <div className="flex justify-between items-center mb-3">
-                <label className="text-xs font-bold text-outline uppercase tracking-widest">Codi 2FA (Sis dígits)</label>
-                <span className="material-symbols-outlined text-secondary text-[18px]" title="Seguretat Requerida">verified_user</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                {otp.map((digit, index) => (
-                  <input 
-                    key={index}
-                    ref={(el: HTMLInputElement | null) => { 
-                        if (el) otpRefs.current[index] = el; 
-                    }}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className="w-12 h-14 text-center text-2xl font-bold bg-surface-container border border-outline-variant rounded-lg focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all" 
-                    maxLength={1} 
-                    type="text"
-                  />
-                ))}
               </div>
             </div>
             
