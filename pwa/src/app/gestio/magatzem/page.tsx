@@ -186,7 +186,7 @@ export default function MagatzemDashboard() {
     }
   ]);
 
-  // Database 4: Proveïdors (with real digitized documents archive for each supplier)
+  // Database 4: Proveïdors (with explicit docType: FACTURA / ALBARÀ / TICKET in history)
   const [proveidors, setProveidors] = useState([
     { 
       id: 'p1', 
@@ -209,10 +209,10 @@ export default function MagatzemDashboard() {
         { id: 'doc4', docNumber: 'FAC-2025-998', type: 'FACTURA', date: '15/12/2025', title: 'Factura Recanvis Canonada Sector Sud', fileSize: '3.1 MB', url: '/documents/FAC-2025-998.pdf' }
       ],
       supplierHistory: [
-        { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' },
-        { id: 'sp2', date: '02/02/2026', docNumber: 'ALB-2026-1102', concept: 'Tub PE 25mm High-Density (50m)', qty: '50m', amount: '225,00 €', buyer: 'Marc (Enginyer)' },
-        { id: 'sp3', date: '15/12/2025', docNumber: 'FAC-2025-998', concept: 'Recanvis canonada reg sector sud', qty: 'Varis', amount: '775,00 €', buyer: 'Miquel Riera' },
-        { id: 'sp4', date: '10/08/2025', docNumber: 'ALB-2025-441', concept: 'Vàlvules de tall i guilotina', qty: '12u', amount: '310,00 €', buyer: 'Miquel Riera' }
+        { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', docType: 'ALBARÀ', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp2', date: '30/04/2026', docNumber: 'FAC-2026-9901', docType: 'FACTURA', concept: 'Factura Comercial Abril 2026 (Tub PE 25mm)', qty: '100m', amount: '490,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp3', date: '02/02/2026', docNumber: 'ALB-2026-1102', docType: 'ALBARÀ', concept: 'Tub PE 25mm High-Density (50m)', qty: '50m', amount: '225,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp4', date: '15/12/2025', docNumber: 'FAC-2025-998', docType: 'FACTURA', concept: 'Factura Recanvis canonada reg sector sud', qty: 'Varis', amount: '775,00 €', buyer: 'Miquel Riera' }
       ]
     },
     { 
@@ -234,8 +234,8 @@ export default function MagatzemDashboard() {
         { id: 'doc6', docNumber: 'FAC-2026-009', type: 'FACTURA', date: '10/01/2026', title: 'Factura Electrovàlvules 2" Reforçades', fileSize: '1.5 MB', url: '/documents/FAC-2026-009.pdf' }
       ],
       supplierHistory: [
-        { id: 'sp5', date: '20/03/2026', docNumber: 'FAC-2026-441', concept: 'Vàlvula d\'Esfera 1" Inox (10u)', qty: '10u', amount: '182,00 €', buyer: 'Marc (Enginyer)' },
-        { id: 'sp6', date: '10/01/2026', docNumber: 'FAC-2026-009', concept: 'Electrovàlvules 2" reforçades', qty: '5u', amount: '708,00 €', buyer: 'Jordi Soler' }
+        { id: 'sp5', date: '20/03/2026', docNumber: 'FAC-2026-441', docType: 'FACTURA', concept: 'Vàlvula d\'Esfera 1" Inox (10u)', qty: '10u', amount: '182,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp6', date: '10/01/2026', docNumber: 'FAC-2026-009', docType: 'FACTURA', concept: 'Electrovàlvules 2" reforçades', qty: '5u', amount: '708,00 €', buyer: 'Jordi Soler' }
       ]
     },
     { 
@@ -256,7 +256,7 @@ export default function MagatzemDashboard() {
         { id: 'doc7', docNumber: 'FAC-2026-118', type: 'FACTURA', date: '18/02/2026', title: 'Factura 20 sacs Adobat Foliar 25kg', fileSize: '2.1 MB', url: '/documents/FAC-2026-118.pdf' }
       ],
       supplierHistory: [
-        { id: 'sp7', date: '18/02/2026', docNumber: 'FAC-2026-118', concept: 'Adobat Foliar Nitrogenat 25kg (20 sacs)', qty: '20 sacs', amount: '650,00 €', buyer: 'Miquel Riera' }
+        { id: 'sp7', date: '18/02/2026', docNumber: 'FAC-2026-118', docType: 'FACTURA', concept: 'Adobat Foliar Nitrogenat 25kg (20 sacs)', qty: '20 sacs', amount: '650,00 €', buyer: 'Miquel Riera' }
       ]
     }
   ]);
@@ -428,6 +428,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
             id: `sp-${Date.now()}`,
             date: aiAuditResult.date,
             docNumber: aiAuditResult.docNumber,
+            docType: 'FACTURA',
             concept: `Alta de Proveïdor via Ticket/Factura #${aiAuditResult.docNumber}`,
             qty: 'Varis',
             amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
@@ -576,26 +577,43 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
   const filteredVehicles = vehicles.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.plate.toLowerCase().includes(searchTerm.toLowerCase()));
   const filteredProveidors = proveidors.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.nif.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // Purchase History Filter Logic (Dual Filter: Text + Period/Date)
+  // Enhanced Purchase History Search & Filter with Synonym Matching (Factura -> FAC-, Albarà -> ALB-)
   const filterSupplierHistory = (historyList: any[]) => {
     if (!historyList) return [];
+    const searchClean = supplierHistorySearch.toLowerCase().trim();
+
     return historyList.filter((sp: any) => {
-      // Text search match
+      // 1. Check Synonym Matching for Document Types (Factura, Albarà, Ticket)
+      let matchesDocTypeSynonym = false;
+      if (searchClean.length > 0) {
+        if (searchClean.includes('factura') || searchClean.includes('fac')) {
+          matchesDocTypeSynonym = (sp.docNumber && sp.docNumber.toLowerCase().startsWith('fac')) || (sp.docType && sp.docType.toLowerCase().includes('factura'));
+        }
+        if (searchClean.includes('albara') || searchClean.includes('albarà') || searchClean.includes('alb')) {
+          matchesDocTypeSynonym = (sp.docNumber && sp.docNumber.toLowerCase().startsWith('alb')) || (sp.docType && sp.docType.toLowerCase().includes('albarà'));
+        }
+        if (searchClean.includes('ticket') || searchClean.includes('tic')) {
+          matchesDocTypeSynonym = (sp.docNumber && sp.docNumber.toLowerCase().startsWith('tic')) || (sp.docType && sp.docType.toLowerCase().includes('ticket'));
+        }
+      }
+
       const matchesText = 
-        sp.concept.toLowerCase().includes(supplierHistorySearch.toLowerCase()) || 
-        sp.docNumber.toLowerCase().includes(supplierHistorySearch.toLowerCase()) ||
-        (sp.buyer && sp.buyer.toLowerCase().includes(supplierHistorySearch.toLowerCase()));
+        searchClean === '' ||
+        matchesDocTypeSynonym ||
+        (sp.concept && sp.concept.toLowerCase().includes(searchClean)) || 
+        (sp.docNumber && sp.docNumber.toLowerCase().includes(searchClean)) ||
+        (sp.docType && sp.docType.toLowerCase().includes(searchClean)) ||
+        (sp.buyer && sp.buyer.toLowerCase().includes(searchClean));
 
       if (!matchesText) return false;
 
-      // Date filter match
+      // 2. Date Filter Matching
       if (supplierDateFilterType === 'ALL') return true;
       if (supplierDateFilterType === 'THIS_MONTH') return sp.date.includes('/08/2026') || sp.date.includes('08/2026');
       if (supplierDateFilterType === 'PREV_MONTH') return sp.date.includes('/07/2026') || sp.date.includes('07/2026');
       if (supplierDateFilterType === '2026') return sp.date.includes('2026');
       if (supplierDateFilterType === '2025') return sp.date.includes('2025');
       if (supplierDateFilterType === 'CUSTOM' && supplierCustomDate) {
-        // Match exact custom date (formatted DD/MM/YYYY)
         const formattedCustom = supplierCustomDate.split('-').reverse().join('/');
         return sp.date.includes(formattedCustom);
       }
@@ -619,10 +637,10 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             Control de Magatzem, Flota i Proveïdors
             <span className="bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1">
-              <Sparkles size={12} /> Format Netejat & Carpeta Digital
+              <Sparkles size={12} /> Cerca "Factura/Albarà" Reparada
             </span>
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">Cerca dual d'històric per data/text, visor de la carpeta de documents digitalitzats i redacció IA.</p>
+          <p className="text-sm text-neutral-500 mt-1">Cerca intel·ligent d'històric per tipus de document (Factura, Albarà, Ticket), dates i carpetes digitals.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -936,7 +954,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         </div>
       )}
 
-      {/* TAB 4: PROVEÏDORS (WITH CLEAN DISCOUNT FORMATTING & ACCESSIBLE DIGITIZED DOCUMENTS FOLDER) */}
+      {/* TAB 4: PROVEÏDORS */}
       {activeTab === 'proveidors' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
@@ -985,7 +1003,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         </div>
       )}
 
-      {/* MODAL DETALL PROVEÏDOR (AMB CERCA DUAL PER DATA/TEXT I VISOR DE CARPETA DIGITAL DE DOCUMENTS) */}
+      {/* MODAL DETALL PROVEÏDOR (AMB CERCA CERCA INTELLIGENT DE TIPUS DE DOCUMENT: FACTURA, ALBARÀ, TICKET) */}
       {selectedItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
@@ -1198,7 +1216,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
               </div>
             )}
 
-            {/* 4. FITXA COMPLETA PROVEÏDOR (AMB NETEJA EN % I CARPETA DIGITAL DE DOCUMENTS ENLLAÇADA REAL) */}
+            {/* 4. FITXA COMPLETA PROVEÏDOR (CERCA REPARADA AMB SINÒNIMS PER FACTURA / ALBARÀ / TICKET) */}
             {selectedItem.type === 'proveidor' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -1247,19 +1265,21 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                       <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2">
                         <History size={16} className="text-primary" /> Històric Completa de Compres ({selectedItem.data.supplierHistory?.length || 0})
                       </h4>
-                      <span className="text-[11px] text-neutral-500 font-medium">Tot l'històric accessible</span>
+                      <span className="text-[11px] text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Cerca per "Factura", "Albarà", "Ticket", dates o concepte
+                      </span>
                     </div>
 
                     {/* DUAL FILTER CONTROLS */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-neutral-50 p-2.5 rounded-xl border border-neutral-200">
-                      {/* Control 1: Text Search */}
+                      {/* Control 1: Text Search with Synonym Matching */}
                       <div className="relative col-span-1 sm:col-span-2">
                         <input 
                           type="text" 
-                          placeholder="Cercar per concepte, doc # o comprador..."
+                          placeholder="Cerca 'Factura', 'Albarà', 'FAC-', concepte o comprador..."
                           value={supplierHistorySearch}
                           onChange={(e) => setSupplierHistorySearch(e.target.value)}
-                          className="w-full pl-8 pr-3 py-2 bg-white border border-neutral-200 rounded-lg text-xs outline-none focus:border-primary"
+                          className="w-full pl-8 pr-3 py-2 bg-white border border-neutral-200 rounded-lg text-xs outline-none focus:border-primary font-medium"
                         />
                         <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                       </div>
@@ -1296,6 +1316,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                       <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
                         <tr>
                           <th className="p-3">Data</th>
+                          <th className="p-3">Tipus</th>
                           <th className="p-3">Doc #</th>
                           <th className="p-3">Concepte / Material</th>
                           <th className="p-3">Quantitat</th>
@@ -1307,6 +1328,13 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                           filterSupplierHistory(selectedItem.data.supplierHistory).map((sp: any) => (
                             <tr key={sp.id} className="hover:bg-neutral-50">
                               <td className="p-3 font-semibold text-neutral-900">{sp.date}</td>
+                              <td className="p-3">
+                                <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                  (sp.docType === 'FACTURA' || sp.docNumber.startsWith('FAC')) ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {sp.docType || (sp.docNumber.startsWith('FAC') ? 'FACTURA' : 'ALBARÀ')}
+                                </span>
+                              </td>
                               <td className="p-3 font-mono font-bold text-primary">{sp.docNumber}</td>
                               <td className="p-3 font-medium text-neutral-800">{sp.concept}</td>
                               <td className="p-3 text-neutral-600">{sp.qty}</td>
@@ -1315,7 +1343,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={5} className="p-4 text-center text-neutral-400">Cap compra trobada amb aquests filtres de cerca/data.</td>
+                            <td colSpan={6} className="p-4 text-center text-neutral-400">Cap compra trobada amb el terme "{supplierHistorySearch}". Prova cercar 'factura', 'albarà' o una data.</td>
                           </tr>
                         )}
                       </tbody>
@@ -1415,7 +1443,6 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                 </table>
               </div>
 
-              {/* Visor / Previsualitzador de Document */}
               {previewingDoc && (
                 <div className="p-4 bg-neutral-900 text-white rounded-2xl space-y-3 animate-in fade-in duration-150">
                   <div className="flex justify-between items-center border-b border-neutral-700 pb-2">
