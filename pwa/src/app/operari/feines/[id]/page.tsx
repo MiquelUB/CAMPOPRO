@@ -1,8 +1,23 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function Page() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleStartJob = () => {
+    setIsLoading(true);
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(50);
+    }
+    setTimeout(() => {
+      router.push('/operari/feines/1/curs');
+    }, 800);
+  };
+
   return (
     <>
 <header className="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div className="h-16 px-4 flex items-center justify-between"><div className="flex items-center gap-1"><Link href="/operari/feines" className="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary"><span className="material-symbols-outlined">chevron_left</span></Link><h1 className="font-headline-md text-headline-md text-primary">Detall De La Feina</h1></div><div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-secondary-container rounded-full animate-pulse"></div><img alt="Perfil" className="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtwAZlJ75l9Gw7pVmLavb2QKnvmYPQzuB7phJke9yAcUDJ0ztQ8WKH1aqTSsG9RjFbewqzbEh-lpqwTHesciQLh-qbsV4tYLsupEKFm7oOf0sL5pPPZZfit0r2O40scG79F3SCHYEILi2EYMC9D21dG8DnWYtR4tBbsR8N2U6Oy6eYrwYpqtfZnePxyU5FByZqiyvjMKkJtFc53nau3eo2EdKYZf_iDBhz7w5J3AxQQ7sEhi2PPI3N"/></div></div></header><main className="flex flex-col relative w-full pt-16 pb-safe bg-surface"><div className="flex flex-col w-full pb-32">
@@ -94,11 +109,11 @@ export default function Page() {
 </div>
 {/* Sticky Bottom Action */}
 <div className="fixed bottom-0 inset-x-0 bg-surface/80 backdrop-blur-xl p-5 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40">
-<Link href="/operari/feines/1/curs" className="w-full h-[64px] bg-[#1a8a3a] text-white rounded-2xl flex items-center justify-center gap-4 shadow-lg active:scale-[0.98] transition-all relative overflow-hidden group" id="start-job-btn">
+<button onClick={handleStartJob} disabled={isLoading} className={`w-full h-[64px] ${isLoading ? 'bg-primary' : 'bg-[#1a8a3a]'} text-white rounded-2xl flex items-center justify-center gap-4 shadow-lg active:scale-[0.98] transition-all relative overflow-hidden group`} id="start-job-btn">
 <div className="absolute inset-0 bg-white/10 translate-y-full group-active:translate-y-0 transition-transform"></div>
-<span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
-<span className="font-headline-md text-headline-md uppercase tracking-wide">Començar feina</span>
-</Link>
+<span className={`material-symbols-outlined text-[32px] ${isLoading ? 'animate-spin' : ''}`} style={{ fontVariationSettings: "'FILL' 1" }}>{isLoading ? 'sync' : 'play_circle'}</span>
+<span className="font-headline-md text-headline-md uppercase tracking-wide">{isLoading ? 'Carregant...' : 'Començar feina'}</span>
+</button>
 </div>
 </div>
 </main>

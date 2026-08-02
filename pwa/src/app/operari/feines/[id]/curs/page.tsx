@@ -1,8 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 export default function Page() {
+  const [secondsElapsed, setSecondsElapsed] = useState(5025); // 01:23:45 inicial
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsElapsed((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (totalSeconds: number) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   return (
     <>
 <header className="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div className="h-16 px-4 flex items-center justify-between"><div className="flex items-center gap-1"><Link href="/operari/feines/1" className="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary"><span className="material-symbols-outlined">chevron_left</span></Link><h1 className="font-headline-md text-headline-md text-primary">Detall De La Feina</h1></div><div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-secondary-container rounded-full animate-pulse"></div><img alt="Perfil" className="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtwAZlJ75l9Gw7pVmLavb2QKnvmYPQzuB7phJke9yAcUDJ0ztQ8WKH1aqTSsG9RjFbewqzbEh-lpqwTHesciQLh-qbsV4tYLsupEKFm7oOf0sL5pPPZZfit0r2O40scG79F3SCHYEILi2EYMC9D21dG8DnWYtR4tBbsR8N2U6Oy6eYrwYpqtfZnePxyU5FByZqiyvjMKkJtFc53nau3eo2EdKYZf_iDBhz7w5J3AxQQ7sEhi2PPI3N"/></div></div></header><main className="flex flex-col relative w-full pt-16 pb-safe bg-surface"><div className="flex flex-col w-full pb-stack-lg">
@@ -10,7 +27,7 @@ export default function Page() {
 <div className="px-margin-mobile flex items-center justify-between mb-stack-md bg-surface-container-low py-4 shadow-sm">
 <div className="flex flex-col">
 <span className="font-label-bold text-label-bold text-outline uppercase tracking-wider">Temps Transcorregut</span>
-<div className="font-headline-lg text-headline-lg text-secondary tabular-nums" id="job-timer">01:23:45</div>
+<div className="font-headline-lg text-headline-lg text-secondary tabular-nums" id="job-timer">{formatTime(secondsElapsed)}</div>
 </div>
 <div className="flex flex-col items-end gap-1">
 <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary-container text-on-primary-container font-label-bold text-label-bold">
