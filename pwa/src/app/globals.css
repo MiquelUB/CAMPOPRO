@@ -1,3 +1,4 @@
+@import url("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
@@ -60,6 +61,15 @@
   main > :last-child { 
     margin-bottom: 0 !important; 
   }
+}
+
+/* Ensure Leaflet Container Always Fills its Parent */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 500px !important;
+  border-radius: 1rem;
+  z-index: 10;
 }
 
 ::-webkit-scrollbar { 

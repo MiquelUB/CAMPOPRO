@@ -8,7 +8,7 @@ export default function Page() {
   const [filter, setFilter] = useState<'TOTS' | 'ACTIUS' | 'INCIDÈNCIES'>('TOTS');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Selected Crew State (Triggers Leaflet Map flyTo)
+  // Selected Crew State
   const [selectedCrewId, setSelectedCrewId] = useState<string | null>('js');
 
   // Live Mobile GPS State
@@ -166,7 +166,7 @@ export default function Page() {
         </div>
 
         {/* Main Map Workspace */}
-        <div className="flex flex-col lg:flex-row gap-lg h-[calc(100vh-280px)] min-h-[640px] relative">
+        <div className="flex flex-col lg:flex-row gap-lg h-[620px] relative">
           
           {/* Left Panel: Active Crew List */}
           <div className="w-full lg:w-88 flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30">
@@ -236,8 +236,8 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Interactive Leaflet Map Container */}
-          <div className="flex-1 relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30">
+          {/* Interactive Leaflet Map Wrapper (Strict Minimum 580px Height) */}
+          <div className="flex-1 relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30 h-[620px] min-h-[580px] bg-slate-100">
             <DynamicMap
               locations={filteredCrews}
               selectedId={selectedCrewId}
