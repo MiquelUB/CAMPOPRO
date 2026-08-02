@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, AlertOctagon, HelpCircle } from 'lucide-react';
+import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, ShoppingCart, Send, Copy, Check } from 'lucide-react';
 
 export default function MagatzemDashboard() {
   const [activeTab, setActiveTab] = useState<'materials' | 'eines' | 'vehicles' | 'proveidors'>('materials');
@@ -11,11 +11,19 @@ export default function MagatzemDashboard() {
   
   // AI Invoice Reader & Audit Engine State
   const [showAIModal, setShowAIModal] = useState(false);
-  const [docTypeSelection, setDocTypeSelection] = useState<'AUTO' | 'ALBARA' | 'FACTURA'>('AUTO');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiStep, setAiStep] = useState<number>(1);
   const [aiInvoiceFile, setAiInvoiceFile] = useState<File | null>(null);
   const [aiAuditResult, setAiAuditResult] = useState<any | null>(null);
+
+  // AI Purchase Order Generator State
+  const [showAIPOModal, setShowAIPOModal] = useState(false);
+  const [selectedMaterialForPO, setSelectedMaterialForPO] = useState<any | null>(null);
+  const [poQuantity, setPoQuantity] = useState<number>(50);
+  const [poNotes, setPoNotes] = useState<string>('Lliurament urgent al magatzem central abans de divendres.');
+  const [isGeneratingPO, setIsGeneratingPO] = useState(false);
+  const [poDraftResult, setPoDraftResult] = useState<any | null>(null);
+  const [copiedPO, setCopiedPO] = useState(false);
 
   // Supplier Purchase History Search Term Filter inside Modal
   const [supplierHistorySearch, setSupplierHistorySearch] = useState('');
@@ -63,9 +71,27 @@ export default function MagatzemDashboard() {
         { id: 'h4', date: '20/03/2026', qty: '10u', price: '182,00 €', supplier: 'RiegoRegen Cat', buyer: 'Marc (Enginyer)' }
       ]
     },
+    { 
+      id: 'm4', 
+      code: 'MAT-004', 
+      name: 'Adobat Foliar Nitrogenat 25kg', 
+      stockTotal: 2,
+      stockCheckedOut: 0,
+      stock: 2, 
+      minStock: 15, 
+      unit: 'sacs', 
+      location: 'Palet N-3',
+      supplier: 'Fertilitzants del Segre SA',
+      unitPrice: 32.50,
+      lastPurchaseDate: '18/02/2026',
+      workerMovementHistory: [],
+      purchaseHistory: [
+        { id: 'h7', date: '18/02/2026', qty: '20 sacs', price: '650,00 €', supplier: 'Fertilitzants del Segre SA', buyer: 'Miquel Riera' }
+      ]
+    },
   ]);
 
-  // Database 2: Eines (with exact Return Condition Status: OPERATIVA, REPARACIO, PERDUDA)
+  // Database 2: Eines
   const [eines, setEines] = useState([
     { 
       id: 'e1', 
@@ -75,7 +101,7 @@ export default function MagatzemDashboard() {
       serial: 'SN-99882', 
       assignedTo: 'Jordi Soler', 
       location: 'Furgoneta 01',
-      returnConditionStatus: 'OPERATIVA', // OPERATIVA | REPARACIO | PERDUDA
+      returnConditionStatus: 'OPERATIVA', 
       returnedAtEndOfDay: false, 
       returnStatusText: 'A la Furgoneta 01 (Operativa)',
       lastWorkerReport: 'Jordi Soler • Retornat en perfecte estat',
@@ -93,7 +119,7 @@ export default function MagatzemDashboard() {
       serial: 'MK-44102', 
       assignedTo: 'Magatzem Central', 
       location: 'Taller Reparació',
-      returnConditionStatus: 'REPARACIO', // Needs repair
+      returnConditionStatus: 'REPARACIO', 
       returnedAtEndOfDay: true,
       returnStatusText: 'Retornat al Magatzem (Avaria reportada per operari)',
       lastWorkerReport: 'Marc Andreu • Cable tallat i rodaments sorollosos',
@@ -111,7 +137,7 @@ export default function MagatzemDashboard() {
       serial: 'TP-77890', 
       assignedTo: 'Pau Ribas', 
       location: 'No trobat al camp',
-      returnConditionStatus: 'PERDUDA', // Lost during shift!
+      returnConditionStatus: 'PERDUDA', 
       returnedAtEndOfDay: false,
       returnStatusText: '⚠️ PERDUDA AL CAMP (No retornat per l\'operari)',
       lastWorkerReport: 'Pau Ribas • Caigut o oblidat al sector Nord de la finca Agro Riera',
@@ -164,6 +190,42 @@ export default function MagatzemDashboard() {
       supplierHistory: [
         { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' }
       ]
+    },
+    { 
+      id: 'p2', 
+      nif: 'A08112233', 
+      name: 'RiegoRegen Cat', 
+      contact: 'Laura Mas', 
+      phone: '938 44 55 66', 
+      email: 'laura@riegoregen.cat', 
+      address: 'Av. del Reg 88, Granollers', 
+      products: 'Vàlvules, Electrovàlvules, Solenoides',
+      discountValue: '10%',
+      paymentMethod: 'Gir Domiciliat a 60 dies',
+      totalSpentNumeric: 890.00,
+      totalSpent: '890,00 €',
+      documentsFolder: '/documents/magatzem/proveidors/riegoregen/',
+      supplierHistory: [
+        { id: 'sp4', date: '20/03/2026', docNumber: 'FAC-2026-441', concept: 'Vàlvula d\'Esfera 1" Inox (10u)', qty: '10u', amount: '182,00 €', buyer: 'Marc (Enginyer)' }
+      ]
+    },
+    { 
+      id: 'p3', 
+      nif: 'B66778899', 
+      name: 'Fertilitzants del Segre SA', 
+      contact: 'Joan Carles Valls', 
+      phone: '973 55 66 77', 
+      email: 'comercial@fertisegre.cat', 
+      address: 'Ctra. de Balaguer km 4, Lleida', 
+      products: 'Adobs, Fertilitzants, Fitosanitaris',
+      discountValue: '12%',
+      paymentMethod: 'Transferència a 45 dies',
+      totalSpentNumeric: 2340.00,
+      totalSpent: '2.340,00 €',
+      documentsFolder: '/documents/magatzem/proveidors/fertisegre/',
+      supplierHistory: [
+        { id: 'sp6', date: '18/02/2026', docNumber: 'FAC-2026-118', concept: 'Adobat Foliar Nitrogenat 25kg (20 sacs)', qty: '20 sacs', amount: '650,00 €', buyer: 'Miquel Riera' }
+      ]
     }
   ]);
 
@@ -181,6 +243,71 @@ export default function MagatzemDashboard() {
     } else {
       alert(`Proveïdor "${supplierName}" no trobat a la base de dades. Pots crear-lo des del botó "Donar d'Alta".`);
     }
+  };
+
+  // Open AI Purchase Order Redactor
+  const openAIPurchaseOrderModal = (material: any) => {
+    setSelectedMaterialForPO(material);
+    // Default requested qty = (minStock * 2) - currentStock or standard 30
+    const needed = Math.max(material.minStock * 2 - material.stock, 20);
+    setPoQuantity(needed);
+    setShowAIPOModal(true);
+    setPoDraftResult(null);
+  };
+
+  // Generate AI Purchase Order Draft using OpenRouter
+  const generateAIPurchaseOrderDraft = () => {
+    if (!selectedMaterialForPO) return;
+    setIsGeneratingPO(true);
+
+    const supplierObj = proveidors.find(p => p.name.toLowerCase().trim() === selectedMaterialForPO.supplier.toLowerCase().trim()) || {
+      email: 'ventes@agrosubministres.cat',
+      nif: 'B25889911',
+      discountValue: '15%',
+      paymentMethod: 'Transferència a 30 dies',
+      contact: 'Departament de Vendes'
+    };
+
+    setTimeout(() => {
+      const grossPrice = selectedMaterialForPO.unitPrice * poQuantity;
+      const discountNum = parseFloat(supplierObj.discountValue) || 10;
+      const netTotal = grossPrice * (1 - discountNum / 100);
+
+      const draftedEmail = {
+        toEmail: supplierObj.email,
+        subject: `COMANDA D'ADQUISICIÓ REPO-2026 #${selectedMaterialForPO.code} - CampoPro Serveis Agrícoles`,
+        body: `A/A: ${supplierObj.contact} (${selectedMaterialForPO.supplier})
+NIF Proveïdor: ${supplierObj.nif}
+
+Benvolguts,
+
+Mitjançant la present comanda oficial emesa pel departament d'Enginyeria de CampoPro Serveis Agrícoles SL, sol·licitem el subministrament del següent material de magatzem:
+
+----------------------------------------------------------------------
+PRODUCTE: ${selectedMaterialForPO.name}
+CODI REFERÈNCIA / SKU: ${selectedMaterialForPO.code}
+QUANTITAT SOL·LICITADA: ${poQuantity} ${selectedMaterialForPO.unit}
+PREU UNITARI PACTAT: ${selectedMaterialForPO.unitPrice.toFixed(2)} € / ${selectedMaterialForPO.unit}
+DESCOMPTE COMERCIAL APLICAT: ${supplierObj.discountValue}
+TOTAL NET ESTIMAT: ${netTotal.toFixed(2)} € (IVA no inclòs)
+----------------------------------------------------------------------
+
+INSTRUCCIONS DE LLIURAMENT:
+- Adreça de lliurament: Magatzem Central CampoPro, Polígon Industrial El Segre, Nau 12, Lleida.
+- Observacions de l'Enginyer: ${poNotes}
+- Forma de pagament acollida: ${supplierObj.paymentMethod}.
+
+Agrairem confirmació de recepció d'aquesta comanda i data estimada de lliurament per albarà.
+
+Atentament,
+Departament de Gestió de Magatzem i Flota
+CampoPro Serveis Agrícoles SL
+Tel: 973 99 00 11 | email: magatzem@campopro.cat`
+      };
+
+      setPoDraftResult(draftedEmail);
+      setIsGeneratingPO(false);
+    }, 1500);
   };
 
   // AI Audit Engine Handler
@@ -429,10 +556,10 @@ export default function MagatzemDashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             Control de Magatzem, Flota i Proveïdors
             <span className="bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1">
-              <Sparkles size={12} /> Sync Operari & IA
+              <Sparkles size={12} /> Redacció Comandes IA
             </span>
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">Estat de retorn de jornada d'eines (Operativa, Reparació, Perduda), dates DD/MM/YYYY i enllaços directes.</p>
+          <p className="text-sm text-neutral-500 mt-1">Estoc en temps real, alertes de reposició i redactor automàtic de comandes IA cap al proveïdor.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -516,11 +643,11 @@ export default function MagatzemDashboard() {
         </div>
       </div>
 
-      {/* TAB 1: MATERIALS */}
+      {/* TAB 1: MATERIALS (WITH AI PURCHASE ORDER REDACTOR FOR LOW STOCK) */}
       {activeTab === 'materials' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 Control d'estoc automàtic descomptant els materials agafats per l'operari i sumant els retorns al final de la jornada.</span>
+            <span>💡 Utilitza el botó 🤖 "Redactar Comanda IA" per demanar reposició automàtica de stock al proveïdor.</span>
             <span className="text-primary font-bold">{filteredMaterials.length} materials trobats</span>
           </div>
           <table className="w-full text-sm text-left">
@@ -533,7 +660,7 @@ export default function MagatzemDashboard() {
                 <th className="px-6 py-4">Ubicació</th>
                 <th className="px-6 py-4">Proveïdor (Link)</th>
                 <th className="px-6 py-4 text-center">Preu Unitari</th>
-                <th className="px-6 py-4 text-center">Estat</th>
+                <th className="px-6 py-4 text-center">Estat / Reposició</th>
                 <th className="px-6 py-4 text-right">Accions</th>
               </tr>
             </thead>
@@ -574,15 +701,29 @@ export default function MagatzemDashboard() {
 
                     <td className="px-6 py-4 text-center font-bold text-primary">{item.unitPrice.toFixed(2)} €</td>
                     <td className="px-6 py-4 text-center">
-                      {isLowStock ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                          <AlertTriangle size={14} /> Estoc Baix
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                          <CheckCircle2 size={14} /> OK
-                        </span>
-                      )}
+                      <div className="flex flex-col items-center gap-1.5">
+                        {isLowStock ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                            <AlertTriangle size={12} /> Estoc Baix
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                            <CheckCircle2 size={12} /> OK
+                          </span>
+                        )}
+
+                        {/* AI PURCHASE ORDER BUTTON */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAIPurchaseOrderModal(item);
+                          }}
+                          className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:from-emerald-700 hover:to-teal-800 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-sm active:scale-95"
+                        >
+                          <Bot size={12} />
+                          Redactar Comanda IA
+                        </button>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button onClick={(e) => deleteMaterial(item.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
@@ -597,11 +738,11 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* TAB 2: EINES (WITH 3 EXACT RETURN CONDITION STATUSES: OPERATIVA, REPARACIO, PERDUDA) */}
+      {/* TAB 2: EINES */}
       {activeTab === 'eines' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 Correspondència amb l'App de l'Operari: Classificació del retorn en 🟢 Operativa, 🛠️ Reparació o ❌ Perduda.</span>
+            <span>💡 Classificació del retorn en 🟢 Operativa, 🛠️ Reparació o ❌ Perduda.</span>
             <span className="text-primary font-bold">{filteredEines.length} eines trobades</span>
           </div>
           <table className="w-full text-sm text-left">
@@ -632,7 +773,6 @@ export default function MagatzemDashboard() {
                   <td className="px-6 py-4 text-neutral-600">{item.brand} ({item.serial})</td>
                   <td className="px-6 py-4 font-medium text-neutral-900">{item.assignedTo}</td>
                   
-                  {/* RETURN CONDITION STATUS BADGES (OPERATIVA, REPARACIO, PERDUDA) */}
                   <td className="px-6 py-4 text-center">
                     {item.returnConditionStatus === 'OPERATIVA' && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -653,7 +793,6 @@ export default function MagatzemDashboard() {
 
                   <td className="px-6 py-4 text-neutral-800 font-bold font-mono text-xs">{item.warrantyUntil}</td>
 
-                  {/* LINKED SUPPLIER NAME */}
                   <td className="px-6 py-4">
                     <button
                       onClick={(e) => {
@@ -784,7 +923,139 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* MODAL DETALL GENERAL TRANSPARENT (ACCÉS TOTAL A TOTES LES DADES A 1-CLICK) */}
+      {/* MODAL IA: REDACTOR DE COMANDES DE REPOSICIÓ CAP AL PROVEÏDOR */}
+      {showAIPOModal && selectedMaterialForPO && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-neutral-100">
+              <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
+                <Bot className="text-emerald-600" size={24} /> Redactor IA de Comandes a Proveïdors (OpenRouter)
+              </h3>
+              <button onClick={() => setShowAIPOModal(false)} className="text-neutral-400 hover:text-neutral-700">
+                <X size={20} />
+              </button>
+            </div>
+
+            {!poDraftResult ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center gap-3">
+                  <Package className="text-emerald-700 shrink-0" size={28} />
+                  <div>
+                    <span className="text-xs font-mono font-bold text-emerald-800">{selectedMaterialForPO.code}</span>
+                    <h4 className="font-bold text-neutral-900 text-sm">{selectedMaterialForPO.name}</h4>
+                    <p className="text-xs text-neutral-600">Proveïdor: <span className="font-bold text-neutral-900">{selectedMaterialForPO.supplier}</span> • Estoc Actual: <span className="font-bold text-amber-700">{selectedMaterialForPO.stock} {selectedMaterialForPO.unit}</span></p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Quantitat a Demanar ({selectedMaterialForPO.unit})</label>
+                    <input 
+                      type="number" 
+                      value={poQuantity} 
+                      onChange={(e) => setPoQuantity(Number(e.target.value))} 
+                      className="w-full p-3 border border-neutral-200 rounded-xl text-sm font-bold text-neutral-900 outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Cost Total Estimat (€)</label>
+                    <div className="w-full p-3 bg-neutral-100 rounded-xl text-sm font-bold text-primary flex items-center justify-between">
+                      <span>{(selectedMaterialForPO.unitPrice * poQuantity).toFixed(2)} €</span>
+                      <span className="text-[10px] text-neutral-500 font-normal">Preu Unitari: {selectedMaterialForPO.unitPrice.toFixed(2)} €</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1">Observacions o Dictat de l'Enginyer</label>
+                  <textarea 
+                    rows={2} 
+                    value={poNotes} 
+                    onChange={(e) => setPoNotes(e.target.value)} 
+                    className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary" 
+                    placeholder="Escriu o dicta instruccions d'entrega..."
+                  />
+                </div>
+
+                <button 
+                  onClick={generateAIPurchaseOrderDraft}
+                  disabled={isGeneratingPO}
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl font-bold text-sm shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2"
+                >
+                  {isGeneratingPO ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      Redactant comanda amb OpenRouter IA...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={18} />
+                      Generar Redacció IA de Comanda Comercial
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              /* DRAFTED EMAIL / PURCHASE ORDER DOCUMENT */
+              <div className="space-y-4">
+                <div className="p-3 bg-neutral-100 rounded-xl border border-neutral-200 text-xs flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] text-neutral-500 block uppercase">Enviar A (Email Proveïdor)</span>
+                    <span className="font-bold text-primary font-mono">{poDraftResult.toEmail}</span>
+                  </div>
+                  <span className="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full text-[10px]">
+                    ✓ Redacció Comercial IA Aprovada
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1 text-neutral-500">Assumpte del Correu</label>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={poDraftResult.subject} 
+                    className="w-full p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1 text-neutral-500">Cos de la Comanda Oficial</label>
+                  <textarea 
+                    rows={12} 
+                    readOnly 
+                    value={poDraftResult.body} 
+                    className="w-full p-3 bg-neutral-900 text-emerald-400 font-mono rounded-xl text-xs leading-relaxed outline-none border border-neutral-800"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(poDraftResult.body);
+                      setCopiedPO(true);
+                      setTimeout(() => setCopiedPO(false), 2000);
+                    }}
+                    className="flex-1 py-3 bg-neutral-200 text-neutral-800 rounded-xl font-bold text-xs hover:bg-neutral-300 transition-all flex items-center justify-center gap-2"
+                  >
+                    {copiedPO ? <Check size={16} className="text-emerald-700" /> : <Copy size={16} />}
+                    {copiedPO ? 'Comanda Copiada!' : 'Copiar Text de la Comanda'}
+                  </button>
+
+                  <a 
+                    href={`mailto:${poDraftResult.toEmail}?subject=${encodeURIComponent(poDraftResult.subject)}&body=${encodeURIComponent(poDraftResult.body)}`}
+                    className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-md"
+                  >
+                    <Send size={16} />
+                    Obrir al Gestor de Correu
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETALL GENERAL TRANSPARENT */}
       {selectedItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
@@ -857,7 +1128,7 @@ export default function MagatzemDashboard() {
               </div>
             )}
 
-            {/* 2. FITXA COMPLETA EINA (AMB ESTAT DE RETORN EN JORNADA: OPERATIVA, REPARACIO, PERDUDA) */}
+            {/* 2. FITXA COMPLETA EINA */}
             {selectedItem.type === 'eina' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -903,12 +1174,6 @@ export default function MagatzemDashboard() {
                       {selectedItem.data.supplier}
                     </button>
                   </div>
-                </div>
-
-                {/* Últim informe de l'operari */}
-                <div className="p-3 bg-neutral-100 rounded-xl border border-neutral-200 text-xs mb-6">
-                  <span className="font-bold text-neutral-700 block uppercase text-[10px] mb-1">Últim informe de l'operari (App Mòbil):</span>
-                  <p className="text-neutral-900 font-medium">{selectedItem.data.lastWorkerReport || 'Sense incidències reportades'}</p>
                 </div>
 
                 <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-3">
@@ -1112,7 +1377,7 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* MODAL IA */}
+      {/* MODAL IA: ESCÀNER */}
       {showAIModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
           <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200">
@@ -1153,7 +1418,7 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* MODAL: DONAR D'ALTA MANUAL COMPLET PER A LES 4 PESTANYES */}
+      {/* MODAL: DONAR D'ALTA MANUAL COMPLET */}
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-neutral-200 max-h-[90vh] overflow-y-auto">
@@ -1212,7 +1477,7 @@ export default function MagatzemDashboard() {
               </form>
             )}
 
-            {/* FORM MANUAL: EINES (WITH RETURN CONDITION SELECTION) */}
+            {/* FORM MANUAL: EINES */}
             {activeTab === 'eines' && (
               <form onSubmit={handleAddEina} className="space-y-4">
                 <div>
