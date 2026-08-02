@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, AlertOctagon, HelpCircle } from 'lucide-react';
 
 export default function MagatzemDashboard() {
   const [activeTab, setActiveTab] = useState<'materials' | 'eines' | 'vehicles' | 'proveidors'>('materials');
@@ -23,15 +23,15 @@ export default function MagatzemDashboard() {
   // Selected Detail Modal State
   const [selectedItem, setSelectedItem] = useState<{ type: 'material' | 'eina' | 'vehicle' | 'proveidor'; data: any } | null>(null);
 
-  // Database 1: Materials (with daily worker checkout & return tracking)
+  // Database 1: Materials
   const [materials, setMaterials] = useState([
     { 
       id: 'm1', 
       code: 'MAT-001', 
       name: 'Tub PE 25mm High-Density', 
       stockTotal: 150, 
-      stockCheckedOut: 30, // Taken by workers today
-      stock: 120, // Real available in warehouse
+      stockCheckedOut: 30, 
+      stock: 120, 
       minStock: 20, 
       unit: 'm', 
       location: 'Prestatgeria A-1',
@@ -39,12 +39,10 @@ export default function MagatzemDashboard() {
       unitPrice: 4.50,
       lastPurchaseDate: '12/04/2026',
       workerMovementHistory: [
-        { id: 'wm1', date: '02/08/2026 07:30', worker: 'Jordi Soler', action: 'SUBTRACTION', qty: '30m', status: 'EN_US_JORNADA' },
-        { id: 'wm2', date: '01/08/2026 18:00', worker: 'Marc Andreu', action: 'RETURN', qty: '10m', status: 'RETORNAT_OK' }
+        { id: 'wm1', date: '02/08/2026 07:30', worker: 'Jordi Soler', action: 'SUBTRACTION', qty: '30m', status: 'EN_US_JORNADA' }
       ],
       purchaseHistory: [
-        { id: 'h1', date: '12/04/2026', qty: '100m', price: '450,00 €', supplier: 'AgroSubministres Ponent SL', buyer: 'Marc (Enginyer)' },
-        { id: 'h2', date: '02/02/2026', qty: '50m', price: '225,00 €', supplier: 'AgroSubministres Ponent SL', buyer: 'Marc (Enginyer)' }
+        { id: 'h1', date: '12/04/2026', qty: '100m', price: '450,00 €', supplier: 'AgroSubministres Ponent SL', buyer: 'Marc (Enginyer)' }
       ]
     },
     { 
@@ -60,52 +58,14 @@ export default function MagatzemDashboard() {
       supplier: 'RiegoRegen Cat',
       unitPrice: 18.20,
       lastPurchaseDate: '20/03/2026',
-      workerMovementHistory: [
-        { id: 'wm3', date: '02/08/2026 08:00', worker: 'Pau Ribas', action: 'SUBTRACTION', qty: '2u', status: 'EN_US_JORNADA' }
-      ],
+      workerMovementHistory: [],
       purchaseHistory: [
         { id: 'h4', date: '20/03/2026', qty: '10u', price: '182,00 €', supplier: 'RiegoRegen Cat', buyer: 'Marc (Enginyer)' }
       ]
     },
-    { 
-      id: 'm3', 
-      code: 'MAT-003', 
-      name: 'Cinta de Teflon Professional', 
-      stockTotal: 35,
-      stockCheckedOut: 0,
-      stock: 35, 
-      minStock: 5, 
-      unit: 'u', 
-      location: 'Armari C-2',
-      supplier: 'Subministraments Industrials Manresa',
-      unitPrice: 1.20,
-      lastPurchaseDate: '05/05/2026',
-      workerMovementHistory: [],
-      purchaseHistory: [
-        { id: 'h6', date: '05/05/2026', qty: '40u', price: '48,00 €', supplier: 'Subministraments Industrials Manresa', buyer: 'Marc (Enginyer)' }
-      ]
-    },
-    { 
-      id: 'm4', 
-      code: 'MAT-004', 
-      name: 'Adobat Foliar Nitrogenat 25kg', 
-      stockTotal: 2,
-      stockCheckedOut: 0,
-      stock: 2, 
-      minStock: 15, 
-      unit: 'sacs', 
-      location: 'Palet N-3',
-      supplier: 'Fertilitzants del Segre SA',
-      unitPrice: 32.50,
-      lastPurchaseDate: '18/02/2026',
-      workerMovementHistory: [],
-      purchaseHistory: [
-        { id: 'h7', date: '18/02/2026', qty: '20 sacs', price: '650,00 €', supplier: 'Fertilitzants del Segre SA', buyer: 'Miquel Riera' }
-      ]
-    },
   ]);
 
-  // Database 2: Eines (DD/MM/YYYY date format, linked supplier, end of day return status)
+  // Database 2: Eines (with exact Return Condition Status: OPERATIVA, REPARACIO, PERDUDA)
   const [eines, setEines] = useState([
     { 
       id: 'e1', 
@@ -113,12 +73,13 @@ export default function MagatzemDashboard() {
       name: 'Trepant Bosch GSR-18', 
       brand: 'Bosch Professional', 
       serial: 'SN-99882', 
-      status: 'BO', 
       assignedTo: 'Jordi Soler', 
       location: 'Furgoneta 01',
-      returnedAtEndOfDay: false, // In worker vehicle vs returned to warehouse
-      returnStatusText: 'A la Furgoneta 01 (En ús per Jordi Soler)',
-      warrantyUntil: '15/06/2027', // Formatted DD/MM/YYYY
+      returnConditionStatus: 'OPERATIVA', // OPERATIVA | REPARACIO | PERDUDA
+      returnedAtEndOfDay: false, 
+      returnStatusText: 'A la Furgoneta 01 (Operativa)',
+      lastWorkerReport: 'Jordi Soler • Retornat en perfecte estat',
+      warrantyUntil: '15/06/2027', 
       supplier: 'Subministraments Industrials Manresa',
       repairHistory: [
         { id: 'r1', date: '15/01/2026', reason: 'Canvi d\'escobetes i greixatge', mechanic: 'Taller Oficial Bosch Manresa', cost: '35,00 €', status: 'COMPLETAT' }
@@ -130,11 +91,12 @@ export default function MagatzemDashboard() {
       name: 'Radial Makita 125mm', 
       brand: 'Makita', 
       serial: 'MK-44102', 
-      status: 'AVARIA', 
       assignedTo: 'Magatzem Central', 
       location: 'Taller Reparació',
+      returnConditionStatus: 'REPARACIO', // Needs repair
       returnedAtEndOfDay: true,
-      returnStatusText: 'Retornat al Magatzem Central (En taller)',
+      returnStatusText: 'Retornat al Magatzem (Avaria reportada per operari)',
+      lastWorkerReport: 'Marc Andreu • Cable tallat i rodaments sorollosos',
       warrantyUntil: '10/10/2025',
       supplier: 'AgroSubministres Ponent SL',
       repairHistory: [
@@ -144,15 +106,16 @@ export default function MagatzemDashboard() {
     { 
       id: 'e3', 
       code: 'EIN-103', 
-      name: 'Joc de Claus Stillson', 
-      brand: 'Palmera', 
-      serial: 'PAL-009', 
-      status: 'BO', 
-      assignedTo: 'Magatzem Central', 
-      location: 'Magatzem Central',
-      returnedAtEndOfDay: true,
-      returnStatusText: 'Retornat al Magatzem Central (Disponible)',
-      warrantyUntil: '01/01/2099',
+      name: 'Nivell Làser Topcon RL-H5A', 
+      brand: 'Topcon', 
+      serial: 'TP-77890', 
+      assignedTo: 'Pau Ribas', 
+      location: 'No trobat al camp',
+      returnConditionStatus: 'PERDUDA', // Lost during shift!
+      returnedAtEndOfDay: false,
+      returnStatusText: '⚠️ PERDUDA AL CAMP (No retornat per l\'operari)',
+      lastWorkerReport: 'Pau Ribas • Caigut o oblidat al sector Nord de la finca Agro Riera',
+      warrantyUntil: '01/03/2028',
       supplier: 'Subministraments Industrials Manresa',
       repairHistory: []
     },
@@ -179,30 +142,10 @@ export default function MagatzemDashboard() {
       maintenanceHistory: [
         { id: 'vh1', date: '10/03/2026', counter: '120.000 Km', service: 'Canvi d\'oli 5W30, filtre d\'oli i filtre d\'aire', mechanic: 'Taller Mecànic Pons & Fills', cost: '185,00 €' }
       ]
-    },
-    { 
-      id: 'v2', 
-      plate: '5678-LMN', 
-      name: 'Tractor John Deere 6R 150', 
-      type: 'Tractor', 
-      unitType: 'Hores', 
-      counterValue: 3420, 
-      itvDate: '10/08/2026', 
-      insuranceCompany: 'Catalana Occident',
-      insurancePolicy: 'POL-44102-TR',
-      insuranceDate: '20/12/2026',
-      lastOilChangeDate: '20/01/2026',
-      lastOilChangeCounter: 3200,
-      mechanicName: 'AgroReparacions del Segre',
-      mechanicContact: '973 44 55 66 (Joan)',
-      status: 'REVISIO_PENDENT',
-      maintenanceHistory: [
-        { id: 'vh3', date: '20/01/2026', counter: '3.200 Hores', service: 'Revisió 500h: Oli de motor, hidràulic i filtres', mechanic: 'AgroReparacions del Segre', cost: '420,00 €' }
-      ]
-    },
+    }
   ]);
 
-  // Database 4: Proveïdors (Clean discount string without duplicate %, full searchable purchase history & documents folder)
+  // Database 4: Proveïdors
   const [proveidors, setProveidors] = useState([
     { 
       id: 'p1', 
@@ -213,78 +156,20 @@ export default function MagatzemDashboard() {
       email: 'ventes@agrosubministres.cat', 
       address: 'Polígon Industrial El Segre, Nau 14, Lleida', 
       products: 'Tubs, Canonades, Reg',
-      discountValue: '15%', // Clean single %
+      discountValue: '15%',
       paymentMethod: 'Transferència a 30 dies',
       totalSpentNumeric: 1450.00,
       totalSpent: '1.450,00 €',
       documentsFolder: '/documents/magatzem/proveidors/agrosubministres/',
       supplierHistory: [
-        { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' },
-        { id: 'sp2', date: '02/02/2026', docNumber: 'ALB-2026-1102', concept: 'Tub PE 25mm High-Density (50m)', qty: '50m', amount: '225,00 €', buyer: 'Marc (Enginyer)' },
-        { id: 'sp3', date: '15/12/2025', docNumber: 'FAC-2025-998', concept: 'Recanvis canonada reg sector sud', qty: 'Varis', amount: '775,00 €', buyer: 'Miquel Riera' }
+        { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' }
       ]
-    },
-    { 
-      id: 'p2', 
-      nif: 'A08112233', 
-      name: 'RiegoRegen Cat', 
-      contact: 'Laura Mas', 
-      phone: '938 44 55 66', 
-      email: 'laura@riegoregen.cat', 
-      address: 'Av. del Reg 88, Granollers', 
-      products: 'Vàlvules, Electrovàlvules, Solenoides',
-      discountValue: '10%',
-      paymentMethod: 'Gir Domiciliat a 60 dies',
-      totalSpentNumeric: 890.00,
-      totalSpent: '890,00 €',
-      documentsFolder: '/documents/magatzem/proveidors/riegoregen/',
-      supplierHistory: [
-        { id: 'sp4', date: '20/03/2026', docNumber: 'FAC-2026-441', concept: 'Vàlvula d\'Esfera 1" Inox (10u)', qty: '10u', amount: '182,00 €', buyer: 'Marc (Enginyer)' },
-        { id: 'sp5', date: '10/01/2026', docNumber: 'FAC-2026-009', concept: 'Electrovàlvules 2" reforçades', qty: '5u', amount: '708,00 €', buyer: 'Jordi Soler' }
-      ]
-    },
-    { 
-      id: 'p3', 
-      nif: 'B66778899', 
-      name: 'Fertilitzants del Segre SA', 
-      contact: 'Joan Carles Valls', 
-      phone: '973 55 66 77', 
-      email: 'comercial@fertisegre.cat', 
-      address: 'Ctra. de Balaguer km 4, Lleida', 
-      products: 'Adobs, Fertilitzants, Fitosanitaris',
-      discountValue: '12%',
-      paymentMethod: 'Transferència a 45 dies',
-      totalSpentNumeric: 2340.00,
-      totalSpent: '2.340,00 €',
-      documentsFolder: '/documents/magatzem/proveidors/fertisegre/',
-      supplierHistory: [
-        { id: 'sp6', date: '18/02/2026', docNumber: 'FAC-2026-118', concept: 'Adobat Foliar Nitrogenat 25kg (20 sacs)', qty: '20 sacs', amount: '650,00 €', buyer: 'Miquel Riera' }
-      ]
-    },
-    { 
-      id: 'p4', 
-      nif: 'B08991122', 
-      name: 'Subministraments Industrials Manresa', 
-      contact: 'Ricard Torres', 
-      phone: '938 77 88 99', 
-      email: 'ricard@submanresa.cat', 
-      address: 'C/ Sallent 12, Manresa', 
-      products: 'Eines, Cinta Teflon, Cargoleria',
-      discountValue: '8%',
-      paymentMethod: 'Comptat / Targeta',
-      totalSpentNumeric: 620.00,
-      totalSpent: '620,00 €',
-      documentsFolder: '/documents/magatzem/proveidors/submanresa/',
-      supplierHistory: [
-        { id: 'sp8', date: '05/05/2026', docNumber: 'TIC-2026-99', concept: 'Cinta de Teflon Professional (40u)', qty: '40u', amount: '48,00 €', buyer: 'Marc (Enginyer)' },
-        { id: 'sp9', date: '15/01/2026', docNumber: 'FAC-2026-012', concept: 'Trepant Bosch GSR-18 Professional', qty: '1u', amount: '572,00 €', buyer: 'Marc (Enginyer)' }
-      ]
-    },
+    }
   ]);
 
-  // Manual Form States for ALL 4 tabs
+  // Manual Form States
   const [newMat, setNewMat] = useState({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '', supplier: '', unitPrice: '' });
-  const [newEin, setNewEin] = useState({ name: '', brand: '', serial: '', status: 'BO', assignedTo: 'Magatzem Central', location: 'Magatzem Central', warrantyUntil: '', supplier: '', returnedAtEndOfDay: true });
+  const [newEin, setNewEin] = useState({ name: '', brand: '', serial: '', assignedTo: 'Magatzem Central', location: 'Magatzem Central', warrantyUntil: '', supplier: '', returnConditionStatus: 'OPERATIVA' });
   const [newVeh, setNewVeh] = useState({ plate: '', name: '', type: 'Furgoneta', unitType: 'Km', counterValue: '', itvDate: '', insuranceCompany: '', insurancePolicy: '', insuranceDate: '', lastOilChangeDate: '', lastOilChangeCounter: '', mechanicName: '', mechanicContact: '' });
   const [newProv, setNewProv] = useState({ name: '', nif: '', contact: '', phone: '', email: '', address: '', products: '', discount: '', paymentMethod: '' });
 
@@ -435,18 +320,19 @@ export default function MagatzemDashboard() {
       name: newEin.name.trim(),
       brand: newEin.brand.trim() || 'Genèric',
       serial: newEin.serial.trim() || 'SN-000',
-      status: newEin.status,
       assignedTo: newEin.assignedTo,
       location: newEin.location,
-      returnedAtEndOfDay: newEin.returnedAtEndOfDay,
-      returnStatusText: newEin.returnedAtEndOfDay ? 'Retornat al Magatzem Central' : `A la Furgoneta de ${newEin.assignedTo}`,
+      returnConditionStatus: newEin.returnConditionStatus,
+      returnedAtEndOfDay: newEin.returnConditionStatus === 'OPERATIVA',
+      returnStatusText: newEin.returnConditionStatus === 'OPERATIVA' ? 'Retornada OK al Magatzem' : newEin.returnConditionStatus === 'REPARACIO' ? 'En Taller / Avaria' : '⚠️ PERDUDA AL CAMP',
+      lastWorkerReport: `${newEin.assignedTo} • Registre d'alta manual`,
       warrantyUntil: newEin.warrantyUntil || '15/06/2027',
       supplier: newEin.supplier || 'Subministraments Industrials Manresa',
       repairHistory: []
     };
 
     setEines([item, ...eines]);
-    setNewEin({ name: '', brand: '', serial: '', status: 'BO', assignedTo: 'Magatzem Central', location: 'Magatzem Central', warrantyUntil: '', supplier: '', returnedAtEndOfDay: true });
+    setNewEin({ name: '', brand: '', serial: '', assignedTo: 'Magatzem Central', location: 'Magatzem Central', warrantyUntil: '', supplier: '', returnConditionStatus: 'OPERATIVA' });
     setShowAddModal(false);
   };
 
@@ -546,7 +432,7 @@ export default function MagatzemDashboard() {
               <Sparkles size={12} /> Sync Operari & IA
             </span>
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">Alta 100% manual o per IA. Control de retorns diaris d'operaris, garanties DD/MM/YYYY i historial complet.</p>
+          <p className="text-sm text-neutral-500 mt-1">Estat de retorn de jornada d'eines (Operativa, Reparació, Perduda), dates DD/MM/YYYY i enllaços directes.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -634,7 +520,7 @@ export default function MagatzemDashboard() {
       {activeTab === 'materials' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 L'estoc inclou les recepcions i les dades d'agafades/retorns de l'App de l'Operari al final de la jornada.</span>
+            <span>💡 Control d'estoc automàtic descomptant els materials agafats per l'operari i sumant els retorns al final de la jornada.</span>
             <span className="text-primary font-bold">{filteredMaterials.length} materials trobats</span>
           </div>
           <table className="w-full text-sm text-left">
@@ -673,7 +559,6 @@ export default function MagatzemDashboard() {
                     </td>
                     <td className="px-6 py-4 text-neutral-600">{item.location}</td>
                     
-                    {/* LINKED SUPPLIER NAME */}
                     <td className="px-6 py-4">
                       <button
                         onClick={(e) => {
@@ -712,11 +597,11 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* TAB 2: EINES */}
+      {/* TAB 2: EINES (WITH 3 EXACT RETURN CONDITION STATUSES: OPERATIVA, REPARACIO, PERDUDA) */}
       {activeTab === 'eines' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 Control del retorn de l'eina al magatzem al final de la jornada i enllaç directe amb el proveïdor de compra.</span>
+            <span>💡 Correspondència amb l'App de l'Operari: Classificació del retorn en 🟢 Operativa, 🛠️ Reparació o ❌ Perduda.</span>
             <span className="text-primary font-bold">{filteredEines.length} eines trobades</span>
           </div>
           <table className="w-full text-sm text-left">
@@ -726,10 +611,9 @@ export default function MagatzemDashboard() {
                 <th className="px-6 py-4">Eina / Maquinària</th>
                 <th className="px-6 py-4">Marca / Model</th>
                 <th className="px-6 py-4">Assignat a (App Operari)</th>
-                <th className="px-6 py-4">Retorn Jornada</th>
-                <th className="px-6 py-4">Garantia Fins (DD/MM/YYYY)</th>
+                <th className="px-6 py-4 text-center">Estat del Retorn Jornada</th>
+                <th className="px-6 py-4">Garantia Fins</th>
                 <th className="px-6 py-4">Proveïdor (Link)</th>
-                <th className="px-6 py-4 text-center">Estat Físic</th>
                 <th className="px-6 py-4 text-right">Accions</th>
               </tr>
             </thead>
@@ -747,17 +631,26 @@ export default function MagatzemDashboard() {
                   </td>
                   <td className="px-6 py-4 text-neutral-600">{item.brand} ({item.serial})</td>
                   <td className="px-6 py-4 font-medium text-neutral-900">{item.assignedTo}</td>
-                  <td className="px-6 py-4 text-xs font-semibold">
-                    {item.returnedAtEndOfDay ? (
-                      <span className="text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                        ✅ Retornada al Magatzem
+                  
+                  {/* RETURN CONDITION STATUS BADGES (OPERATIVA, REPARACIO, PERDUDA) */}
+                  <td className="px-6 py-4 text-center">
+                    {item.returnConditionStatus === 'OPERATIVA' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        🟢 Operativa (Retornada OK)
                       </span>
-                    ) : (
-                      <span className="text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                        🚐 En Furgoneta Operari
+                    )}
+                    {item.returnConditionStatus === 'REPARACIO' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                        🛠️ En Reparació / Avaria
+                      </span>
+                    )}
+                    {item.returnConditionStatus === 'PERDUDA' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200 animate-pulse">
+                        ❌ PERDUDA / EXTRAVIADA
                       </span>
                     )}
                   </td>
+
                   <td className="px-6 py-4 text-neutral-800 font-bold font-mono text-xs">{item.warrantyUntil}</td>
 
                   {/* LINKED SUPPLIER NAME */}
@@ -774,13 +667,6 @@ export default function MagatzemDashboard() {
                     </button>
                   </td>
 
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      item.status === 'BO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800 animate-pulse'
-                    }`}>
-                      {item.status === 'BO' ? '🟢 Operatiu' : '🔴 Avaria / Taller'}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 text-right">
                     <button onClick={(e) => deleteEina(item.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
                       <Trash2 size={16} />
@@ -898,12 +784,12 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* MODAL DETALL GENERAL (TRANSPARÈNCIA I HISTÒRICS COMPLETS) */}
+      {/* MODAL DETALL GENERAL TRANSPARENT (ACCÉS TOTAL A TOTES LES DADES A 1-CLICK) */}
       {selectedItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             
-            {/* 1. FITXA MATERIAL AMB TRACKING D'OPERARIS */}
+            {/* 1. FITXA MATERIAL */}
             {selectedItem.type === 'material' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -943,46 +829,6 @@ export default function MagatzemDashboard() {
                   </div>
                 </div>
 
-                {/* Moviments Diaris d'Operaris */}
-                <div className="mb-6">
-                  <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
-                    <User size={16} className="text-primary" /> Moviments d'Operaris en Jornada (App Mòbil)
-                  </h4>
-                  <div className="border border-neutral-200 rounded-xl overflow-hidden text-xs">
-                    {selectedItem.data.workerMovementHistory?.length > 0 ? (
-                      <table className="w-full text-left">
-                        <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
-                          <tr>
-                            <th className="p-2.5">Data / Hora</th>
-                            <th className="p-2.5">Operari</th>
-                            <th className="p-2.5">Acció</th>
-                            <th className="p-2.5">Quantitat</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-neutral-200">
-                          {selectedItem.data.workerMovementHistory.map((wm: any) => (
-                            <tr key={wm.id} className="hover:bg-neutral-50">
-                              <td className="p-2.5 font-mono">{wm.date}</td>
-                              <td className="p-2.5 font-bold text-neutral-900">{wm.worker}</td>
-                              <td className="p-2.5 font-semibold">
-                                {wm.action === 'SUBTRACTION' ? (
-                                  <span className="text-amber-700 flex items-center gap-1"><ArrowDownRight size={14} /> Substracció Obradora</span>
-                                ) : (
-                                  <span className="text-emerald-700 flex items-center gap-1"><ArrowUpRight size={14} /> Retorn al Magatzem</span>
-                                )}
-                              </td>
-                              <td className="p-2.5 font-bold text-neutral-900">{wm.qty}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <p className="p-3 text-center text-neutral-400">Cap moviment registrat avui.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Històric de Compres */}
                 <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
                   <History size={16} className="text-primary" /> Històric de Compres i Entrades d'Estoc
                 </h4>
@@ -1011,7 +857,7 @@ export default function MagatzemDashboard() {
               </div>
             )}
 
-            {/* 2. FITXA COMPLETA EINA */}
+            {/* 2. FITXA COMPLETA EINA (AMB ESTAT DE RETORN EN JORNADA: OPERATIVA, REPARACIO, PERDUDA) */}
             {selectedItem.type === 'eina' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -1035,11 +881,13 @@ export default function MagatzemDashboard() {
                     </span>
                   </div>
                   <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Estat del Retorn (Jornada)</span>
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Estat del Retorn Jornada</span>
                     <span className={`text-xs font-bold inline-block px-2.5 py-1 rounded-full mt-1 ${
-                      selectedItem.data.returnedAtEndOfDay ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      selectedItem.data.returnConditionStatus === 'OPERATIVA' ? 'bg-emerald-100 text-emerald-800' : selectedItem.data.returnConditionStatus === 'REPARACIO' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800 animate-pulse'
                     }`}>
-                      {selectedItem.data.returnedAtEndOfDay ? '✅ Magatzem Central' : '🚐 En Vehicle d\'Operari'}
+                      {selectedItem.data.returnConditionStatus === 'OPERATIVA' && '🟢 Operativa (Retornada OK)'}
+                      {selectedItem.data.returnConditionStatus === 'REPARACIO' && '🛠️ En Reparació / Avaria'}
+                      {selectedItem.data.returnConditionStatus === 'PERDUDA' && '❌ PERDUDA AL CAMP'}
                     </span>
                   </div>
                   <div>
@@ -1057,8 +905,14 @@ export default function MagatzemDashboard() {
                   </div>
                 </div>
 
+                {/* Últim informe de l'operari */}
+                <div className="p-3 bg-neutral-100 rounded-xl border border-neutral-200 text-xs mb-6">
+                  <span className="font-bold text-neutral-700 block uppercase text-[10px] mb-1">Últim informe de l'operari (App Mòbil):</span>
+                  <p className="text-neutral-900 font-medium">{selectedItem.data.lastWorkerReport || 'Sense incidències reportades'}</p>
+                </div>
+
                 <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-3">
-                  <Wrench size={16} className="text-primary" /> Històric de Reparacions
+                  <Wrench size={16} className="text-primary" /> Històric de Reparacions i Avaries
                 </h4>
                 <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto text-xs">
                   <table className="w-full text-left">
@@ -1149,7 +1003,7 @@ export default function MagatzemDashboard() {
               </div>
             )}
 
-            {/* 4. FITXA COMPLETA PROVEÏDOR (AMB CERCA DE TOT L'HISTÒRIC I CARPETA DIGITAL) */}
+            {/* 4. FITXA COMPLETA PROVEÏDOR */}
             {selectedItem.type === 'proveidor' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -1188,14 +1042,12 @@ export default function MagatzemDashboard() {
                   </div>
                 </div>
 
-                {/* Filterable FULL Purchase History */}
                 <div className="space-y-3">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2">
                       <History size={16} className="text-primary" /> Històric de Compres i Factures ({selectedItem.data.supplierHistory?.length || 0})
                     </h4>
 
-                    {/* Modal Filter Input */}
                     <div className="relative w-full sm:w-56">
                       <input 
                         type="text" 
@@ -1322,7 +1174,7 @@ export default function MagatzemDashboard() {
             {activeTab === 'materials' && (
               <form onSubmit={handleAddMaterial} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Nom del Material</label>
+                  <label className="block text-xs font-semibold uppercase mb-1">Nom del Material</label>
                   <input type="text" required placeholder="Ex: Tub PE 25mm High-Density" value={newMat.name} onChange={(e) => setNewMat({ ...newMat, name: e.target.value })} className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -1360,7 +1212,7 @@ export default function MagatzemDashboard() {
               </form>
             )}
 
-            {/* FORM MANUAL: EINES */}
+            {/* FORM MANUAL: EINES (WITH RETURN CONDITION SELECTION) */}
             {activeTab === 'eines' && (
               <form onSubmit={handleAddEina} className="space-y-4">
                 <div>
@@ -1373,12 +1225,20 @@ export default function MagatzemDashboard() {
                     <input type="text" placeholder="15/06/2027" value={newEin.warrantyUntil} onChange={(e) => setNewEin({ ...newEin, warrantyUntil: e.target.value })} className="w-full p-3 border rounded-xl text-sm font-mono" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold uppercase mb-1">Proveïdor</label>
-                    <select value={newEin.supplier} onChange={(e) => setNewEin({ ...newEin, supplier: e.target.value })} className="w-full p-3 border rounded-xl text-sm bg-white">
-                      <option value="">Seleccionar Proveïdor...</option>
-                      {proveidors.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                    <label className="block text-xs font-semibold uppercase mb-1">Estat del Retorn Jornada</label>
+                    <select value={newEin.returnConditionStatus} onChange={(e) => setNewEin({ ...newEin, returnConditionStatus: e.target.value as any })} className="w-full p-3 border rounded-xl text-sm bg-white">
+                      <option value="OPERATIVA">🟢 Operativa / En perfecte estat</option>
+                      <option value="REPARACIO">🛠️ En Reparació / Avaria</option>
+                      <option value="PERDUDA">❌ PERDUDA / EXTRAVIADA</option>
                     </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1">Proveïdor</label>
+                  <select value={newEin.supplier} onChange={(e) => setNewEin({ ...newEin, supplier: e.target.value })} className="w-full p-3 border rounded-xl text-sm bg-white">
+                    <option value="">Seleccionar Proveïdor...</option>
+                    {proveidors.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  </select>
                 </div>
                 <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold mt-2">Guardar i Donar d'Alta Eina</button>
               </form>
