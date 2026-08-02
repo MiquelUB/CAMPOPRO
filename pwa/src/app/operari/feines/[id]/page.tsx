@@ -1,158 +1,107 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Camera, PenTool, Play, Square, Pause } from 'lucide-react';
-import CameraOverlay from '@/components/CameraOverlay';
-import SignaturePad from '@/components/SignaturePad';
-import { addToSyncQueue, saveFeinaOffline, getFeinaOffline } from '@/lib/idb';
+import Link from 'next/link';
 
-export default function OperariFeinaPage({ params }: { params: { id: string } }) {
-  const [status, setStatus] = useState<'pendent' | 'en_curs' | 'pausada' | 'finalitzada'>('pendent');
-  const [showCamera, setShowCamera] = useState(false);
-  const [showSignature, setShowSignature] = useState(false);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [signature, setSignature] = useState<string | null>(null);
-  
-  useEffect(() => {
-    // Load offline state if available
-    getFeinaOffline(params.id).then(feina => {
-      if (feina) {
-        setStatus(feina.status || 'pendent');
-        setPhotos(feina.photos || []);
-        setSignature(feina.signature || null);
-      }
-    });
-  }, [params.id]);
-
-  const updateState = async (newState: typeof status) => {
-    setStatus(newState);
-    
-    const feinaData = { id: params.id, status: newState, photos, signature };
-    await saveFeinaOffline(feinaData);
-
-    await addToSyncQueue({
-      url: `/api/v1/feines_operari/${params.id}/status`,
-      method: 'POST',
-      body: { status: newState },
-    });
-  };
-
-  const handlePhotoCaptured = async (file: File) => {
-    setShowCamera(false);
-    const photoUrl = URL.createObjectURL(file);
-    const newPhotos = [...photos, photoUrl];
-    setPhotos(newPhotos);
-    
-    await saveFeinaOffline({ id: params.id, status, photos: newPhotos, signature });
-
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    await addToSyncQueue({
-      url: `/api/v1/feines_operari/${params.id}/foto`,
-      method: 'POST',
-      body: formData, // FormData will be serialized or stored properly in IDB
-    });
-  };
-
-  const handleSignatureSaved = async (sigData: string) => {
-    setShowSignature(false);
-    setSignature(sigData);
-    
-    await saveFeinaOffline({ id: params.id, status, photos, signature: sigData });
-
-    await addToSyncQueue({
-      url: `/api/v1/feines_operari/${params.id}/signatura`,
-      method: 'POST',
-      body: { signature: sigData },
-    });
-  };
-
+export default function Page() {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col p-4 space-y-6">
-      <header className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-        <h1 className="text-3xl font-black text-gray-900">Feina #{params.id}</h1>
-        <p className="text-gray-500 mt-2 text-lg">Client: Finca Mestra</p>
-        <div className="mt-4 inline-block px-4 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">
-          Estat: {status.replace('_', ' ').toUpperCase()}
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 gap-4 flex-1">
-        {status === 'pendent' || status === 'pausada' ? (
-          <button 
-            onClick={() => updateState('en_curs')}
-            className="w-full bg-green-500 active:bg-green-600 text-white rounded-3xl p-8 flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95"
-          >
-            <Play size={64} className="mb-4" />
-            <span className="text-3xl font-black">INICIAR</span>
-          </button>
-        ) : status === 'en_curs' ? (
-          <>
-            <button 
-              onClick={() => updateState('pausada')}
-              className="w-full bg-yellow-500 active:bg-yellow-600 text-white rounded-3xl p-8 flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95"
-            >
-              <Pause size={64} className="mb-4" />
-              <span className="text-3xl font-black">PAUSAR</span>
-            </button>
-            <button 
-              onClick={() => updateState('finalitzada')}
-              className="w-full bg-red-500 active:bg-red-600 text-white rounded-3xl p-8 flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95"
-            >
-              <Square size={64} className="mb-4" />
-              <span className="text-3xl font-black">FINALITZAR</span>
-            </button>
-          </>
-        ) : (
-          <div className="bg-gray-200 p-8 rounded-3xl flex flex-col items-center justify-center text-gray-500">
-            <span className="text-2xl font-bold">FEINA COMPLETADA</span>
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <button 
-          onClick={() => setShowCamera(true)}
-          className="bg-white border-2 border-gray-300 rounded-2xl p-6 flex flex-col items-center justify-center text-gray-700 active:bg-gray-50"
-        >
-          <Camera size={40} className="mb-2" />
-          <span className="font-bold text-lg">FOTO</span>
-        </button>
-        <button 
-          onClick={() => setShowSignature(true)}
-          className="bg-white border-2 border-gray-300 rounded-2xl p-6 flex flex-col items-center justify-center text-gray-700 active:bg-gray-50"
-        >
-          <PenTool size={40} className="mb-2" />
-          <span className="font-bold text-lg">SIGNAR</span>
-        </button>
-      </div>
-
-      {photos.length > 0 && (
-        <div className="bg-white p-4 rounded-2xl">
-          <h3 className="font-bold mb-2">Fotos ({photos.length})</h3>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {photos.map((src, i) => (
-              <img key={i} src={src} className="h-20 w-20 object-cover rounded-lg" alt="Foto feina" />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {signature && (
-        <div className="bg-white p-4 rounded-2xl">
-          <h3 className="font-bold mb-2">Signatura</h3>
-          <img src={signature} className="h-24 bg-gray-50 border rounded-lg w-full object-contain" alt="Signatura" />
-        </div>
-      )}
-
-      {showCamera && (
-        <CameraOverlay onCapture={handlePhotoCaptured} onClose={() => setShowCamera(false)} />
-      )}
-
-      {showSignature && (
-        <SignaturePad onSave={handleSignatureSaved} onClose={() => setShowSignature(false)} />
-      )}
-    </div>
+    <>
+<header className="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div className="h-16 px-4 flex items-center justify-between"><div className="flex items-center gap-1"><button className="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary" onClick={() => { /* history.back() */ }}><span className="material-symbols-outlined">chevron_left</span></button><h1 className="font-headline-md text-headline-md text-primary">Detall De La Feina</h1></div><div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-secondary-container rounded-full animate-pulse"></div><img alt="Perfil" className="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtwAZlJ75l9Gw7pVmLavb2QKnvmYPQzuB7phJke9yAcUDJ0ztQ8WKH1aqTSsG9RjFbewqzbEh-lpqwTHesciQLh-qbsV4tYLsupEKFm7oOf0sL5pPPZZfit0r2O40scG79F3SCHYEILi2EYMC9D21dG8DnWYtR4tBbsR8N2U6Oy6eYrwYpqtfZnePxyU5FByZqiyvjMKkJtFc53nau3eo2EdKYZf_iDBhz7w5J3AxQQ7sEhi2PPI3N"/></div></div></header><main className="flex flex-col relative w-full pt-16 pb-safe bg-surface"><div className="flex flex-col w-full pb-32">
+{/* Map Preview Section */}
+<div className="relative w-full h-[180px] overflow-hidden">
+<div className="w-full h-full bg-surface-container-highest flex items-center justify-center" data-location="Carrer de la Marina, 200, Barcelona" style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu')` }}></div>
+<div className="absolute bottom-4 left-5 right-5 flex justify-between items-center">
+<div className="bg-surface/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md flex items-center gap-2">
+<span className="material-symbols-outlined text-primary text-[18px]">location_on</span>
+<span className="font-label-bold text-label-bold text-primary">Sector Eixample Nord</span>
+</div>
+<button className="w-12 h-12 bg-primary rounded-full shadow-lg flex items-center justify-center text-on-primary active:scale-95 transition-transform">
+<span className="material-symbols-outlined">directions</span>
+</button>
+</div>
+</div>
+{/* Job Header Info */}
+<div className="px-margin-mobile py-stack-md">
+<div className="flex items-center gap-2 mb-1">
+<span className="px-2 py-0.5 bg-secondary-container text-on-secondary-container font-label-bold text-[12px] rounded-full uppercase tracking-wider">Urgència Alta</span>
+<span className="text-outline text-label-bold">Dte: 14/03/24</span>
+</div>
+<h2 className="font-headline-lg text-headline-lg text-primary">Reparació Escomesa d'Aigua</h2>
+<p className="font-body-md text-body-md text-on-surface-variant mt-1">Intervenció a la xarxa de distribució secundària.</p>
+</div>
+{/* Instructions Card */}
+<div className="px-margin-mobile mb-stack-lg">
+<div className="bg-surface-container-low p-5 rounded-xl shadow-sm">
+<div className="flex items-center gap-3 mb-3 text-primary">
+<span className="material-symbols-outlined">engineering</span>
+<h3 className="font-label-bold text-label-bold uppercase tracking-tight">Instruccions de l'enginyer</h3>
+</div>
+<p className="font-body-md text-body-md text-on-surface leading-relaxed">
+                Cal localitzar la fuita exactament abans de picar. El paviment és hidràulic antic. Si us plau, feu fotos del procés d'obertura.
+            </p>
+</div>
+</div>
+{/* Layout Grid: Materials and Tools */}
+<div className="px-margin-mobile grid grid-cols-1 gap-stack-md mb-stack-lg">
+{/* Materials */}
+<div className="bg-surface-container-low p-5 rounded-xl shadow-sm">
+<div className="flex items-center justify-between mb-4">
+<div className="flex items-center gap-3 text-primary">
+<span className="material-symbols-outlined">inventory_2</span>
+<h3 className="font-label-bold text-label-bold uppercase tracking-tight">Material assignat</h3>
+</div>
+<span className="text-primary font-label-bold text-label-bold bg-primary-fixed px-2 py-0.5 rounded">2 ítems</span>
+</div>
+<ul className="space-y-3">
+<li className="flex items-center justify-between bg-surface-container-highest p-3 rounded-lg">
+<div className="flex flex-col">
+<span className="font-label-bold text-on-surface">Tub PE 25mm</span>
+<span className="text-[12px] text-on-surface-variant">Codi: MAT-0293</span>
+</div>
+<span className="font-headline-md text-headline-md text-primary">6m</span>
+</li>
+<li className="flex items-center justify-between bg-surface-container-highest p-3 rounded-lg">
+<div className="flex flex-col">
+<span className="font-label-bold text-on-surface">Vàlvula 1"</span>
+<span className="text-[12px] text-on-surface-variant">Inox reforçada</span>
+</div>
+<span className="font-headline-md text-headline-md text-primary">1u</span>
+</li>
+</ul>
+</div>
+{/* Tools */}
+<div className="bg-surface-container-low p-5 rounded-xl shadow-sm">
+<div className="flex items-center gap-3 mb-4 text-primary">
+<span className="material-symbols-outlined">handyman</span>
+<h3 className="font-label-bold text-label-bold uppercase tracking-tight">Eines necessàries</h3>
+</div>
+<div className="flex flex-wrap gap-2">
+<span className="bg-white px-3 py-2 rounded-lg text-body-md shadow-sm">Tallatubs radial</span>
+<span className="bg-white px-3 py-2 rounded-lg text-body-md shadow-sm">Llave Stillson</span>
+<span className="bg-white px-3 py-2 rounded-lg text-body-md shadow-sm">Detector de metalls</span>
+</div>
+</div>
+{/* Attachment */}
+<button className="flex items-center gap-4 bg-primary-container text-on-primary-container p-3 rounded-xl active:opacity-80 transition-opacity">
+<div className="w-16 h-16 rounded-lg overflow-hidden bg-white/20 shrink-0">
+<img className="w-full h-full object-cover" data-alt="Technical blueprint with detailed blue and white schematic drawings showing underground water pipes, valve placements, and architectural measurements of a city street layout." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKWndsRtzpf1OCPI-wCnYbSWbN0MUPFGXnHLQzjg8Rj5XCkpNTdHjWU2VvgxoGjiia3Ir8solkDwPni9mtQXpZu0ZQuGv1jEslYc4OtvZQ0NtlII-Tn5aSvkB_RLtCjQ-TCE4xGZ6zd5xTP3uDzAax5e4bhKD18mSfBF0TjpPxiof0ZjCeqDrqRo97_sRZ1MAzPcbrxMXKxR51ik8-KVb0mI3A5DrFGM-BnNZsP_673c62scm83lFL"/>
+</div>
+<div className="flex flex-col text-left">
+<span className="font-label-bold text-label-bold">Plànol adjunt</span>
+<span className="text-[12px] opacity-80">PLAN_ZONA_034_REV2.pdf (1.2MB)</span>
+</div>
+<span className="material-symbols-outlined ml-auto">open_in_new</span>
+</button>
+</div>
+{/* Sticky Bottom Action */}
+<div className="fixed bottom-0 inset-x-0 bg-surface/80 backdrop-blur-xl p-5 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40">
+<button className="w-full h-[64px] bg-[#1a8a3a] text-white rounded-2xl flex items-center justify-center gap-4 shadow-lg active:scale-[0.98] transition-all relative overflow-hidden group" id="start-job-btn">
+<div className="absolute inset-0 bg-white/10 translate-y-full group-active:translate-y-0 transition-transform"></div>
+<span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
+<span className="font-headline-md text-headline-md uppercase tracking-wide">Començar feina</span>
+</button>
+</div>
+</div>
+</main>
+    </>
   );
 }
