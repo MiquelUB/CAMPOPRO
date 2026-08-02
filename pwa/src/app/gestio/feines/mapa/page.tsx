@@ -2,20 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import DynamicMap from '@/components/map/DynamicMap';
 
 export default function Page() {
   const [filter, setFilter] = useState<'TOTS' | 'ACTIUS' | 'INCIDÈNCIES'>('TOTS');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Selected Crew State (for highlighting on map)
+  // Selected Crew State (Triggers Leaflet Map flyTo)
   const [selectedCrewId, setSelectedCrewId] = useState<string | null>('js');
 
-  // Live Mobile GPS Geolocation State
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
-  const [gpsError, setGpsError] = useState<string | null>(null);
+  // Live Mobile GPS State
+  const [userGps, setUserGps] = useState<{ lat: number; lng: number } | null>(null);
   const [isGpsActive, setIsGpsActive] = useState(false);
 
-  // Active Crews Dataset with Map Coordinates (%)
+  // Active Crews Dataset with Real GPS Coordinates
   const crews = [
     {
       id: 'js',
@@ -25,12 +25,9 @@ export default function Page() {
       status: 'TREBALLANT',
       vehicle: 'Tractor John Deere 6R',
       time: '2 min',
-      top: '32%',
-      left: '46%',
       lat: 41.6521,
       lng: 1.8322,
-      color: 'bg-green-600',
-      borderColor: 'border-green-600',
+      colorHex: '#16a34a',
       badgeColor: 'bg-green-100 text-green-800'
     },
     {
@@ -41,12 +38,9 @@ export default function Page() {
       status: 'EN TRÀNSIT',
       vehicle: 'Ford Transit B-1234-CD',
       time: 'Ara mateix',
-      top: '58%',
-      left: '28%',
       lat: 41.6710,
       lng: 1.8150,
-      color: 'bg-blue-600',
-      borderColor: 'border-blue-600',
+      colorHex: '#2563eb',
       badgeColor: 'bg-blue-100 text-blue-800'
     },
     {
@@ -57,12 +51,9 @@ export default function Page() {
       status: 'INCIDÈNCIES',
       vehicle: 'Toyota Hilux 3341-KLM',
       time: 'ALERTA',
-      top: '42%',
-      left: '74%',
       lat: 41.6400,
       lng: 1.8600,
-      color: 'bg-red-600',
-      borderColor: 'border-red-600',
+      colorHex: '#dc2626',
       badgeColor: 'bg-red-100 text-red-800'
     },
     {
@@ -73,12 +64,9 @@ export default function Page() {
       status: 'INACTIU',
       vehicle: 'Furgoneta Magatzem 02',
       time: '15 min',
-      top: '75%',
-      left: '52%',
       lat: 41.6300,
       lng: 1.8400,
-      color: 'bg-gray-500',
-      borderColor: 'border-gray-500',
+      colorHex: '#6b7280',
       badgeColor: 'bg-gray-100 text-gray-800'
     }
   ];
@@ -88,16 +76,13 @@ export default function Page() {
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
-          setUserLocation({
+          setUserGps({
             lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: Math.round(position.coords.accuracy)
+            lng: position.coords.longitude
           });
           setIsGpsActive(true);
-          setGpsError(null);
         },
-        (error) => {
-          setGpsError('Permís de GPS denegat o no disponible.');
+        () => {
           setIsGpsActive(false);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -116,10 +101,10 @@ export default function Page() {
   const selectedCrew = crews.find((c) => c.id === selectedCrewId) || crews[0];
 
   const handleCenterOnUserGps = () => {
-    if (userLocation) {
-      alert(`📍 Centrant mapa al teu GPS en temps real: ${userLocation.lat.toFixed(4)}° N, ${userLocation.lng.toFixed(4)}° E (Precisió: ${userLocation.accuracy}m)`);
+    if (userGps) {
+      alert(`📍 Centrant el mapa interactiu al teu GPS mòbil: ${userGps.lat.toFixed(4)}° N, ${userGps.lng.toFixed(4)}° E`);
     } else {
-      alert("Activant la lectura de GPS del mòbil...");
+      alert("Obtinint la ubicació del GPS del mòbil...");
     }
   };
 
@@ -130,7 +115,7 @@ export default function Page() {
         <span>/</span>
         <Link href="/gestio" className="hover:text-primary cursor-pointer">Dashboard</Link>
         <span>/</span>
-        <span className="text-primary font-body-strong">Mapa en Temps Real</span>
+        <span className="text-primary font-body-strong">Mapa en Temps Real (Leaflet)</span>
       </nav>
 
       <div className="flex flex-col w-full gap-lg">
@@ -160,9 +145,9 @@ export default function Page() {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold">
               <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
               <span className="material-symbols-outlined text-[16px]">my_location</span>
-              {isGpsActive && userLocation 
-                ? `GPS Mòbil Actiu (${userLocation.lat.toFixed(3)}°, ${userLocation.lng.toFixed(3)}°)`
-                : 'GPS Mòbil: Cercant senyal...'}
+              {isGpsActive && userGps 
+                ? `GPS Mòbil: ${userGps.lat.toFixed(3)}°, ${userGps.lng.toFixed(3)}°`
+                : 'GPS Mòbil: Actiu'}
             </div>
           </div>
 
@@ -170,7 +155,7 @@ export default function Page() {
             <div className="relative flex-1 md:flex-initial">
               <input 
                 type="text" 
-                placeholder="Cercar operari, vehicle o finca..."
+                placeholder="Cercar operari, vehicle..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full md:w-64 bg-surface-container-low border border-outline-variant rounded-xl pl-10 pr-md py-2.5 text-sm focus:outline-none focus:border-primary transition-all" 
@@ -188,7 +173,7 @@ export default function Page() {
             <div className="p-md border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low">
               <div>
                 <h3 className="font-section-title text-sm uppercase tracking-wider text-primary">Equips Actius</h3>
-                <p className="text-[11px] text-on-surface-variant">Prem un equip per destacar-lo al mapa</p>
+                <p className="text-[11px] text-on-surface-variant">Clica un equip per centrar el mapa al seu GPS</p>
               </div>
               <span className="bg-primary text-white px-2.5 py-1 rounded-full text-xs font-bold">
                 {filteredCrews.length} Actius
@@ -208,7 +193,10 @@ export default function Page() {
                         : 'hover:bg-surface-container-low border-l-4 border-transparent'
                     }`}
                   >
-                    <div className={`w-11 h-11 rounded-full ${crew.color} text-white flex items-center justify-center font-bold text-sm shadow-md flex-shrink-0`}>
+                    <div 
+                      style={{ backgroundColor: crew.colorHex }}
+                      className="w-11 h-11 rounded-full text-white flex items-center justify-center font-bold text-sm shadow-md flex-shrink-0"
+                    >
                       {crew.initials}
                     </div>
 
@@ -226,7 +214,7 @@ export default function Page() {
                         </span>
                         {isSelected && (
                           <span className="text-xs text-primary font-bold flex items-center gap-1">
-                            Destacat al mapa <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                            Centrat al mapa <span className="material-symbols-outlined text-[14px]">my_location</span>
                           </span>
                         )}
                       </div>
@@ -248,129 +236,48 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Map Viewport Area */}
-          <div className="flex-1 relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30 group">
-            
-            {/* Map Canvas Background */}
-            <div className="w-full h-full bg-cover bg-center grayscale-[0.15] brightness-95 transition-all" style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlm9jUfgnuweYEJ-Ww6p0-5mXPnyp0zXCLllonK5Qegx18rx94wdqGJI_ntB1_e0udMbidzpT5RLBQ1z_UNctJvsP90nPLwbZo1iOpplpn_jYp2zck0S52xgvq_XcN0tp_wMezFkUKREo_hgnXMFkdW_kpfhKAymAZfc0KjY44ZlbOD8PpiuEn46P61w00hOIcU2prSwejTH9B8GYZqpwCSRNyqdKobNk0lNzQbt2yt5kGDTrR6t_U')` }}>
-              <div className="absolute inset-0 bg-primary/5 pointer-events-none"></div>
+          {/* Interactive Leaflet Map Container */}
+          <div className="flex-1 relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30">
+            <DynamicMap
+              locations={filteredCrews}
+              selectedId={selectedCrewId}
+              onSelectLocation={(id) => setSelectedCrewId(id)}
+              userGps={userGps}
+              center={[selectedCrew.lat, selectedCrew.lng]}
+              zoom={14}
+            />
 
-              {/* Render Map Markers for all Crews */}
-              {filteredCrews.map((crew) => {
-                const isSelected = selectedCrewId === crew.id;
-                return (
-                  <div 
-                    key={crew.id}
-                    onClick={() => setSelectedCrewId(crew.id)}
-                    style={{ top: crew.top, left: crew.left }}
-                    className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer transition-all duration-500 z-20 ${
-                      isSelected ? 'scale-125 z-30' : 'hover:scale-110 opacity-85'
-                    }`}
-                  >
-                    {/* Active Crew Header Label */}
-                    <div className={`px-2.5 py-1 rounded-xl shadow-lg mb-1 flex items-center gap-1.5 transition-all ${
-                      isSelected ? 'bg-primary text-white font-bold ring-4 ring-primary/20 scale-105' : 'bg-white text-primary'
-                    }`}>
-                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                      <span className="text-[11px] whitespace-nowrap">{crew.initials} • {crew.name.split(' ')[0]}</span>
-                    </div>
-
-                    {/* Circular Marker Pin */}
-                    <div className={`w-11 h-11 rounded-full ${crew.color} flex items-center justify-center border-4 border-white shadow-2xl text-white font-bold text-sm relative`}>
-                      {crew.initials}
-                      {isSelected && (
-                        <div className="absolute inset-0 rounded-full border-4 border-secondary-container animate-ping"></div>
-                      )}
-                    </div>
-                    <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-white -mt-1 shadow-md"></div>
-                  </div>
-                );
-              })}
-
-              {/* Live Mobile GPS Position Marker (Blue Pulse) */}
-              {userLocation && (
-                <div 
-                  style={{ top: '50%', left: '50%' }}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer z-30"
-                  onClick={handleCenterOnUserGps}
-                >
-                  <div className="bg-blue-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold shadow-lg mb-1 flex items-center gap-1">
-                    <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
-                    📍 El Teu GPS (Mòbil)
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center border-4 border-white shadow-2xl text-white relative">
-                    <span className="material-symbols-outlined text-[20px]">my_location</span>
-                    <div className="absolute -inset-2 rounded-full border-2 border-blue-400 animate-ping"></div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Floating Info Popup Card for Selected Crew */}
+            {/* Floating Info Card for Currently Selected Crew */}
             {selectedCrew && (
-              <div className="absolute top-md left-md bg-white/95 backdrop-blur-md p-md rounded-2xl shadow-2xl border border-outline-variant/30 max-w-xs z-30 animate-in fade-in duration-300">
-                <div className="flex items-center justify-between mb-2">
+              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-outline-variant/30 max-w-xs z-[400]">
+                <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1">
                     <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                    Equip Destacat
+                    Equip Seleccionat
                   </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedCrew.badgeColor}`}>
                     {selectedCrew.status}
                   </span>
                 </div>
-                <h4 className="font-headline-md text-base text-primary">{selectedCrew.name}</h4>
+                <h4 className="font-headline-md text-base text-primary font-bold">{selectedCrew.name}</h4>
                 <p className="text-xs text-on-surface-variant font-medium mt-0.5">{selectedCrew.task}</p>
                 <p className="text-[11px] text-outline mt-1">{selectedCrew.vehicle}</p>
                 <div className="mt-3 pt-2 border-t border-outline-variant/20 flex justify-between items-center text-[11px] text-on-surface-variant">
-                  <span>GPS: {selectedCrew.lat}° N, {selectedCrew.lng}° E</span>
-                  <span className="text-primary font-bold">Actiu</span>
+                  <span>GPS: {selectedCrew.lat.toFixed(4)}° N, {selectedCrew.lng.toFixed(4)}° E</span>
+                  <span className="text-primary font-bold">Temps real ✓</span>
                 </div>
               </div>
             )}
 
-            {/* Map Controls Overlay (Zoom, Layers, My Location) */}
-            <div className="absolute top-md right-md flex flex-col gap-2 z-30">
-              <button 
-                onClick={handleCenterOnUserGps}
-                className="w-11 h-11 bg-white rounded-xl shadow-lg flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
-                title="Centrar al Teu GPS en Temps Real"
-              >
-                <span className="material-symbols-outlined text-[22px]">my_location</span>
-              </button>
-
-              <button className="w-11 h-11 bg-white rounded-xl shadow-lg flex items-center justify-center text-on-surface hover:text-primary transition-colors">
-                <span className="material-symbols-outlined text-[22px]">add</span>
-              </button>
-              <button className="w-11 h-11 bg-white rounded-xl shadow-lg flex items-center justify-center text-on-surface hover:text-primary transition-colors">
-                <span className="material-symbols-outlined text-[22px]">remove</span>
-              </button>
-              <button className="w-11 h-11 bg-white rounded-xl shadow-lg flex items-center justify-center text-on-surface hover:text-primary transition-colors">
-                <span className="material-symbols-outlined text-[22px]">layers</span>
-              </button>
-            </div>
-
-            {/* Map Legend */}
-            <div className="absolute bottom-md left-md bg-white/90 backdrop-blur-md p-md rounded-xl shadow-xl border border-outline-variant/30 min-w-[180px] z-30">
-              <p className="font-label-caps text-xs text-outline mb-2">LLEGENDA D'ESTATS</p>
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-green-600"></span>
-                  <span className="text-on-surface font-medium">Treballant</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-blue-600"></span>
-                  <span className="text-on-surface font-medium">En trànsit</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-600"></span>
-                  <span className="text-on-surface font-bold text-red-600">Incidència</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-blue-400 animate-ping"></span>
-                  <span className="text-on-surface font-bold text-blue-600">El teu GPS mòbil</span>
-                </div>
-              </div>
-            </div>
+            {/* GPS Mobile Location Trigger Button */}
+            <button
+              onClick={handleCenterOnUserGps}
+              className="absolute top-4 right-4 bg-white text-primary p-3 rounded-xl shadow-2xl z-[400] hover:bg-primary hover:text-white transition-all active:scale-95 flex items-center gap-2 text-xs font-bold"
+              title="Centrar al Teu GPS Mòbil"
+            >
+              <span className="material-symbols-outlined text-[20px]">my_location</span>
+              Centrar al Teu GPS
+            </button>
           </div>
         </div>
 
