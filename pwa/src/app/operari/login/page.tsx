@@ -1,8 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function Page() {
+  const router = useRouter();
+  const [pin, setPin] = useState('');
+
+  const pressKey = (key: string) => {
+    if (pin.length < 4) {
+      const newPin = pin + key;
+      setPin(newPin);
+      if (newPin.length === 4) {
+        setTimeout(() => router.push('/operari/feines'), 200);
+      }
+    }
+  };
+
+  const clearPin = () => setPin('');
+
   return (
     <>
 <main className="flex flex-col relative w-full max-w-md"><div className="flex flex-col w-full min-h-[100dvh] bg-gradient-to-br from-[#1E3A5F] to-[#0F172A] overflow-hidden">
@@ -21,52 +38,52 @@ export default function Page() {
 </div>
 {/* PIN Display */}
 <div className="flex justify-center gap-6 mb-12">
-<div className="w-4 h-4 rounded-full border-2 border-primary-fixed transition-all duration-200" id="dot-1"></div>
-<div className="w-4 h-4 rounded-full border-2 border-primary-fixed transition-all duration-200" id="dot-2"></div>
-<div className="w-4 h-4 rounded-full border-2 border-primary-fixed transition-all duration-200" id="dot-3"></div>
-<div className="w-4 h-4 rounded-full border-2 border-primary-fixed transition-all duration-200" id="dot-4"></div>
+<div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${pin.length >= 1 ? 'bg-primary border-primary' : 'border-primary-fixed'}`} id="dot-1"></div>
+<div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${pin.length >= 2 ? 'bg-primary border-primary' : 'border-primary-fixed'}`} id="dot-2"></div>
+<div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${pin.length >= 3 ? 'bg-primary border-primary' : 'border-primary-fixed'}`} id="dot-3"></div>
+<div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${pin.length >= 4 ? 'bg-primary border-primary' : 'border-primary-fixed'}`} id="dot-4"></div>
 </div>
 {/* Keypad Container */}
 <div className="px-margin-mobile pb-12 mt-auto">
 <div className="grid grid-cols-3 gap-y-6 gap-x-4 justify-items-center max-w-[320px] mx-auto">
 {/* Row 1 */}
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('1') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('1')}>
 <span className="font-headline-md text-headline-md text-white">1</span>
 </button>
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('2') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('2')}>
 <span className="font-headline-md text-headline-md text-white">2</span>
 </button>
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('3') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('3')}>
 <span className="font-headline-md text-headline-md text-white">3</span>
 </button>
 {/* Row 2 */}
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('4') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('4')}>
 <span className="font-headline-md text-headline-md text-white">4</span>
 </button>
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('5') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('5')}>
 <span className="font-headline-md text-headline-md text-white">5</span>
 </button>
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('6') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('6')}>
 <span className="font-headline-md text-headline-md text-white">6</span>
 </button>
 {/* Row 3 */}
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('7') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('7')}>
 <span className="font-headline-md text-headline-md text-white">7</span>
 </button>
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('8') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('8')}>
 <span className="font-headline-md text-headline-md text-white">8</span>
 </button>
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('9') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('9')}>
 <span className="font-headline-md text-headline-md text-white">9</span>
 </button>
 {/* Row 4 */}
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center text-primary-fixed-dim active:scale-90 transition-transform" onClick={() => { /* biometric() */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center text-primary-fixed-dim active:scale-90 transition-transform" onClick={() => { router.push('/operari/feines'); }}>
 <span className="material-symbols-outlined text-[32px]">fingerprint</span>
 </button>
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => { /* pressKey('0') */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white/10 active:bg-white/30 transition-colors" onClick={() => pressKey('0')}>
 <span className="font-headline-md text-headline-md text-white">0</span>
 </button>
-<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center text-white/60 active:text-white transition-colors" onClick={() => { /* clearPin() */ }}>
+<button className="w-[72px] h-[72px] rounded-full flex items-center justify-center text-white/60 active:text-white transition-colors" onClick={clearPin}>
 <span className="material-symbols-outlined text-[32px]">backspace</span>
 </button>
 </div>

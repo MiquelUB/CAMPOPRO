@@ -32,7 +32,7 @@ export default function Page() {
         </p>
 </div>
 {/* Login Form */}
-<form className="space-y-lg" id="loginForm">
+<form className="space-y-lg" id="loginForm" onSubmit={(e) => { e.preventDefault(); router.push('/gestio'); }}>
 {/* Field Group: Credentials */}
 <div className="space-y-md">
 <div className="group">
