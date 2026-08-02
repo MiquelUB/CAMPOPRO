@@ -7,33 +7,14 @@ export default function Page() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-
-  const handleOtpChange = (value: string, index: number) => {
-    if (value.length > 1) value = value[0];
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
-  };
+  const [rememberMe, setRememberMe] = useState(true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
       router.push('/gestio');
-    }, 1000);
+    }, 800);
   };
 
   return (
@@ -47,6 +28,7 @@ export default function Page() {
             {/* Subtle Grid Overlay */}
             <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
           </div>
+
           {/* Login Container */}
           <div className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-md">
             {/* Login Card */}
@@ -60,9 +42,10 @@ export default function Page() {
                   Accés Gestió CampoPro
                 </h1>
                 <p className="font-body-base text-body-base text-on-surface-variant mt-xs text-center">
-                  Introduïu les vostres credencials per continuar
+                  Introduïu el vostre correu i contrasenya per accedir
                 </p>
               </div>
+
               {/* Login Form */}
               <form className="space-y-lg" id="loginForm" onSubmit={handleSubmit}>
                 {/* Field Group: Credentials */}
@@ -71,44 +54,61 @@ export default function Page() {
                     <label className="block font-label-caps text-label-caps text-outline mb-xs uppercase tracking-widest">Correu Electrònic</label>
                     <div className="relative">
                       <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">mail</span>
-                      <input className="w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg font-body-base text-body-base focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all" defaultValue="nom@campopro.cat" placeholder="nom@campopro.cat" required type="email" />
+                      <input 
+                        className="w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg font-body-base text-body-base focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all" 
+                        defaultValue="enginyer@campopro.cat" 
+                        placeholder="enginyer@campopro.cat" 
+                        required 
+                        type="email" 
+                      />
                     </div>
                   </div>
+
                   <div className="group">
                     <label className="block font-label-caps text-label-caps text-outline mb-xs uppercase tracking-widest">Contrasenya</label>
                     <div className="relative">
                       <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">lock</span>
-                      <input className="w-full pl-10 pr-12 py-3 bg-surface-container-low border border-outline-variant rounded-lg font-body-base text-body-base focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all" defaultValue="password123" id="passwordInput" placeholder="••••••••" required type={showPassword ? "text" : "password"} />
-                      <button className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors" onClick={() => setShowPassword(!showPassword)} type="button">
+                      <input 
+                        className="w-full pl-10 pr-12 py-3 bg-surface-container-low border border-outline-variant rounded-lg font-body-base text-body-base focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all" 
+                        defaultValue="password123" 
+                        id="passwordInput" 
+                        placeholder="••••••••" 
+                        required 
+                        type={showPassword ? "text" : "password"} 
+                      />
+                      <button 
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors" 
+                        onClick={() => setShowPassword(!showPassword)} 
+                        type="button"
+                      >
                         <span className="material-symbols-outlined text-[20px]">{showPassword ? "visibility_off" : "visibility"}</span>
                       </button>
                     </div>
                   </div>
-                </div>
-                {/* Field Group: 2FA */}
-                <div className="pt-sm border-t border-surface-container-highest">
-                  <div className="flex justify-between items-center mb-sm">
-                    <label className="font-label-caps text-label-caps text-outline uppercase tracking-widest">Codi 2FA (Sis dígits)</label>
-                    <span className="material-symbols-outlined text-secondary text-[18px]" title="Seguretat Requerida">verified_user</span>
-                  </div>
-                  <div className="flex justify-between gap-2" id="otp-container">
-                    {otp.map((digit, idx) => (
-                      <input
-                        key={idx}
-                        id={`otp-${idx}`}
-                        className="otp-input w-12 h-14 text-center text-display-lg font-display-lg bg-surface-container border border-outline-variant rounded-lg focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all"
-                        maxLength={1}
-                        type="text"
-                        value={digit}
-                        onChange={(e) => handleOtpChange(e.target.value, idx)}
-                        onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+
+                  <div className="flex items-center justify-between pt-xs">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={rememberMe} 
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-4 h-4 text-primary rounded border-outline-variant focus:ring-primary" 
                       />
-                    ))}
+                      <span className="text-xs text-on-surface-variant font-body-base">Recorda la meva sessió</span>
+                    </label>
+                    <a className="text-xs text-primary hover:underline font-body-strong" href="#">
+                      Has oblidat la contrasenya?
+                    </a>
                   </div>
                 </div>
+
                 {/* Actions */}
                 <div className="space-y-md pt-sm">
-                  <button className="w-full bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-white py-4 rounded-lg font-body-strong text-body-strong shadow-lg shadow-secondary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 group" type="submit" disabled={loading}>
+                  <button 
+                    className="w-full bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-white py-4 rounded-lg font-body-strong text-body-strong shadow-lg shadow-secondary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 group" 
+                    type="submit" 
+                    disabled={loading}
+                  >
                     {loading ? (
                       <>
                         <span className="material-symbols-outlined animate-spin">sync</span> Carregant...
@@ -120,14 +120,10 @@ export default function Page() {
                       </>
                     )}
                   </button>
-                  <div className="text-center">
-                    <a className="font-body-base text-body-base text-primary hover:text-secondary-container transition-colors underline-offset-4 hover:underline decoration-secondary-container/30" href="#">
-                      Has oblidat la contrasenya?
-                    </a>
-                  </div>
                 </div>
               </form>
             </div>
+
             {/* Security Footer */}
             <div className="mt-xl flex flex-col items-center gap-2 opacity-80">
               <div className="flex items-center gap-sm bg-on-primary-fixed/30 backdrop-blur-md px-md py-sm rounded-full border border-white/5 shadow-sm">
@@ -135,7 +131,7 @@ export default function Page() {
                 <span className="font-label-caps text-label-caps text-white uppercase tracking-widest">Plataforma segura</span>
                 <span className="w-1 h-1 rounded-full bg-white/30"></span>
                 <span className="font-label-caps text-label-caps text-white uppercase tracking-widest flex items-center gap-1">
-                  Dades a UE <span class="text-[14px] leading-none">🇪🇺</span>
+                  Dades a UE 🇪🇺
                 </span>
               </div>
               <p className="font-label-caps text-[10px] text-white/50 uppercase tracking-[0.2em] mt-xs">CampoPro ERP v4.2.0 • Field Service Management</p>
