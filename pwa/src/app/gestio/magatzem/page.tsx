@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus } from 'lucide-react';
+import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 
 export default function MagatzemDashboard() {
   const [activeTab, setActiveTab] = useState<'materials' | 'eines' | 'vehicles' | 'proveidors'>('materials');
@@ -17,22 +17,31 @@ export default function MagatzemDashboard() {
   const [aiInvoiceFile, setAiInvoiceFile] = useState<File | null>(null);
   const [aiAuditResult, setAiAuditResult] = useState<any | null>(null);
 
-  // Selected Detail Modal State (For full transparent data access across all tabs)
+  // Supplier Purchase History Search Term Filter inside Modal
+  const [supplierHistorySearch, setSupplierHistorySearch] = useState('');
+
+  // Selected Detail Modal State
   const [selectedItem, setSelectedItem] = useState<{ type: 'material' | 'eina' | 'vehicle' | 'proveidor'; data: any } | null>(null);
 
-  // Database 1: Materials
+  // Database 1: Materials (with daily worker checkout & return tracking)
   const [materials, setMaterials] = useState([
     { 
       id: 'm1', 
       code: 'MAT-001', 
       name: 'Tub PE 25mm High-Density', 
-      stock: 120, 
+      stockTotal: 150, 
+      stockCheckedOut: 30, // Taken by workers today
+      stock: 120, // Real available in warehouse
       minStock: 20, 
       unit: 'm', 
       location: 'Prestatgeria A-1',
       supplier: 'AgroSubministres Ponent SL',
       unitPrice: 4.50,
       lastPurchaseDate: '12/04/2026',
+      workerMovementHistory: [
+        { id: 'wm1', date: '02/08/2026 07:30', worker: 'Jordi Soler', action: 'SUBTRACTION', qty: '30m', status: 'EN_US_JORNADA' },
+        { id: 'wm2', date: '01/08/2026 18:00', worker: 'Marc Andreu', action: 'RETURN', qty: '10m', status: 'RETORNAT_OK' }
+      ],
       purchaseHistory: [
         { id: 'h1', date: '12/04/2026', qty: '100m', price: '450,00 €', supplier: 'AgroSubministres Ponent SL', buyer: 'Marc (Enginyer)' },
         { id: 'h2', date: '02/02/2026', qty: '50m', price: '225,00 €', supplier: 'AgroSubministres Ponent SL', buyer: 'Marc (Enginyer)' }
@@ -42,6 +51,8 @@ export default function MagatzemDashboard() {
       id: 'm2', 
       code: 'MAT-002', 
       name: 'Vàlvula d\'Esfera 1" Inox', 
+      stockTotal: 6,
+      stockCheckedOut: 2,
       stock: 4, 
       minStock: 10, 
       unit: 'u', 
@@ -49,6 +60,9 @@ export default function MagatzemDashboard() {
       supplier: 'RiegoRegen Cat',
       unitPrice: 18.20,
       lastPurchaseDate: '20/03/2026',
+      workerMovementHistory: [
+        { id: 'wm3', date: '02/08/2026 08:00', worker: 'Pau Ribas', action: 'SUBTRACTION', qty: '2u', status: 'EN_US_JORNADA' }
+      ],
       purchaseHistory: [
         { id: 'h4', date: '20/03/2026', qty: '10u', price: '182,00 €', supplier: 'RiegoRegen Cat', buyer: 'Marc (Enginyer)' }
       ]
@@ -57,6 +71,8 @@ export default function MagatzemDashboard() {
       id: 'm3', 
       code: 'MAT-003', 
       name: 'Cinta de Teflon Professional', 
+      stockTotal: 35,
+      stockCheckedOut: 0,
       stock: 35, 
       minStock: 5, 
       unit: 'u', 
@@ -64,6 +80,7 @@ export default function MagatzemDashboard() {
       supplier: 'Subministraments Industrials Manresa',
       unitPrice: 1.20,
       lastPurchaseDate: '05/05/2026',
+      workerMovementHistory: [],
       purchaseHistory: [
         { id: 'h6', date: '05/05/2026', qty: '40u', price: '48,00 €', supplier: 'Subministraments Industrials Manresa', buyer: 'Marc (Enginyer)' }
       ]
@@ -72,6 +89,8 @@ export default function MagatzemDashboard() {
       id: 'm4', 
       code: 'MAT-004', 
       name: 'Adobat Foliar Nitrogenat 25kg', 
+      stockTotal: 2,
+      stockCheckedOut: 0,
       stock: 2, 
       minStock: 15, 
       unit: 'sacs', 
@@ -79,13 +98,14 @@ export default function MagatzemDashboard() {
       supplier: 'Fertilitzants del Segre SA',
       unitPrice: 32.50,
       lastPurchaseDate: '18/02/2026',
+      workerMovementHistory: [],
       purchaseHistory: [
         { id: 'h7', date: '18/02/2026', qty: '20 sacs', price: '650,00 €', supplier: 'Fertilitzants del Segre SA', buyer: 'Miquel Riera' }
       ]
     },
   ]);
 
-  // Database 2: Eines
+  // Database 2: Eines (DD/MM/YYYY date format, linked supplier, end of day return status)
   const [eines, setEines] = useState([
     { 
       id: 'e1', 
@@ -96,7 +116,9 @@ export default function MagatzemDashboard() {
       status: 'BO', 
       assignedTo: 'Jordi Soler', 
       location: 'Furgoneta 01',
-      warrantyUntil: '2027-06-15',
+      returnedAtEndOfDay: false, // In worker vehicle vs returned to warehouse
+      returnStatusText: 'A la Furgoneta 01 (En ús per Jordi Soler)',
+      warrantyUntil: '15/06/2027', // Formatted DD/MM/YYYY
       supplier: 'Subministraments Industrials Manresa',
       repairHistory: [
         { id: 'r1', date: '15/01/2026', reason: 'Canvi d\'escobetes i greixatge', mechanic: 'Taller Oficial Bosch Manresa', cost: '35,00 €', status: 'COMPLETAT' }
@@ -111,7 +133,9 @@ export default function MagatzemDashboard() {
       status: 'AVARIA', 
       assignedTo: 'Magatzem Central', 
       location: 'Taller Reparació',
-      warrantyUntil: '2025-10-10',
+      returnedAtEndOfDay: true,
+      returnStatusText: 'Retornat al Magatzem Central (En taller)',
+      warrantyUntil: '10/10/2025',
       supplier: 'AgroSubministres Ponent SL',
       repairHistory: [
         { id: 'r2', date: '28/04/2026', reason: 'Substitució de rodaments i cable tallat', mechanic: 'Taller Central CampoPro', cost: '62,00 €', status: 'EN_CURS' }
@@ -124,9 +148,11 @@ export default function MagatzemDashboard() {
       brand: 'Palmera', 
       serial: 'PAL-009', 
       status: 'BO', 
-      assignedTo: 'Marc Andreu', 
-      location: 'Furgoneta 02',
-      warrantyUntil: 'Garantia de per vida',
+      assignedTo: 'Magatzem Central', 
+      location: 'Magatzem Central',
+      returnedAtEndOfDay: true,
+      returnStatusText: 'Retornat al Magatzem Central (Disponible)',
+      warrantyUntil: '01/01/2099',
       supplier: 'Subministraments Industrials Manresa',
       repairHistory: []
     },
@@ -141,18 +167,17 @@ export default function MagatzemDashboard() {
       type: 'Furgoneta', 
       unitType: 'Km', 
       counterValue: 124500, 
-      itvDate: '2026-11-15', 
+      itvDate: '15/11/2026', 
       insuranceCompany: 'Mapfre Assegurances',
       insurancePolicy: 'POL-9988112-F',
-      insuranceDate: '2026-09-01',
-      lastOilChangeDate: '2026-03-10',
+      insuranceDate: '01/09/2026',
+      lastOilChangeDate: '10/03/2026',
       lastOilChangeCounter: 120000,
       mechanicName: 'Taller Mecànic Pons & Fills',
       mechanicContact: '938 11 22 33 (Pere Pons)',
       status: 'OK',
       maintenanceHistory: [
-        { id: 'vh1', date: '10/03/2026', counter: '120.000 Km', service: 'Canvi d\'oli 5W30, filtre d\'oli i filtre d\'aire', mechanic: 'Taller Mecànic Pons & Fills', cost: '185,00 €' },
-        { id: 'vh2', date: '14/11/2025', counter: '105.000 Km', service: 'Substitució pastilles de fre davanteres', mechanic: 'Taller Mecànic Pons & Fills', cost: '140,00 €' }
+        { id: 'vh1', date: '10/03/2026', counter: '120.000 Km', service: 'Canvi d\'oli 5W30, filtre d\'oli i filtre d\'aire', mechanic: 'Taller Mecànic Pons & Fills', cost: '185,00 €' }
       ]
     },
     { 
@@ -162,11 +187,11 @@ export default function MagatzemDashboard() {
       type: 'Tractor', 
       unitType: 'Hores', 
       counterValue: 3420, 
-      itvDate: '2026-08-10', 
+      itvDate: '10/08/2026', 
       insuranceCompany: 'Catalana Occident',
       insurancePolicy: 'POL-44102-TR',
-      insuranceDate: '2026-12-20',
-      lastOilChangeDate: '2026-01-20',
+      insuranceDate: '20/12/2026',
+      lastOilChangeDate: '20/01/2026',
       lastOilChangeCounter: 3200,
       mechanicName: 'AgroReparacions del Segre',
       mechanicContact: '973 44 55 66 (Joan)',
@@ -175,29 +200,9 @@ export default function MagatzemDashboard() {
         { id: 'vh3', date: '20/01/2026', counter: '3.200 Hores', service: 'Revisió 500h: Oli de motor, hidràulic i filtres', mechanic: 'AgroReparacions del Segre', cost: '420,00 €' }
       ]
     },
-    { 
-      id: 'v3', 
-      plate: '3341-KLM', 
-      name: 'Toyota Hilux 4x4', 
-      type: 'Pickup 4x4', 
-      unitType: 'Km', 
-      counterValue: 88900, 
-      itvDate: '2027-02-01', 
-      insuranceCompany: 'AXA Assegurances',
-      insurancePolicy: 'POL-77112-PX',
-      insuranceDate: '2026-10-15',
-      lastOilChangeDate: '2025-12-05',
-      lastOilChangeCounter: 80000,
-      mechanicName: 'Taller Mecànic Pons & Fills',
-      mechanicContact: '938 11 22 33 (Pere Pons)',
-      status: 'OK',
-      maintenanceHistory: [
-        { id: 'vh4', date: '05/12/2025', counter: '80.000 Km', service: 'Manteniment integral 4x4 i alineació', mechanic: 'Taller Mecànic Pons & Fills', cost: '210,00 €' }
-      ]
-    },
   ]);
 
-  // Database 4: Proveïdors
+  // Database 4: Proveïdors (Clean discount string without duplicate %, full searchable purchase history & documents folder)
   const [proveidors, setProveidors] = useState([
     { 
       id: 'p1', 
@@ -208,13 +213,15 @@ export default function MagatzemDashboard() {
       email: 'ventes@agrosubministres.cat', 
       address: 'Polígon Industrial El Segre, Nau 14, Lleida', 
       products: 'Tubs, Canonades, Reg',
-      discount: '15%',
+      discountValue: '15%', // Clean single %
       paymentMethod: 'Transferència a 30 dies',
       totalSpentNumeric: 1450.00,
       totalSpent: '1.450,00 €',
+      documentsFolder: '/documents/magatzem/proveidors/agrosubministres/',
       supplierHistory: [
-        { id: 'sp1', date: '12/04/2026', concept: 'Tub PE 25mm High-Density (100m)', amount: '450,00 €' },
-        { id: 'sp2', date: '02/02/2026', concept: 'Tub PE 25mm High-Density (50m)', amount: '225,00 €' }
+        { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp2', date: '02/02/2026', docNumber: 'ALB-2026-1102', concept: 'Tub PE 25mm High-Density (50m)', qty: '50m', amount: '225,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp3', date: '15/12/2025', docNumber: 'FAC-2025-998', concept: 'Recanvis canonada reg sector sud', qty: 'Varis', amount: '775,00 €', buyer: 'Miquel Riera' }
       ]
     },
     { 
@@ -226,12 +233,14 @@ export default function MagatzemDashboard() {
       email: 'laura@riegoregen.cat', 
       address: 'Av. del Reg 88, Granollers', 
       products: 'Vàlvules, Electrovàlvules, Solenoides',
-      discount: '10%',
+      discountValue: '10%',
       paymentMethod: 'Gir Domiciliat a 60 dies',
       totalSpentNumeric: 890.00,
       totalSpent: '890,00 €',
+      documentsFolder: '/documents/magatzem/proveidors/riegoregen/',
       supplierHistory: [
-        { id: 'sp4', date: '20/03/2026', concept: 'Vàlvula d\'Esfera 1" Inox (10u)', amount: '182,00 €' }
+        { id: 'sp4', date: '20/03/2026', docNumber: 'FAC-2026-441', concept: 'Vàlvula d\'Esfera 1" Inox (10u)', qty: '10u', amount: '182,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp5', date: '10/01/2026', docNumber: 'FAC-2026-009', concept: 'Electrovàlvules 2" reforçades', qty: '5u', amount: '708,00 €', buyer: 'Jordi Soler' }
       ]
     },
     { 
@@ -243,12 +252,13 @@ export default function MagatzemDashboard() {
       email: 'comercial@fertisegre.cat', 
       address: 'Ctra. de Balaguer km 4, Lleida', 
       products: 'Adobs, Fertilitzants, Fitosanitaris',
-      discount: '12%',
+      discountValue: '12%',
       paymentMethod: 'Transferència a 45 dies',
       totalSpentNumeric: 2340.00,
       totalSpent: '2.340,00 €',
+      documentsFolder: '/documents/magatzem/proveidors/fertisegre/',
       supplierHistory: [
-        { id: 'sp6', date: '18/02/2026', concept: 'Adobat Foliar Nitrogenat 25kg (20 sacs)', amount: '650,00 €' }
+        { id: 'sp6', date: '18/02/2026', docNumber: 'FAC-2026-118', concept: 'Adobat Foliar Nitrogenat 25kg (20 sacs)', qty: '20 sacs', amount: '650,00 €', buyer: 'Miquel Riera' }
       ]
     },
     { 
@@ -260,21 +270,33 @@ export default function MagatzemDashboard() {
       email: 'ricard@submanresa.cat', 
       address: 'C/ Sallent 12, Manresa', 
       products: 'Eines, Cinta Teflon, Cargoleria',
-      discount: '8%',
+      discountValue: '8%',
       paymentMethod: 'Comptat / Targeta',
       totalSpentNumeric: 620.00,
       totalSpent: '620,00 €',
+      documentsFolder: '/documents/magatzem/proveidors/submanresa/',
       supplierHistory: [
-        { id: 'sp8', date: '05/05/2026', concept: 'Cinta de Teflon Professional (40u)', amount: '48,00 €' }
+        { id: 'sp8', date: '05/05/2026', docNumber: 'TIC-2026-99', concept: 'Cinta de Teflon Professional (40u)', qty: '40u', amount: '48,00 €', buyer: 'Marc (Enginyer)' },
+        { id: 'sp9', date: '15/01/2026', docNumber: 'FAC-2026-012', concept: 'Trepant Bosch GSR-18 Professional', qty: '1u', amount: '572,00 €', buyer: 'Marc (Enginyer)' }
       ]
     },
   ]);
 
-  // Form States for Donar d'Alta
+  // Manual Form States for ALL 4 tabs
   const [newMat, setNewMat] = useState({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '', supplier: '', unitPrice: '' });
-  const [newEin, setNewEin] = useState({ name: '', brand: '', serial: '', status: 'BO', assignedTo: 'Magatzem Central', location: 'Magatzem Central', warrantyUntil: '', supplier: '' });
+  const [newEin, setNewEin] = useState({ name: '', brand: '', serial: '', status: 'BO', assignedTo: 'Magatzem Central', location: 'Magatzem Central', warrantyUntil: '', supplier: '', returnedAtEndOfDay: true });
   const [newVeh, setNewVeh] = useState({ plate: '', name: '', type: 'Furgoneta', unitType: 'Km', counterValue: '', itvDate: '', insuranceCompany: '', insurancePolicy: '', insuranceDate: '', lastOilChangeDate: '', lastOilChangeCounter: '', mechanicName: '', mechanicContact: '' });
   const [newProv, setNewProv] = useState({ name: '', nif: '', contact: '', phone: '', email: '', address: '', products: '', discount: '', paymentMethod: '' });
+
+  // Direct Supplier Navigation Helper
+  const openSupplierByName = (supplierName: string) => {
+    const foundProv = proveidors.find(p => p.name.toLowerCase().trim() === supplierName.toLowerCase().trim());
+    if (foundProv) {
+      setSelectedItem({ type: 'proveidor', data: foundProv });
+    } else {
+      alert(`Proveïdor "${supplierName}" no trobat a la base de dades. Pots crear-lo des del botó "Donar d'Alta".`);
+    }
+  };
 
   // AI Audit Engine Handler
   const startAIAudit = (scenario: 'EXISTING_SUPPLIER' | 'NEW_SUPPLIER') => {
@@ -350,16 +372,20 @@ export default function MagatzemDashboard() {
         email: aiAuditResult.supplier.email,
         address: aiAuditResult.supplier.address,
         products: aiAuditResult.supplier.products,
-        discount: aiAuditResult.supplier.discount,
+        discountValue: aiAuditResult.supplier.discount,
         paymentMethod: aiAuditResult.supplier.paymentMethod,
         totalSpentNumeric: aiAuditResult.totalAmount,
         totalSpent: `${aiAuditResult.totalAmount.toFixed(2)} €`,
+        documentsFolder: `/documents/magatzem/proveidors/${aiAuditResult.supplier.nif}/`,
         supplierHistory: [
           {
             id: `sp-${Date.now()}`,
             date: aiAuditResult.date,
+            docNumber: aiAuditResult.docNumber,
             concept: `Alta de Proveïdor via Ticket/Factura #${aiAuditResult.docNumber}`,
-            amount: `${aiAuditResult.totalAmount.toFixed(2)} €`
+            qty: 'Varis',
+            amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
+            buyer: 'IA Auto-Reader'
           }
         ]
       };
@@ -371,22 +397,26 @@ export default function MagatzemDashboard() {
     setAiAuditResult(null);
   };
 
-  // Creation Handlers
+  // Manual Creation Handlers
   const handleAddMaterial = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMat.name.trim()) return;
 
+    const initialStock = Number(newMat.stock) || 0;
     const item = {
       id: `m${Date.now()}`,
       code: newMat.code.trim() || `MAT-00${materials.length + 1}`,
       name: newMat.name.trim(),
-      stock: Number(newMat.stock) || 0,
+      stockTotal: initialStock,
+      stockCheckedOut: 0,
+      stock: initialStock,
       minStock: Number(newMat.minStock) || 5,
       unit: newMat.unit,
       location: newMat.location.trim() || 'Magatzem Central',
       supplier: newMat.supplier.trim() || 'AgroSubministres Ponent SL',
       unitPrice: Number(newMat.unitPrice) || 0,
       lastPurchaseDate: new Date().toLocaleDateString('ca-ES'),
+      workerMovementHistory: [],
       purchaseHistory: []
     };
 
@@ -408,13 +438,15 @@ export default function MagatzemDashboard() {
       status: newEin.status,
       assignedTo: newEin.assignedTo,
       location: newEin.location,
-      warrantyUntil: newEin.warrantyUntil || 'Sense garantia',
-      supplier: newEin.supplier || 'Subministraments Industrials',
+      returnedAtEndOfDay: newEin.returnedAtEndOfDay,
+      returnStatusText: newEin.returnedAtEndOfDay ? 'Retornat al Magatzem Central' : `A la Furgoneta de ${newEin.assignedTo}`,
+      warrantyUntil: newEin.warrantyUntil || '15/06/2027',
+      supplier: newEin.supplier || 'Subministraments Industrials Manresa',
       repairHistory: []
     };
 
     setEines([item, ...eines]);
-    setNewEin({ name: '', brand: '', serial: '', status: 'BO', assignedTo: 'Magatzem Central', location: 'Magatzem Central', warrantyUntil: '', supplier: '' });
+    setNewEin({ name: '', brand: '', serial: '', status: 'BO', assignedTo: 'Magatzem Central', location: 'Magatzem Central', warrantyUntil: '', supplier: '', returnedAtEndOfDay: true });
     setShowAddModal(false);
   };
 
@@ -429,10 +461,10 @@ export default function MagatzemDashboard() {
       type: newVeh.type,
       unitType: newVeh.unitType,
       counterValue: Number(newVeh.counterValue) || 0,
-      itvDate: newVeh.itvDate || '2027-01-01',
+      itvDate: newVeh.itvDate || '15/11/2026',
       insuranceCompany: newVeh.insuranceCompany.trim() || 'Mapfre Assegurances',
       insurancePolicy: newVeh.insurancePolicy.trim() || 'POL-998800',
-      insuranceDate: newVeh.insuranceDate || '2027-01-01',
+      insuranceDate: newVeh.insuranceDate || '01/09/2026',
       lastOilChangeDate: newVeh.lastOilChangeDate || new Date().toLocaleDateString('ca-ES'),
       lastOilChangeCounter: Number(newVeh.lastOilChangeCounter) || Number(newVeh.counterValue) || 0,
       mechanicName: newVeh.mechanicName || 'Taller Mecànic Pons & Fills',
@@ -459,10 +491,11 @@ export default function MagatzemDashboard() {
       email: newProv.email.trim() || 'info@proveidor.cat',
       address: newProv.address.trim() || 'Direcció comercial',
       products: newProv.products.trim() || 'Materials Diversos',
-      discount: newProv.discount.trim() || '0%',
+      discountValue: newProv.discount.trim() || '0%',
       paymentMethod: newProv.paymentMethod.trim() || 'Transferència a 30 dies',
       totalSpentNumeric: 0,
       totalSpent: '0,00 €',
+      documentsFolder: `/documents/magatzem/proveidors/${newProv.nif}/`,
       supplierHistory: []
     };
 
@@ -510,10 +543,10 @@ export default function MagatzemDashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             Control de Magatzem, Flota i Proveïdors
             <span className="bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1">
-              <Sparkles size={12} /> IA & Transparència Total
+              <Sparkles size={12} /> Sync Operari & IA
             </span>
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">Clica qualsevol fila per obrir la Fitxa Tècnica Completa. Utilitza l'IA per auditar albarans i crear proveïdors automàticament.</p>
+          <p className="text-sm text-neutral-500 mt-1">Alta 100% manual o per IA. Control de retorns diaris d'operaris, garanties DD/MM/YYYY i historial complet.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -526,7 +559,7 @@ export default function MagatzemDashboard() {
             className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:from-emerald-700 hover:to-teal-800 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95"
           >
             <Bot size={18} />
-            Escanejar Albarà/Factura amb IA
+            Escanejar amb IA
           </button>
 
           {/* Manual Add Button */}
@@ -535,7 +568,7 @@ export default function MagatzemDashboard() {
             className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90 px-5 py-3 rounded-xl font-medium text-sm transition-all shadow-md active:scale-95"
           >
             <Plus size={18} />
-            Donar d'Alta
+            Donar d'Alta (Manual)
           </button>
         </div>
       </div>
@@ -601,7 +634,7 @@ export default function MagatzemDashboard() {
       {activeTab === 'materials' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 Clica qualsevol material per veure la Fitxa Tècnica Completa (Proveïdor, Preu, Històric de Compres).</span>
+            <span>💡 L'estoc inclou les recepcions i les dades d'agafades/retorns de l'App de l'Operari al final de la jornada.</span>
             <span className="text-primary font-bold">{filteredMaterials.length} materials trobats</span>
           </div>
           <table className="w-full text-sm text-left">
@@ -609,10 +642,10 @@ export default function MagatzemDashboard() {
               <tr>
                 <th className="px-6 py-4">Codi</th>
                 <th className="px-6 py-4">Nom del Material</th>
-                <th className="px-6 py-4 text-center">Estoc Actual</th>
-                <th className="px-6 py-4 text-center">Estoc Mínim</th>
+                <th className="px-6 py-4 text-center">Disponible Magatzem</th>
+                <th className="px-6 py-4 text-center">En Ús Operaris</th>
                 <th className="px-6 py-4">Ubicació</th>
-                <th className="px-6 py-4">Proveïdor</th>
+                <th className="px-6 py-4">Proveïdor (Link)</th>
                 <th className="px-6 py-4 text-center">Preu Unitari</th>
                 <th className="px-6 py-4 text-center">Estat</th>
                 <th className="px-6 py-4 text-right">Accions</th>
@@ -632,12 +665,28 @@ export default function MagatzemDashboard() {
                       {item.name}
                       <ExternalLink size={14} className="text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </td>
-                    <td className="px-6 py-4 text-center font-bold text-base text-neutral-900">
+                    <td className="px-6 py-4 text-center font-bold text-base text-emerald-800">
                       {item.stock} <span className="text-xs font-normal text-neutral-500">{item.unit}</span>
                     </td>
-                    <td className="px-6 py-4 text-center text-neutral-500">{item.minStock} {item.unit}</td>
+                    <td className="px-6 py-4 text-center font-semibold text-amber-700 bg-amber-50/50">
+                      {item.stockCheckedOut > 0 ? `-${item.stockCheckedOut} ${item.unit}` : '0'}
+                    </td>
                     <td className="px-6 py-4 text-neutral-600">{item.location}</td>
-                    <td className="px-6 py-4 text-neutral-700 font-medium">{item.supplier}</td>
+                    
+                    {/* LINKED SUPPLIER NAME */}
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openSupplierByName(item.supplier);
+                        }}
+                        className="text-primary font-bold hover:underline flex items-center gap-1 text-xs"
+                      >
+                        <Building2 size={12} />
+                        {item.supplier}
+                      </button>
+                    </td>
+
                     <td className="px-6 py-4 text-center font-bold text-primary">{item.unitPrice.toFixed(2)} €</td>
                     <td className="px-6 py-4 text-center">
                       {isLowStock ? (
@@ -667,7 +716,7 @@ export default function MagatzemDashboard() {
       {activeTab === 'eines' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 Clica qualsevol eina per obrir la Fitxa Completa (Garantia, Proveïdor i Històric de Reparacions).</span>
+            <span>💡 Control del retorn de l'eina al magatzem al final de la jornada i enllaç directe amb el proveïdor de compra.</span>
             <span className="text-primary font-bold">{filteredEines.length} eines trobades</span>
           </div>
           <table className="w-full text-sm text-left">
@@ -676,8 +725,10 @@ export default function MagatzemDashboard() {
                 <th className="px-6 py-4">Codi Inventari</th>
                 <th className="px-6 py-4">Eina / Maquinària</th>
                 <th className="px-6 py-4">Marca / Model</th>
-                <th className="px-6 py-4">Assignat a</th>
-                <th className="px-6 py-4">Garantia Fins</th>
+                <th className="px-6 py-4">Assignat a (App Operari)</th>
+                <th className="px-6 py-4">Retorn Jornada</th>
+                <th className="px-6 py-4">Garantia Fins (DD/MM/YYYY)</th>
+                <th className="px-6 py-4">Proveïdor (Link)</th>
                 <th className="px-6 py-4 text-center">Estat Físic</th>
                 <th className="px-6 py-4 text-right">Accions</th>
               </tr>
@@ -695,8 +746,34 @@ export default function MagatzemDashboard() {
                     <ExternalLink size={14} className="text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </td>
                   <td className="px-6 py-4 text-neutral-600">{item.brand} ({item.serial})</td>
-                  <td className="px-6 py-4 font-medium text-neutral-800">{item.assignedTo}</td>
-                  <td className="px-6 py-4 text-neutral-600 font-medium">{item.warrantyUntil}</td>
+                  <td className="px-6 py-4 font-medium text-neutral-900">{item.assignedTo}</td>
+                  <td className="px-6 py-4 text-xs font-semibold">
+                    {item.returnedAtEndOfDay ? (
+                      <span className="text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                        ✅ Retornada al Magatzem
+                      </span>
+                    ) : (
+                      <span className="text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                        🚐 En Furgoneta Operari
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-neutral-800 font-bold font-mono text-xs">{item.warrantyUntil}</td>
+
+                  {/* LINKED SUPPLIER NAME */}
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openSupplierByName(item.supplier);
+                      }}
+                      className="text-primary font-bold hover:underline flex items-center gap-1 text-xs"
+                    >
+                      <Building2 size={12} />
+                      {item.supplier}
+                    </button>
+                  </td>
+
                   <td className="px-6 py-4 text-center">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                       item.status === 'BO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800 animate-pulse'
@@ -720,7 +797,7 @@ export default function MagatzemDashboard() {
       {activeTab === 'vehicles' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 Clica qualsevol vehicle per veure la Fitxa de Flota (Pòlissa, Assegurança, ITV, Canvi d'Oli, Mecànic i Revisions).</span>
+            <span>💡 Lectura i sincronització de Km/Hores introduïdes per l'operari a l'iniciar/finalitzar el dia.</span>
             <span className="text-primary font-bold">{filteredVehicles.length} vehicles trobats</span>
           </div>
           <table className="w-full text-sm text-left">
@@ -729,7 +806,7 @@ export default function MagatzemDashboard() {
                 <th className="px-6 py-4">Matrícula</th>
                 <th className="px-6 py-4">Vehicle / Maquinària</th>
                 <th className="px-6 py-4">Tipus</th>
-                <th className="px-6 py-4 text-center">Comptador</th>
+                <th className="px-6 py-4 text-center">Comptador Actual</th>
                 <th className="px-6 py-4">Asseguradora i Pòlissa</th>
                 <th className="px-6 py-4">Renovació Assegurança</th>
                 <th className="px-6 py-4 text-right">Accions</th>
@@ -776,7 +853,7 @@ export default function MagatzemDashboard() {
       {activeTab === 'proveidors' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 Clica qualsevol proveïdor per veure la Fitxa Comercial (NIF, Descomptes, Forma de Pagament i Històric de Compres).</span>
+            <span>💡 Clica qualsevol proveïdor per cercar tot el seu històric complet de compres i accedir a la carpeta digital.</span>
             <span className="text-primary font-bold">{filteredProveidors.length} proveïdors trobats</span>
           </div>
           <table className="w-full text-sm text-left">
@@ -804,7 +881,7 @@ export default function MagatzemDashboard() {
                   <td className="px-6 py-4 font-mono text-xs text-neutral-500 font-semibold">{prov.nif}</td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-1 rounded-full">
-                      <Percent size={12} /> {prov.discount} Descompte
+                      <Percent size={12} /> {prov.discountValue}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-neutral-700 font-medium">{prov.paymentMethod}</td>
@@ -821,12 +898,12 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* MODAL DETALL GENERAL TRANSPARENT (ACCÉS TOTAL A TOTES LES DADES A 1-CLICK) */}
+      {/* MODAL DETALL GENERAL (TRANSPARÈNCIA I HISTÒRICS COMPLETS) */}
       {selectedItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             
-            {/* 1. FITXA COMPLETA MATERIAL */}
+            {/* 1. FITXA MATERIAL AMB TRACKING D'OPERARIS */}
             {selectedItem.type === 'material' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -844,45 +921,88 @@ export default function MagatzemDashboard() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-neutral-50 p-4 rounded-xl border border-neutral-200/80 mb-6">
                   <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Estoc Actual</span>
-                    <span className="text-lg font-bold text-neutral-900">{selectedItem.data.stock} {selectedItem.data.unit}</span>
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Estoc Magatzem</span>
+                    <span className="text-lg font-bold text-emerald-800">{selectedItem.data.stock} {selectedItem.data.unit}</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Agafat per Operaris</span>
+                    <span className="text-lg font-bold text-amber-700">-{selectedItem.data.stockCheckedOut || 0} {selectedItem.data.unit}</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Proveïdor Principal</span>
+                    <button
+                      onClick={() => openSupplierByName(selectedItem.data.supplier)}
+                      className="text-xs font-bold text-primary underline block mt-1"
+                    >
+                      {selectedItem.data.supplier}
+                    </button>
                   </div>
                   <div>
                     <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Preu Unitari</span>
-                    <span className="text-lg font-bold text-primary">{selectedItem.data.unitPrice.toFixed(2)} €</span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Proveïdor</span>
-                    <span className="text-xs font-bold text-neutral-800 truncate block mt-1">{selectedItem.data.supplier}</span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Última Compra</span>
-                    <span className="text-xs font-bold text-neutral-800 block mt-1">{selectedItem.data.lastPurchaseDate}</span>
+                    <span className="text-lg font-bold text-neutral-900">{selectedItem.data.unitPrice.toFixed(2)} €</span>
                   </div>
                 </div>
 
-                <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-3">
+                {/* Moviments Diaris d'Operaris */}
+                <div className="mb-6">
+                  <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
+                    <User size={16} className="text-primary" /> Moviments d'Operaris en Jornada (App Mòbil)
+                  </h4>
+                  <div className="border border-neutral-200 rounded-xl overflow-hidden text-xs">
+                    {selectedItem.data.workerMovementHistory?.length > 0 ? (
+                      <table className="w-full text-left">
+                        <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
+                          <tr>
+                            <th className="p-2.5">Data / Hora</th>
+                            <th className="p-2.5">Operari</th>
+                            <th className="p-2.5">Acció</th>
+                            <th className="p-2.5">Quantitat</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-200">
+                          {selectedItem.data.workerMovementHistory.map((wm: any) => (
+                            <tr key={wm.id} className="hover:bg-neutral-50">
+                              <td className="p-2.5 font-mono">{wm.date}</td>
+                              <td className="p-2.5 font-bold text-neutral-900">{wm.worker}</td>
+                              <td className="p-2.5 font-semibold">
+                                {wm.action === 'SUBTRACTION' ? (
+                                  <span className="text-amber-700 flex items-center gap-1"><ArrowDownRight size={14} /> Substracció Obradora</span>
+                                ) : (
+                                  <span className="text-emerald-700 flex items-center gap-1"><ArrowUpRight size={14} /> Retorn al Magatzem</span>
+                                )}
+                              </td>
+                              <td className="p-2.5 font-bold text-neutral-900">{wm.qty}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="p-3 text-center text-neutral-400">Cap moviment registrat avui.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Històric de Compres */}
+                <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
                   <History size={16} className="text-primary" /> Històric de Compres i Entrades d'Estoc
                 </h4>
-                <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                  <table className="w-full text-xs text-left">
+                <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-40 overflow-y-auto text-xs">
+                  <table className="w-full text-left">
                     <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
                       <tr>
-                        <th className="p-3">Data</th>
-                        <th className="p-3">Quantitat</th>
-                        <th className="p-3">Import</th>
-                        <th className="p-3">Proveïdor</th>
-                        <th className="p-3">Comprat per</th>
+                        <th className="p-2.5">Data</th>
+                        <th className="p-2.5">Quantitat</th>
+                        <th className="p-2.5">Import</th>
+                        <th className="p-2.5">Proveïdor</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-200">
                       {selectedItem.data.purchaseHistory?.map((h: any) => (
                         <tr key={h.id} className="hover:bg-neutral-50">
-                          <td className="p-3 font-semibold text-neutral-900">{h.date}</td>
-                          <td className="p-3 font-bold text-emerald-700">{h.qty}</td>
-                          <td className="p-3 font-bold text-neutral-900">{h.price}</td>
-                          <td className="p-3 text-neutral-700">{h.supplier}</td>
-                          <td className="p-3 text-neutral-500">{h.buyer}</td>
+                          <td className="p-2.5 font-semibold text-neutral-900">{h.date}</td>
+                          <td className="p-2.5 font-bold text-emerald-700">{h.qty}</td>
+                          <td className="p-2.5 font-bold text-neutral-900">{h.price}</td>
+                          <td className="p-2.5 text-neutral-700">{h.supplier}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -900,7 +1020,7 @@ export default function MagatzemDashboard() {
                       #{selectedItem.data.code}
                     </span>
                     <h3 className="text-xl font-bold text-neutral-900 mt-2">{selectedItem.data.name}</h3>
-                    <p className="text-xs text-neutral-500">{selectedItem.data.brand} • Núm. Sèrie: {selectedItem.data.serial}</p>
+                    <p className="text-xs text-neutral-500">{selectedItem.data.brand} • Sèrie: {selectedItem.data.serial}</p>
                   </div>
                   <button onClick={() => setSelectedItem(null)} className="p-1 text-neutral-400 hover:text-neutral-700 rounded-full">
                     <X size={22} />
@@ -909,34 +1029,39 @@ export default function MagatzemDashboard() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-neutral-50 p-4 rounded-xl border border-neutral-200/80 mb-6">
                   <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Garantia Fins</span>
-                    <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 mt-1">
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Garantia Fins (DD/MM/YYYY)</span>
+                    <span className="text-sm font-bold text-emerald-800 flex items-center gap-1 mt-1 font-mono">
                       <ShieldCheck size={14} /> {selectedItem.data.warrantyUntil}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Estat Físic</span>
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Estat del Retorn (Jornada)</span>
                     <span className={`text-xs font-bold inline-block px-2.5 py-1 rounded-full mt-1 ${
-                      selectedItem.data.status === 'BO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                      selectedItem.data.returnedAtEndOfDay ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                     }`}>
-                      {selectedItem.data.status === 'BO' ? '🟢 Operatiu' : '🔴 Avaria / Taller'}
+                      {selectedItem.data.returnedAtEndOfDay ? '✅ Magatzem Central' : '🚐 En Vehicle d\'Operari'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Assignat A</span>
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Assignat a Operari</span>
                     <span className="text-xs font-bold text-neutral-800 block mt-1">{selectedItem.data.assignedTo}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Proveïdor</span>
-                    <span className="text-xs font-bold text-neutral-800 truncate block mt-1">{selectedItem.data.supplier}</span>
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Proveïdor d'Adquisició</span>
+                    <button
+                      onClick={() => openSupplierByName(selectedItem.data.supplier)}
+                      className="text-xs font-bold text-primary underline block mt-1"
+                    >
+                      {selectedItem.data.supplier}
+                    </button>
                   </div>
                 </div>
 
                 <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-3">
-                  <Wrench size={16} className="text-primary" /> Històric de Reparacions i Manteniments
+                  <Wrench size={16} className="text-primary" /> Històric de Reparacions
                 </h4>
-                <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                  <table className="w-full text-xs text-left">
+                <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto text-xs">
+                  <table className="w-full text-left">
                     <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
                       <tr>
                         <th className="p-3">Data</th>
@@ -946,27 +1071,21 @@ export default function MagatzemDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-200">
-                      {selectedItem.data.repairHistory && selectedItem.data.repairHistory.length > 0 ? (
-                        selectedItem.data.repairHistory.map((r: any) => (
-                          <tr key={r.id} className="hover:bg-neutral-50">
-                            <td className="p-3 font-semibold text-neutral-900">{r.date}</td>
-                            <td className="p-3 font-medium text-neutral-800">{r.reason}</td>
-                            <td className="p-3 text-neutral-600">{r.mechanic}</td>
-                            <td className="p-3 font-bold text-neutral-900">{r.cost}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={4} className="p-4 text-center text-neutral-400">Cap reparació registrada. Eina en perfecte estat.</td>
+                      {selectedItem.data.repairHistory?.map((r: any) => (
+                        <tr key={r.id} className="hover:bg-neutral-50">
+                          <td className="p-3 font-semibold text-neutral-900">{r.date}</td>
+                          <td className="p-3 font-medium text-neutral-800">{r.reason}</td>
+                          <td className="p-3 text-neutral-600">{r.mechanic}</td>
+                          <td className="p-3 font-bold text-neutral-900">{r.cost}</td>
                         </tr>
-                      )}
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
 
-            {/* 3. FITXA COMPLETA VEHICLE (AMB PÒLISSA, ASSEGURANÇA, ITV, OLI I MECÀNIC) */}
+            {/* 3. FITXA COMPLETA VEHICLE */}
             {selectedItem.type === 'vehicle' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -990,34 +1109,28 @@ export default function MagatzemDashboard() {
                   </div>
                   <div>
                     <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Renovació Assegurança</span>
-                    <span className="text-xs font-bold text-emerald-800 flex items-center gap-1 mt-1">
-                      <ShieldCheck size={14} /> {selectedItem.data.insuranceDate}
-                    </span>
+                    <span className="text-xs font-bold text-emerald-800 block mt-1">{selectedItem.data.insuranceDate}</span>
                   </div>
                   <div>
                     <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Data Límit ITV</span>
-                    <span className="text-xs font-bold text-neutral-900 flex items-center gap-1 mt-1">
-                      <Calendar size={14} className="text-primary" /> {selectedItem.data.itvDate}
-                    </span>
+                    <span className="text-xs font-bold text-neutral-900 block mt-1">{selectedItem.data.itvDate}</span>
                   </div>
                   <div>
                     <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Mecànic Habitual</span>
                     <span className="text-xs font-bold text-neutral-900 block mt-1">{selectedItem.data.mechanicName}</span>
-                    <span className="text-[10px] text-neutral-500">{selectedItem.data.mechanicContact}</span>
                   </div>
                 </div>
 
                 <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-3">
-                  <Wrench size={16} className="text-primary" /> Històric de Revisions i Manteniments del Vehicle
+                  <Wrench size={16} className="text-primary" /> Històric de Manteniment
                 </h4>
-                <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                  <table className="w-full text-xs text-left">
+                <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto text-xs">
+                  <table className="w-full text-left">
                     <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
                       <tr>
                         <th className="p-3">Data</th>
                         <th className="p-3">Comptador</th>
-                        <th className="p-3">Manteniment Realitzat</th>
-                        <th className="p-3">Taller / Mecànic</th>
+                        <th className="p-3">Servei</th>
                         <th className="p-3">Cost</th>
                       </tr>
                     </thead>
@@ -1027,7 +1140,6 @@ export default function MagatzemDashboard() {
                           <td className="p-3 font-semibold text-neutral-900">{m.date}</td>
                           <td className="p-3 font-mono">{m.counter}</td>
                           <td className="p-3 font-medium text-neutral-800">{m.service}</td>
-                          <td className="p-3 text-neutral-600">{m.mechanic}</td>
                           <td className="p-3 font-bold text-neutral-900">{m.cost}</td>
                         </tr>
                       ))}
@@ -1037,7 +1149,7 @@ export default function MagatzemDashboard() {
               </div>
             )}
 
-            {/* 4. FITXA COMPLETA PROVEÏDOR (NIF, DESCOMPTES, FORMA PAGAMENT, HISTÒRIC COMPRES) */}
+            {/* 4. FITXA COMPLETA PROVEÏDOR (AMB CERCA DE TOT L'HISTÒRIC I CARPETA DIGITAL) */}
             {selectedItem.type === 'proveidor' && (
               <div>
                 <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
@@ -1057,7 +1169,7 @@ export default function MagatzemDashboard() {
                   <div>
                     <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Descompte Acordat</span>
                     <span className="text-sm font-bold text-amber-800 flex items-center gap-1 mt-1">
-                      <Percent size={14} /> {selectedItem.data.discount} Descompte
+                      <Percent size={14} /> {selectedItem.data.discountValue}
                     </span>
                   </div>
                   <div>
@@ -1069,39 +1181,68 @@ export default function MagatzemDashboard() {
                     <span className="text-base font-bold text-primary block mt-1">{selectedItem.data.totalSpent}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Persona de Contacte</span>
-                    <span className="text-xs font-bold text-neutral-900 block mt-1">{selectedItem.data.contact} ({selectedItem.data.phone})</span>
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase block">Carpeta de Documents</span>
+                    <span className="text-xs text-emerald-700 font-bold flex items-center gap-1 mt-1">
+                      <Folder size={14} /> Documents Guardats
+                    </span>
                   </div>
                 </div>
 
-                <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-3">
-                  <History size={16} className="text-primary" /> Històric de Compres i Factures d'aquest Proveïdor
-                </h4>
-                <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
-                      <tr>
-                        <th className="p-3">Data</th>
-                        <th className="p-3">Concepte / Producte</th>
-                        <th className="p-3 font-right">Import Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-200">
-                      {selectedItem.data.supplierHistory && selectedItem.data.supplierHistory.length > 0 ? (
-                        selectedItem.data.supplierHistory.map((sp: any) => (
-                          <tr key={sp.id} className="hover:bg-neutral-50">
-                            <td className="p-3 font-semibold text-neutral-900">{sp.date}</td>
-                            <td className="p-3 font-medium text-neutral-800">{sp.concept}</td>
-                            <td className="p-3 font-bold text-primary">{sp.amount}</td>
-                          </tr>
-                        ))
-                      ) : (
+                {/* Filterable FULL Purchase History */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2">
+                      <History size={16} className="text-primary" /> Històric de Compres i Factures ({selectedItem.data.supplierHistory?.length || 0})
+                    </h4>
+
+                    {/* Modal Filter Input */}
+                    <div className="relative w-full sm:w-56">
+                      <input 
+                        type="text" 
+                        placeholder="Cercar a l'històric..."
+                        value={supplierHistorySearch}
+                        onChange={(e) => setSupplierHistorySearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs outline-none focus:border-primary"
+                      />
+                      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    </div>
+                  </div>
+
+                  <div className="border border-neutral-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto text-xs">
+                    <table className="w-full text-left">
+                      <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
                         <tr>
-                          <td colSpan={3} className="p-4 text-center text-neutral-400">Cap compra registrada encara.</td>
+                          <th className="p-3">Data</th>
+                          <th className="p-3">Doc #</th>
+                          <th className="p-3">Concepte / Material</th>
+                          <th className="p-3">Quantitat</th>
+                          <th className="p-3">Import Total</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-200">
+                        {selectedItem.data.supplierHistory && selectedItem.data.supplierHistory.length > 0 ? (
+                          selectedItem.data.supplierHistory
+                            .filter((sp: any) => 
+                              sp.concept.toLowerCase().includes(supplierHistorySearch.toLowerCase()) || 
+                              sp.docNumber.toLowerCase().includes(supplierHistorySearch.toLowerCase())
+                            )
+                            .map((sp: any) => (
+                              <tr key={sp.id} className="hover:bg-neutral-50">
+                                <td className="p-3 font-semibold text-neutral-900">{sp.date}</td>
+                                <td className="p-3 font-mono font-bold text-primary">{sp.docNumber}</td>
+                                <td className="p-3 font-medium text-neutral-800">{sp.concept}</td>
+                                <td className="p-3 text-neutral-600">{sp.qty}</td>
+                                <td className="p-3 font-bold text-neutral-900">{sp.amount}</td>
+                              </tr>
+                            ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="p-4 text-center text-neutral-400">Cap compra registrada en l'històric.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -1119,144 +1260,148 @@ export default function MagatzemDashboard() {
         </div>
       )}
 
-      {/* MODAL IA: AUDITORIA I AUTO-ALTA PROVEÏDORS */}
+      {/* MODAL IA */}
       {showAIModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-neutral-100">
               <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
-                <Bot className="text-emerald-600" size={24} />
-                Auditor IA d'Albarans vs Factures & Auto-Alta Proveïdors
+                <Bot className="text-emerald-600" size={24} /> Escàner IA d'Albarans / Factures
               </h3>
-              <button onClick={() => setShowAIModal(false)} className="text-neutral-400 hover:text-neutral-700">
-                <X size={20} />
-              </button>
+              <button onClick={() => setShowAIModal(false)} className="text-neutral-400 hover:text-neutral-700"><X size={20} /></button>
             </div>
 
             {aiStep === 1 && (
-              <div className="space-y-6">
-                <div className="flex flex-col items-center justify-center gap-4 py-8 border-2 border-dashed border-neutral-300 rounded-2xl bg-neutral-50/50 hover:bg-neutral-100/50 transition-colors cursor-pointer relative">
-                  <input 
-                    type="file" 
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setAiInvoiceFile(e.target.files[0]);
-                      }
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  <div className="w-14 h-14 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center">
-                    <FileUp size={28} />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-semibold text-sm text-neutral-900">
-                      {aiInvoiceFile ? aiInvoiceFile.name : 'Carrega el ticket, albarà o factura'}
-                    </p>
-                    <p className="text-xs text-neutral-500 mt-1">Fotos (.jpg, .png) o documents PDF</p>
-                  </div>
+              <div className="space-y-4">
+                <div className="p-8 border-2 border-dashed border-neutral-300 rounded-2xl bg-neutral-50 text-center">
+                  <FileUp size={32} className="mx-auto text-emerald-600 mb-2" />
+                  <p className="font-semibold text-sm">Pja l'albarà o factura en foto o PDF</p>
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={() => startAIAudit('NEW_SUPPLIER')}
-                    className="flex-1 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl text-xs font-bold hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2 shadow-md"
-                  >
-                    <UserPlus size={18} /> Provar Ticket Proveïdor Nou (Auto-Alta)
-                  </button>
-                  <button
-                    onClick={() => startAIAudit('EXISTING_SUPPLIER')}
-                    className="flex-1 py-3 bg-neutral-800 text-white rounded-xl text-xs font-bold hover:bg-neutral-900 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Sparkles size={16} /> Provar Factura vs Albarà (Cross-Check Alert)
-                  </button>
+                <div className="flex gap-3">
+                  <button onClick={() => startAIAudit('NEW_SUPPLIER')} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold">Provar Auto-Alta Proveïdor Nou</button>
+                  <button onClick={() => startAIAudit('EXISTING_SUPPLIER')} className="flex-1 py-3 bg-neutral-800 text-white rounded-xl text-xs font-bold">Provar Auditoria Factura vs Albarà</button>
                 </div>
               </div>
             )}
 
             {aiStep === 2 && (
-              <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-                <Loader2 className="animate-spin text-emerald-600" size={48} />
-                <div>
-                  <h4 className="font-bold text-base text-neutral-900">Llegint Document amb l'IA d'OpenRouter...</h4>
-                  <p className="text-xs text-neutral-500 mt-1">Buscant si el proveïdor ja existeix o contrastant preus unitaris contra l'albarà de lliurament.</p>
-                </div>
+              <div className="py-12 text-center">
+                <Loader2 className="animate-spin text-emerald-600 mx-auto mb-2" size={40} />
+                <p className="font-bold text-sm">Analitzant document amb OpenRouter...</p>
               </div>
             )}
 
-            {aiStep === 3 && aiAuditResult && (
-              <div className="space-y-5">
-                {aiAuditResult.isNewSupplier && (
-                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-2xl p-4 space-y-2 shadow-sm">
-                    <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
-                      <UserPlus size={20} className="text-emerald-600 animate-pulse" />
-                      ✨ NOU PROVEÏDOR DETECTAT I CREAT AUTOMÀTICAMENT PER LA IA
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-white/80 p-3 rounded-xl border border-emerald-200 text-xs">
-                      <div><span className="text-[10px] text-neutral-500 block uppercase">Nom Fiscal</span><span className="font-bold text-neutral-900">{aiAuditResult.supplier.name}</span></div>
-                      <div><span className="text-[10px] text-neutral-500 block uppercase">NIF / CIF</span><span className="font-mono font-bold text-primary">{aiAuditResult.supplier.nif}</span></div>
-                      <div><span className="text-[10px] text-neutral-500 block uppercase">Telèfon</span><span className="font-bold text-neutral-800">{aiAuditResult.supplier.phone}</span></div>
-                    </div>
-                  </div>
-                )}
-
-                {aiAuditResult.hasDiscrepancy && (
-                  <div className="bg-red-50 border border-red-200 rounded-2xl p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-red-800 font-bold text-sm">
-                      <ShieldAlert size={20} className="text-red-600 animate-bounce" />
-                      ⚠️ ALERTES DE DISCREPÀNCIA FACTURA VS ALBARÀ
-                    </div>
-                    {aiAuditResult.discrepancies.map((disc: any, idx: number) => (
-                      <div key={idx} className="bg-white p-3 rounded-xl border border-red-200 text-xs flex justify-between items-center">
-                        <div>
-                          <span className="font-bold text-red-900 block">{disc.field}: {disc.item}</span>
-                          <span className="text-neutral-500 block">🟢 Albarà: {disc.albaraValue}</span>
-                          <span className="text-red-700 font-semibold block">🔴 Factura: {disc.facturaValue}</span>
-                        </div>
-                        <div className="font-bold text-red-800 bg-red-100 px-3 py-1.5 rounded-lg">{disc.impact}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <button onClick={applyAIAuditToDatabase} className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-emerald-700">
-                  Confirmar i Actualitzar Magatzem Automàticament
-                </button>
+            {aiStep === 3 && (
+              <div className="space-y-4">
+                <div className="bg-emerald-50 p-4 rounded-xl text-xs text-emerald-800 font-bold">Document processat amb èxit per la IA!</div>
+                <button onClick={applyAIAuditToDatabase} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs">Confirmar i Actualitzar Magatzem</button>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* MODAL: DONAR D'ALTA MANUAL COMPLET */}
+      {/* MODAL: DONAR D'ALTA MANUAL COMPLET PER A LES 4 PESTANYES */}
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-neutral-200 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6 pb-3 border-b border-neutral-100">
               <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
                 <Plus className="text-primary" size={20} />
-                Donar d'Alta
+                {activeTab === 'materials' && 'Donar d\'Alta Nou Material'}
+                {activeTab === 'eines' && 'Donar d\'Alta Nova Eina'}
+                {activeTab === 'vehicles' && 'Donar d\'Alta Nou Vehicle'}
+                {activeTab === 'proveidors' && 'Donar d\'Alta Nou Proveïdor'}
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-neutral-400 hover:text-neutral-700"><X size={20} /></button>
+              <button onClick={() => setShowAddModal(false)} className="text-neutral-400 hover:text-neutral-700">
+                <X size={20} />
+              </button>
             </div>
 
+            {/* FORM MANUAL: MATERIALS */}
             {activeTab === 'materials' && (
               <form onSubmit={handleAddMaterial} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase mb-1">Nom del Material</label>
-                  <input type="text" required placeholder="Ex: Tub PE 25mm" value={newMat.name} onChange={(e) => setNewMat({ ...newMat, name: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Nom del Material</label>
+                  <input type="text" required placeholder="Ex: Tub PE 25mm High-Density" value={newMat.name} onChange={(e) => setNewMat({ ...newMat, name: e.target.value })} className="w-full p-3 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary" />
                 </div>
-                <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold">Guardar Material</button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Codi Barres / SKU</label>
+                    <input type="text" placeholder="MAT-005" value={newMat.code} onChange={(e) => setNewMat({ ...newMat, code: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Unitat</label>
+                    <select value={newMat.unit} onChange={(e) => setNewMat({ ...newMat, unit: e.target.value })} className="w-full p-3 border rounded-xl text-sm bg-white">
+                      <option value="u">Unitats (u)</option>
+                      <option value="m">Metres (m)</option>
+                      <option value="kg">Kilograms (kg)</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Estoc Inicial</label>
+                    <input type="number" required placeholder="100" value={newMat.stock} onChange={(e) => setNewMat({ ...newMat, stock: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Preu Unitari (€)</label>
+                    <input type="number" step="0.01" placeholder="4.50" value={newMat.unitPrice} onChange={(e) => setNewMat({ ...newMat, unitPrice: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1">Proveïdor Principal</label>
+                  <select value={newMat.supplier} onChange={(e) => setNewMat({ ...newMat, supplier: e.target.value })} className="w-full p-3 border rounded-xl text-sm bg-white">
+                    <option value="">Seleccionar Proveïdor...</option>
+                    {proveidors.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  </select>
+                </div>
+                <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold mt-2">Guardar i Donar d'Alta Material</button>
               </form>
             )}
 
+            {/* FORM MANUAL: EINES */}
+            {activeTab === 'eines' && (
+              <form onSubmit={handleAddEina} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase mb-1">Nom de l'Eina</label>
+                  <input type="text" required placeholder="Ex: Trepant Bosch GSR-18" value={newEin.name} onChange={(e) => setNewEin({ ...newEin, name: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Garantia Fins (DD/MM/YYYY)</label>
+                    <input type="text" placeholder="15/06/2027" value={newEin.warrantyUntil} onChange={(e) => setNewEin({ ...newEin, warrantyUntil: e.target.value })} className="w-full p-3 border rounded-xl text-sm font-mono" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Proveïdor</label>
+                    <select value={newEin.supplier} onChange={(e) => setNewEin({ ...newEin, supplier: e.target.value })} className="w-full p-3 border rounded-xl text-sm bg-white">
+                      <option value="">Seleccionar Proveïdor...</option>
+                      {proveidors.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold mt-2">Guardar i Donar d'Alta Eina</button>
+              </form>
+            )}
+
+            {/* FORM MANUAL: PROVEÏDORS */}
             {activeTab === 'proveidors' && (
               <form onSubmit={handleAddProveidor} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase mb-1">Nom Fiscal del Proveïdor</label>
                   <input type="text" required placeholder="Ex: AgroSubministres Ponent SL" value={newProv.name} onChange={(e) => setNewProv({ ...newProv, name: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
                 </div>
-                <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold">Guardar Proveïdor</button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">NIF / CIF</label>
+                    <input type="text" placeholder="B25889911" value={newProv.nif} onChange={(e) => setNewProv({ ...newProv, nif: e.target.value })} className="w-full p-3 border rounded-xl text-sm font-mono" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1">Descompte Acordat (%)</label>
+                    <input type="text" placeholder="15%" value={newProv.discount} onChange={(e) => setNewProv({ ...newProv, discount: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
+                  </div>
+                </div>
+                <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold mt-2">Guardar i Donar d'Alta Proveïdor</button>
               </form>
             )}
           </div>
