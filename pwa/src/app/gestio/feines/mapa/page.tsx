@@ -165,11 +165,11 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Main Map Workspace */}
-        <div className="flex flex-col lg:flex-row gap-lg h-[620px] relative">
+        {/* Main Map Workspace (Flexible Grid for Maximized Screen) */}
+        <div className="flex flex-col lg:flex-row gap-lg min-h-[620px] h-[620px] w-full relative">
           
           {/* Left Panel: Active Crew List */}
-          <div className="w-full lg:w-88 flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30">
+          <div className="w-full lg:w-88 flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30 flex-shrink-0">
             <div className="p-md border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low">
               <div>
                 <h3 className="font-section-title text-sm uppercase tracking-wider text-primary">Equips Actius</h3>
@@ -236,8 +236,8 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Interactive Leaflet Map Wrapper (Strict Minimum 580px Height) */}
-          <div className="flex-1 relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30 h-[620px] min-h-[580px] bg-slate-100">
+          {/* Interactive Leaflet Map Wrapper (Full Width Flex Expansion on Maximized Screen) */}
+          <div className="flex-1 min-w-0 w-full relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant/30 min-h-[580px] h-[620px] bg-slate-100">
             <DynamicMap
               locations={filteredCrews}
               selectedId={selectedCrewId}

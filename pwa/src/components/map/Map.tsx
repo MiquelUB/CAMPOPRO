@@ -66,6 +66,22 @@ function MapRecenter({ center, zoom }: { center: [number, number]; zoom: number 
   return null;
 }
 
+// Component to automatically invalidate map size on window resize / screen maximize
+function MapResizeHandler() {
+  const map = useMap();
+  useEffect(() => {
+    const handleResize = () => {
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, [map]);
+  return null;
+}
+
 export interface CrewLocation {
   id: string;
   initials: string;
@@ -102,7 +118,7 @@ export default function Map({
   }, []);
 
   if (!mounted) {
-    return <div className="h-full w-full bg-slate-100 rounded-2xl animate-pulse"></div>;
+    return <div className="h-full w-full min-h-[580px] bg-slate-100 rounded-2xl animate-pulse"></div>;
   }
 
   // Find selected crew coordinates or fallback
@@ -111,13 +127,19 @@ export default function Map({
   const activeZoom = selectedCrew ? 14 : zoom;
 
   return (
-    <MapContainer center={activeCenter} zoom={activeZoom} className="h-full w-full rounded-2xl z-0" style={{ minHeight: "500px" }}>
+    <MapContainer 
+      center={activeCenter} 
+      zoom={activeZoom} 
+      className="h-full w-full rounded-2xl z-0" 
+      style={{ width: "100%", height: "100%", minHeight: "580px" }}
+    >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
       <MapRecenter center={activeCenter} zoom={activeZoom} />
+      <MapResizeHandler />
 
       {/* Render Crew Markers */}
       {locations.map((loc) => {
