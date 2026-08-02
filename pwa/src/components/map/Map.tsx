@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
 // Custom Leaflet Icons
@@ -62,31 +61,30 @@ function MapRecenter({ center, zoom }: { center: [number, number]; zoom: number 
   const map = useMap();
   useEffect(() => {
     map.flyTo(center, zoom, { duration: 1.2 });
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
   }, [center, zoom, map]);
   return null;
 }
 
-// Robust ResizeObserver Component for Fullscreen/Maximized Resizing
-function MapResizeObserver() {
+// Map Invalidate Size Handler for Maximize & Window Resizing
+function MapInvalidator() {
   const map = useMap();
 
   useEffect(() => {
-    const container = map.getContainer();
-    if (!container) return;
+    const timer1 = setTimeout(() => map.invalidateSize(), 100);
+    const timer2 = setTimeout(() => map.invalidateSize(), 500);
+    const timer3 = setTimeout(() => map.invalidateSize(), 1500);
 
-    const observer = new ResizeObserver(() => {
-      map.invalidateSize();
-    });
-
-    observer.observe(container);
-
-    // Initial resize trigger
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      observer.disconnect();
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      window.removeEventListener("resize", handleResize);
     };
   }, [map]);
 
@@ -125,11 +123,23 @@ export default function Map({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Inject Leaflet CSS dynamically into head at runtime
+    if (!document.getElementById("leaflet-runtime-css")) {
+      const link = document.createElement("link");
+      link.id = "leaflet-runtime-css";
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
     setMounted(true);
   }, []);
 
   if (!mounted) {
-    return <div className="h-full w-full min-h-[580px] bg-slate-100 rounded-2xl animate-pulse"></div>;
+    return (
+      <div className="w-full h-[600px] min-h-[600px] bg-slate-100 rounded-2xl animate-pulse flex items-center justify-center text-slate-400 font-bold">
+        Carregant Mapa de Leaflet...
+      </div>
+    );
   }
 
   // Find selected crew coordinates or fallback
@@ -138,58 +148,60 @@ export default function Map({
   const activeZoom = selectedCrew ? 14 : zoom;
 
   return (
-    <MapContainer 
-      center={activeCenter} 
-      zoom={activeZoom} 
-      className="h-full w-full rounded-2xl z-0 relative" 
-      style={{ width: "100%", height: "100%", minHeight: "580px" }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-      />
+    <div className="w-full h-[600px] min-h-[600px] rounded-2xl overflow-hidden relative border border-slate-200 shadow-xl bg-slate-100">
+      <MapContainer 
+        center={activeCenter} 
+        zoom={activeZoom} 
+        className="w-full h-[600px] rounded-2xl z-0" 
+        style={{ width: "100%", height: "600px", minHeight: "600px" }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        />
 
-      <MapRecenter center={activeCenter} zoom={activeZoom} />
-      <MapResizeObserver />
+        <MapRecenter center={activeCenter} zoom={activeZoom} />
+        <MapInvalidator />
 
-      {/* Render Crew Markers */}
-      {locations.map((loc) => {
-        const icon = createCustomIcon(loc.colorHex, loc.initials);
+        {/* Render Crew Markers */}
+        {locations.map((loc) => {
+          const icon = createCustomIcon(loc.colorHex, loc.initials);
 
-        return (
-          <Marker
-            key={loc.id}
-            position={[loc.lat, loc.lng]}
-            icon={icon}
-            eventHandlers={{
-              click: () => onSelectLocation && onSelectLocation(loc.id),
-            }}
-          >
+          return (
+            <Marker
+              key={loc.id}
+              position={[loc.lat, loc.lng]}
+              icon={icon}
+              eventHandlers={{
+                click: () => onSelectLocation && onSelectLocation(loc.id),
+              }}
+            >
+              <Popup>
+                <div className="p-1 font-sans">
+                  <strong className="text-sm block text-slate-900">{loc.name}</strong>
+                  <span className="text-xs text-slate-600 block">{loc.task}</span>
+                  <span className="text-xs text-slate-500 block">{loc.vehicle}</span>
+                  <span className="text-[10px] font-bold mt-1 inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-800">
+                    {loc.status}
+                  </span>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {/* Render User GPS Live Position Marker */}
+        {userGps && (
+          <Marker position={[userGps.lat, userGps.lng]} icon={userGpsIcon}>
             <Popup>
-              <div className="p-1 font-sans">
-                <strong className="text-sm block text-slate-900">{loc.name}</strong>
-                <span className="text-xs text-slate-600 block">{loc.task}</span>
-                <span className="text-xs text-slate-500 block">{loc.vehicle}</span>
-                <span className="text-[10px] font-bold mt-1 inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-800">
-                  {loc.status}
-                </span>
+              <div className="p-1 text-xs">
+                <strong className="text-blue-600 block font-bold">📍 El Teu GPS (Mòbil)</strong>
+                <span>Posició geolocalitzada en temps real</span>
               </div>
             </Popup>
           </Marker>
-        );
-      })}
-
-      {/* Render User GPS Live Position Marker */}
-      {userGps && (
-        <Marker position={[userGps.lat, userGps.lng]} icon={userGpsIcon}>
-          <Popup>
-            <div className="p-1 text-xs">
-              <strong className="text-blue-600 block font-bold">📍 El Teu GPS (Mòbil)</strong>
-              <span>Posició geolocalitzada en temps real</span>
-            </div>
-          </Popup>
-        </Marker>
-      )}
-    </MapContainer>
+        )}
+      </MapContainer>
+    </div>
   );
 }
