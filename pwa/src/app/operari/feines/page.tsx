@@ -31,7 +31,7 @@ export default function Page() {
 {/* Job List */}
 <div className="flex flex-col gap-stack-md px-margin-mobile pb-32">
 {/* Card 1: Priority High */}
-<div className="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform">
+<Link href="/operari/feines/1" className="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform">
 {/* Vertical Status Bar */}
 <div className="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
 <div className="flex flex-col flex-1 min-w-0">
@@ -55,9 +55,9 @@ export default function Page() {
 </div>
 </div>
 </div>
-</div>
+</Link>
 {/* Card 2: Normal Status */}
-<div className="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform">
+<Link href="/operari/feines/2" className="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform">
 <div className="absolute left-0 top-0 bottom-0 w-1 bg-secondary-container"></div>
 <div className="flex flex-col flex-1 min-w-0">
 <div className="flex justify-between items-start mb-1">
@@ -80,7 +80,7 @@ export default function Page() {
 </div>
 </div>
 </div>
-</div>
+</Link>
 {/* Empty State / Footer Illustration */}
 <div className="mt-8 flex flex-col items-center opacity-40">
 <div className="w-24 h-1 bg-surface-container-highest rounded-full mb-6"></div>

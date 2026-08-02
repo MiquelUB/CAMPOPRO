@@ -53,21 +53,7 @@ export default function Page() {
 </div>
 </div>
 </div>
-{/* Field Group: 2FA */}
-<div className="pt-sm border-t border-surface-container-highest">
-<div className="flex justify-between items-center mb-sm">
-<label className="font-label-caps text-label-caps text-outline uppercase tracking-widest">Codi 2FA (Sis dígits)</label>
-<span className="material-symbols-outlined text-secondary text-[18px]" title="Seguretat Requerida">verified_user</span>
-</div>
-<div className="flex justify-between gap-2" id="otp-container">
-<input className="otp-input w-12 h-14 text-center text-display-lg font-display-lg bg-surface-container border border-outline-variant rounded-lg focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all" maxlength="1" type="text"/>
-<input className="otp-input w-12 h-14 text-center text-display-lg font-display-lg bg-surface-container border border-outline-variant rounded-lg focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all" maxlength="1" type="text"/>
-<input className="otp-input w-12 h-14 text-center text-display-lg font-display-lg bg-surface-container border border-outline-variant rounded-lg focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all" maxlength="1" type="text"/>
-<input className="otp-input w-12 h-14 text-center text-display-lg font-display-lg bg-surface-container border border-outline-variant rounded-lg focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all" maxlength="1" type="text"/>
-<input className="otp-input w-12 h-14 text-center text-display-lg font-display-lg bg-surface-container border border-outline-variant rounded-lg focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all" maxlength="1" type="text"/>
-<input className="otp-input w-12 h-14 text-center text-display-lg font-display-lg bg-surface-container border border-outline-variant rounded-lg focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all" maxlength="1" type="text"/>
-</div>
-</div>
+
 {/* Actions */}
 <div className="space-y-md pt-sm">
 <button className="w-full bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-white py-4 rounded-lg font-body-strong text-body-strong shadow-lg shadow-secondary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 group" type="submit">

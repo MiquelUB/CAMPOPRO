@@ -88,7 +88,12 @@ const config = {
         gutter: "16px",
         "base-unit": "8px",
         md: "16px",
-        xs: "4px"
+        xs: "4px",
+        "stack-md": "16px",
+        "stack-sm": "8px",
+        "touch-target-min": "48px",
+        "margin-mobile": "20px",
+        "stack-lg": "24px"
       },
       fontFamily: {
         "display-lg": ["var(--font-inter)", "sans-serif"],
@@ -96,7 +101,13 @@ const config = {
         "label-caps": ["var(--font-inter)", "sans-serif"],
         "section-title": ["var(--font-inter)", "sans-serif"],
         "body-strong": ["var(--font-inter)", "sans-serif"],
-        "data-tabular": ["var(--font-inter)", "sans-serif"]
+        "data-tabular": ["var(--font-inter)", "sans-serif"],
+        "headline-lg": ["var(--font-inter)", "sans-serif"],
+        "label-bold": ["var(--font-inter)", "sans-serif"],
+        "headline-md": ["var(--font-inter)", "sans-serif"],
+        "body-md": ["var(--font-inter)", "sans-serif"],
+        "button-text": ["var(--font-inter)", "sans-serif"],
+        "body-lg": ["var(--font-inter)", "sans-serif"]
       },
       fontSize: {
         "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600" }],
@@ -104,7 +115,13 @@ const config = {
         "label-caps": ["11px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
         "section-title": ["22px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600" }],
         "body-strong": ["14px", { lineHeight: "20px", fontWeight: "500" }],
-        "data-tabular": ["12px", { lineHeight: "16px", fontWeight: "400" }]
+        "data-tabular": ["12px", { lineHeight: "16px", fontWeight: "400" }],
+        "headline-lg": ["28px", { lineHeight: "34px", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "label-bold": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+        "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "700" }],
+        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+        "button-text": ["16px", { lineHeight: "20px", fontWeight: "600" }],
+        "body-lg": ["18px", { lineHeight: "26px", fontWeight: "400" }]
       }
     },
   },
