@@ -9,6 +9,17 @@ export default function Page() {
   const [tubQty, setTubQty] = useState(45);
   const [valvQty, setValvQty] = useState(2);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceSeconds, setVoiceSeconds] = useState(0);
+
+  const toggleRecording = () => {
+    if (!isRecording) {
+      setIsRecording(true);
+      setVoiceSeconds(0);
+    } else {
+      setIsRecording(false);
+    }
+  };
 
   return (
     <>
@@ -19,7 +30,7 @@ export default function Page() {
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
             <span className="font-headline-md text-headline-md text-primary tracking-tight">Gestió Material</span>
-            <div className="w-2.5 h-2.5 bg-secondary-container rounded-full animate-pulse" title="Offline"></div>
+            <div className="w-2.5 h-2.5 bg-secondary-container rounded-full animate-pulse" title="Mode Sense Connexió"></div>
           </div>
           <div className="flex items-center gap-2">
             <button className="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant">
@@ -107,10 +118,33 @@ export default function Page() {
               Afegir material
             </button>
 
+            {/* Voice Annotation Note Section */}
+            <div className="bg-surface-container-low p-4 rounded-xl flex items-center justify-between border border-outline-variant/30">
+              <div className="flex items-center gap-3">
+                <button 
+                  type="button"
+                  onClick={toggleRecording}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                    isRecording ? 'bg-error text-white scale-110 animate-pulse' : 'bg-primary text-white shadow-md'
+                  }`}
+                >
+                  <span className="material-symbols-outlined">{isRecording ? 'stop' : 'mic'}</span>
+                </button>
+                <div className="flex flex-col">
+                  <span className="font-body-strong text-primary text-sm">
+                    {isRecording ? 'Gravant la teva explicació...' : "Dicta una nota de veu del material utilitzat"}
+                  </span>
+                  <span className="text-xs text-on-surface-variant">
+                    {isRecording ? `00:${voiceSeconds < 10 ? '0' + voiceSeconds : voiceSeconds} / 00:30` : 'Prem el micròfon per parlar'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* Notes Section */}
-            <div className="flex flex-col gap-stack-sm mt-2">
-              <label className="font-label-bold text-label-bold text-on-surface-variant ml-1">NOTES D'ÚS</label>
-              <textarea className="w-full bg-surface-container-low rounded-xl p-4 font-body-md text-body-md text-on-surface outline-none focus:bg-white transition-colors" placeholder="Anotacions sobre el material o incidències..." rows={3}></textarea>
+            <div className="flex flex-col gap-stack-sm mt-1">
+              <label className="font-label-bold text-label-bold text-on-surface-variant ml-1 uppercase text-xs">NOTES ESCRITES D'ÚS (OPCIONAL)</label>
+              <textarea className="w-full bg-surface-container-low rounded-xl p-4 font-body-md text-body-md text-on-surface outline-none focus:bg-white transition-colors" placeholder="Anotacions escrites addicionals sobre el material..." rows={2}></textarea>
             </div>
 
             {/* Save Action */}

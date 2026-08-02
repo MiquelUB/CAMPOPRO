@@ -7,15 +7,28 @@ import { useRouter } from 'next/navigation';
 export default function Page() {
   const router = useRouter();
   
-  const [checkedTools, setCheckedTools] = useState<Record<string, boolean>>({
-    't1': true,
-    't2': true,
-    't3': true,
-    't4': false,
+  // Track tool status: 'ok' | 'reparacio' | 'perdut'
+  const [toolStatuses, setToolStatuses] = useState<Record<string, 'ok' | 'reparacio' | 'perdut'>>({
+    't1': 'ok',
+    't2': 'reparacio',
+    't3': 'ok',
+    't4': 'ok',
   });
 
-  const toggleCheck = (id: string) => {
-    setCheckedTools((prev) => ({ ...prev, [id]: !prev[id] }));
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceSeconds, setVoiceSeconds] = useState(0);
+
+  const toggleRecording = () => {
+    if (!isRecording) {
+      setIsRecording(true);
+      setVoiceSeconds(0);
+    } else {
+      setIsRecording(false);
+    }
+  };
+
+  const handleStatusChange = (id: string, status: 'ok' | 'reparacio' | 'perdut') => {
+    setToolStatuses((prev) => ({ ...prev, [id]: status }));
   };
 
   const returnedTools = [
@@ -24,8 +37,6 @@ export default function Page() {
     { id: 't3', name: 'Joc de Claus Stillson', code: 'EIN-0012' },
     { id: 't4', name: 'Detector de Metalls i Cables', code: 'EIN-0419' },
   ];
-
-  const countReturned = Object.values(checkedTools).filter(Boolean).length;
 
   return (
     <>
@@ -49,54 +60,100 @@ export default function Page() {
           {/* Progress Header */}
           <div className="px-margin-mobile pt-stack-lg pb-stack-md flex flex-col gap-1">
             <span className="font-label-bold text-label-bold text-outline uppercase tracking-wider">PAS 2 — FINAL DE JORNADA</span>
-            <h2 className="font-headline-lg text-headline-lg text-primary">Retorn d'Eines al Magatzem</h2>
+            <h2 className="font-headline-lg text-headline-lg text-primary">Retorn i Estat de les Eines</h2>
             <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-              Verifica que tornes totes les eines que vas agafar al matí abans de tancar la jornada.
+              Indica l'estat de cada eina retornada (OK, necessita reparació o perduda/malmesa).
             </p>
           </div>
 
-          {/* Info Banner */}
-          <div className="px-margin-mobile mb-stack-md">
-            <div className="bg-secondary-container/10 border border-secondary-container/30 p-4 rounded-xl flex items-start gap-3">
-              <span className="material-symbols-outlined text-secondary text-2xl">info</span>
-              <p className="text-body-md text-on-surface leading-tight">
-                Marca cadascuna de les eines que tornes a dipositar al magatzem o a la furgoneta de l'empresa.
-              </p>
-            </div>
-          </div>
-
-          {/* Tools List */}
+          {/* Tools List with Status Selector */}
           <div className="px-margin-mobile flex flex-col gap-stack-md">
             {returnedTools.map((tool) => {
-              const isChecked = !!checkedTools[tool.id];
+              const currentStatus = toolStatuses[tool.id] || 'ok';
               return (
                 <div 
                   key={tool.id}
-                  onClick={() => toggleCheck(tool.id)}
-                  className={`p-4 rounded-xl flex items-center justify-between border cursor-pointer transition-all ${
-                    isChecked ? 'bg-surface-container-low border-primary/20 shadow-sm' : 'bg-surface-container-lowest border-outline-variant/30 opacity-60'
-                  }`}
+                  className="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-3 shadow-sm"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary text-2xl">build_circle</span>
-                    <div className="flex flex-col">
-                      <span className="font-headline-md text-[16px] text-primary">{tool.name}</span>
-                      <span className="text-[12px] text-on-surface-variant">Codi: {tool.code}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <span className="material-symbols-outlined text-2xl">build_circle</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-headline-md text-[16px] text-primary">{tool.name}</span>
+                        <span className="text-[12px] text-on-surface-variant">Codi: {tool.code}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isChecked ? 'bg-primary text-white' : 'bg-surface-container-high text-outline'}`}>
-                    <span className="material-symbols-outlined text-[20px]">{isChecked ? 'check' : 'close'}</span>
+
+                  {/* Status Selection Buttons */}
+                  <div className="grid grid-cols-3 gap-2 bg-white p-1 rounded-xl border border-outline-variant/30">
+                    <button
+                      type="button"
+                      onClick={() => handleStatusChange(tool.id, 'ok')}
+                      className={`py-2 px-1 rounded-lg text-xs font-label-bold flex items-center justify-center gap-1 transition-all ${
+                        currentStatus === 'ok'
+                          ? 'bg-green-600 text-white font-bold shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                      OK (Correcte)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleStatusChange(tool.id, 'reparacio')}
+                      className={`py-2 px-1 rounded-lg text-xs font-label-bold flex items-center justify-center gap-1 transition-all ${
+                        currentStatus === 'reparacio'
+                          ? 'bg-amber-500 text-white font-bold shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[14px]">build</span>
+                      Avaria / Rep.
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleStatusChange(tool.id, 'perdut')}
+                      className={`py-2 px-1 rounded-lg text-xs font-label-bold flex items-center justify-center gap-1 transition-all ${
+                        currentStatus === 'perdut'
+                          ? 'bg-red-600 text-white font-bold shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[14px]">report</span>
+                      Perdut / Malmès
+                    </button>
                   </div>
                 </div>
               );
             })}
 
-            {/* Summary Card */}
-            <div className="bg-surface-container-low p-4 rounded-xl flex justify-between items-center mt-2 border border-outline-variant/30">
-              <span className="font-label-bold text-on-surface-variant uppercase text-xs">Eines Retornades Correctament</span>
-              <span className="font-headline-md text-primary bg-white px-3 py-1 rounded-lg border border-outline-variant">
-                {countReturned} / {returnedTools.length}
-              </span>
+            {/* Voice Annotation Note Section */}
+            <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/30 flex flex-col gap-3 mt-2">
+              <label className="font-label-bold text-xs text-on-surface-variant uppercase tracking-wider">Anotació de Veu sobre l'Estat</label>
+              <div className="flex items-center gap-3">
+                <button 
+                  type="button"
+                  onClick={toggleRecording}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                    isRecording ? 'bg-error text-white scale-110 animate-pulse' : 'bg-primary text-white shadow-md'
+                  }`}
+                >
+                  <span className="material-symbols-outlined">{isRecording ? 'stop' : 'mic'}</span>
+                </button>
+                <div className="flex flex-col flex-1">
+                  <span className="font-body-strong text-primary text-sm">
+                    {isRecording ? 'Gravant nota de veu...' : 'Grava una explicació en veu sobre avaries o eines perdudes'}
+                  </span>
+                  <span className="text-xs text-on-surface-variant">
+                    {isRecording ? `00:${voiceSeconds < 10 ? '0' + voiceSeconds : voiceSeconds} / 00:30` : 'Clica per parlar'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
