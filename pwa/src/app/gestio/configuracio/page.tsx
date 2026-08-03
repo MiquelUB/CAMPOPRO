@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { 
   Settings, Users, Shield, Lock, Key, UserPlus, ShieldCheck, ShieldAlert, Check, 
   X, Edit3, Trash2, Smartphone, Mail, Phone, RefreshCw, Server, Bot, CheckCircle2,
-  Building2, Save, Send, AlertTriangle, Monitor, HardDrive
+  Building2, Save, Send, AlertTriangle, Monitor, HardDrive, CreditCard, Landmark,
+  QrCode, Receipt, Plus, PlusCircle, DollarSign
 } from 'lucide-react';
 
 interface StaffUser {
@@ -20,6 +21,35 @@ interface StaffUser {
   phone: string;
   status: 'ACTIU' | 'REVOCAT' | 'PENDENT';
 }
+
+interface CorporateCard {
+  id: string;
+  cardNumber: string;
+  holderName: string;
+  holderRole: string;
+  monthlyLimit: number;
+  bankName: string;
+  status: 'ACTIVA' | 'BLOQUEJADA';
+}
+
+interface BankAccount {
+  id: string;
+  bankName: string;
+  iban: string;
+  type: 'COBRAMENTS_CLIENTS' | 'PAGAMENTS_PROVEIDORS' | 'NOMINES';
+  bic: string;
+}
+
+const INITIAL_CARDS: CorporateCard[] = [
+  { id: 'c1', cardNumber: '**** **** **** 4122', holderName: 'Jordi Soler', holderRole: 'Cap de Grup de Camp', monthlyLimit: 1000, bankName: 'CaixaBank', status: 'ACTIVA' },
+  { id: 'c2', cardNumber: '**** **** **** 8821', holderName: 'Pau Ribas', holderRole: 'Operari Agrícola & Maquinista', monthlyLimit: 800, bankName: 'CaixaBank', status: 'ACTIVA' },
+  { id: 'c3', cardNumber: '**** **** **** 9012', holderName: 'Marc Solsona', holderRole: 'Enginyer Supervisor', monthlyLimit: 1500, bankName: 'BBVA', status: 'ACTIVA' }
+];
+
+const INITIAL_BANKS: BankAccount[] = [
+  { id: 'b1', bankName: 'CaixaBank (Compte Principal)', iban: 'ES91 2100 0418 4502 0005 4321', type: 'COBRAMENTS_CLIENTS', bic: 'CAIXESBBXXX' },
+  { id: 'b2', bankName: 'BBVA (Compte Operatiu Proveïdors)', iban: 'ES12 0182 3344 5501 2345 6789', type: 'PAGAMENTS_PROVEIDORS', bic: 'BBVAESMMXXX' }
+];
 
 const INITIAL_STAFF_DATABASE: StaffUser[] = [
   {
@@ -98,16 +128,25 @@ const INITIAL_STAFF_DATABASE: StaffUser[] = [
 
 export default function ConfiguracioPage() {
   const [users, setUsers] = useState<StaffUser[]>(INITIAL_STAFF_DATABASE);
+  const [cards, setCards] = useState<CorporateCard[]>(INITIAL_CARDS);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(INITIAL_BANKS);
+  
   const [activeTab, setActiveTab] = useState<'personal' | 'auth' | 'empresa'>('personal');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Company Parameters & Telegram Bot State
+  // Company Parameters & Bizum State
   const [companyName, setCompanyName] = useState('CampoPro Serveis Agrícoles SL');
   const [companyNif, setCompanyNif] = useState('B-65498712');
   const [companyPhone, setCompanyPhone] = useState('938 77 00 11');
   const [companyEmail, setCompanyEmail] = useState('facturacio@campopro.cat');
   const [companyAddress, setCompanyAddress] = useState('Polígon Industrial Els Dolors, Nau 12, 08243 Manresa');
   
+  // Treasury & Bizum Settings
+  const [bizumPhone, setBizumPhone] = useState('600 00 11 22');
+  const [bizumMerchantId, setBizumMerchantId] = useState('CAMPOPRO-BIZUM-88');
+  const [bizumActive, setBizumActive] = useState(true);
+
+  // Telegram Bot State
   const [telegramBotToken, setTelegramBotToken] = useState('7123984712:AAH9fklmN389f_xK923uJz8s');
   const [telegramChatId, setTelegramChatId] = useState('-100192837465');
   const [telegramStatus, setTelegramStatus] = useState<'OPERATIU' | 'PROVANT'>('OPERATIU');
@@ -120,27 +159,10 @@ export default function ConfiguracioPage() {
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState<StaffUser['role']>('ENGINYER_SUPERVISOR');
 
-  // Toggle user access type (DASHBOARD_WEB vs PWA_MOBIL)
-  const toggleUserAccessType = (id: string) => {
-    setUsers(users.map(u => {
-      if (u.id === id) {
-        // Rules: Caps de grup & Operaris can ONLY be PWA_MOBIL
-        if (u.role === 'CAP_GRUP_OPERARI' || u.role === 'OPERARI_PWA') {
-          alert('⚠️ Restricció de seguretat: Els Caps de Grup i Operaris de camp només poden tenir accés a la PWA Mòbil.');
-          return u;
-        }
-        const nextAccess = u.accessType === 'DASHBOARD_WEB' ? 'PWA_MOBIL' : 'DASHBOARD_WEB';
-        return { ...u, accessType: nextAccess };
-      }
-      return u;
-    }));
-  };
-
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newEmail) return;
 
-    // Determine access type automatically based on role directive: Caps de Grup and Operaris ONLY get PWA_MOBIL
     const isMobileOnlyRole = newRole === 'CAP_GRUP_OPERARI' || newRole === 'OPERARI_PWA';
     const computedAccess: StaffUser['accessType'] = isMobileOnlyRole ? 'PWA_MOBIL' : 'DASHBOARD_WEB';
 
@@ -170,12 +192,12 @@ export default function ConfiguracioPage() {
     setNewEmail('');
     setNewNif('');
     setNewPhone('');
-    alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText}. Accés assignat: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}.`);
+    alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText}. Accés: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}.`);
   };
 
   const handleSaveCompanySettings = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`💾 S'han desat correctament els paràmetres fiscals de ${companyName} i la configuració del Bot de Telegram!`);
+    alert(`💾 S'han desat correctament els paràmetres fiscals, comptes IBAN, Bizum (${bizumPhone}), targetes corporatives de Caps de Grup i la configuració del Bot de Telegram de ${companyName}!`);
   };
 
   const handleTestTelegramBot = () => {
@@ -194,7 +216,7 @@ export default function ConfiguracioPage() {
       <nav className="flex items-center text-xs text-neutral-500 gap-1">
         <Link href="/gestio" className="hover:text-primary">Dashboard</Link>
         <span>/</span>
-        <span className="text-primary font-semibold">Configuració, Personal i Auth</span>
+        <span className="text-primary font-semibold">Configuració, Comptes, Targetes i Telegram</span>
       </nav>
 
       {/* Header Banner */}
@@ -202,10 +224,10 @@ export default function ConfiguracioPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             <Settings className="text-primary" size={28} />
-            Configuració de Personal, Permisos Auth i Telegram
+            Paràmetres Fiscals, Comptes, Targetes i Telegram
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
-            Gestió de plantilla (Enginyers, Comptabilitat, Secretaria, Caps de Grup), diferenciació d'accés (Dashboard Web vs PWA Mòbil) i paràmetres de Telegram.
+            Gestió de plantilla, comptes IBAN, cobraments amb Bizum, targetes corporatives de Caps de Grup i paràmetres de Telegram.
           </p>
         </div>
 
@@ -244,7 +266,7 @@ export default function ConfiguracioPage() {
             activeTab === 'empresa' ? 'bg-white text-blue-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-900'
           }`}
         >
-          <Building2 size={16} className="text-blue-600" /> Paràmetres Empresa & Telegram Bot
+          <Building2 size={16} className="text-blue-600" /> Paràmetres Fiscals, IBAN, Bizum & Telegram
         </button>
       </div>
 
@@ -315,7 +337,7 @@ export default function ConfiguracioPage() {
         </div>
       )}
 
-      {/* TAB 2: PERMISOS D'ACCÉS AUTH (DASHBOARD WEB vs PWA MÒBIL) */}
+      {/* TAB 2: PERMISOS D'ACCÉS AUTH */}
       {activeTab === 'auth' && (
         <div className="space-y-4 text-xs">
           <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl flex justify-between items-center">
@@ -372,7 +394,7 @@ export default function ConfiguracioPage() {
         </div>
       )}
 
-      {/* TAB 3: PARÀMETRES EMPRESA & TELEGRAM BOT */}
+      {/* TAB 3: PARÀMETRES EMPRESA, COMPTES IBAN, BIZUM, TARGETES & TELEGRAM */}
       {activeTab === 'empresa' && (
         <form onSubmit={handleSaveCompanySettings} className="space-y-6 text-xs">
           
@@ -435,7 +457,111 @@ export default function ConfiguracioPage() {
             </div>
           </div>
 
-          {/* Card 2: Telegram Bot Integration & Webhook */}
+          {/* Card 2: Bank Accounts (IBANs) & Bizum Payment Gateways */}
+          <div className="p-6 bg-white rounded-3xl border border-neutral-200 shadow-sm space-y-4">
+            <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2 border-b pb-3">
+              <Landmark size={20} className="text-emerald-700" /> Comptes Bancaris (IBAN) i Cobraments Bizum d'Empresa
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {bankAccounts.map((b) => (
+                <div key={b.id} className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-2xl space-y-2">
+                  <div className="flex justify-between items-center border-b border-emerald-200 pb-2">
+                    <span className="font-bold text-emerald-950 text-sm">{b.bankName}</span>
+                    <span className="px-2.5 py-0.5 bg-emerald-700 text-white font-bold text-[10px] rounded-full">
+                      {b.type}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-neutral-500 font-bold block uppercase">Codi IBAN per Facturació:</span>
+                    <span className="font-mono font-extrabold text-neutral-900 text-sm">{b.iban}</span>
+                  </div>
+                  <span className="text-[10px] text-neutral-400 font-mono block">SWIFT/BIC: {b.bic}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Bizum Mobile Payment Gateway */}
+            <div className="p-4 bg-gradient-to-r from-teal-900 to-emerald-900 text-white rounded-2xl space-y-3 shadow-md">
+              <div className="flex justify-between items-center border-b border-teal-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <QrCode size={20} className="text-teal-300" />
+                  <h4 className="font-bold text-sm text-teal-100">Cobraments amb Bizum d'Empresa (Camp & PWA)</h4>
+                </div>
+                <span className="px-3 py-1 bg-teal-800 text-teal-200 font-bold text-[10px] rounded-full">
+                  Actiu per Caps de Grup
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-teal-300 uppercase block mb-1">TELÈFON BIZUM PROFESSIONAL</label>
+                  <input 
+                    type="text"
+                    value={bizumPhone}
+                    onChange={(e) => setBizumPhone(e.target.value)}
+                    className="w-full p-2.5 bg-teal-950 border border-teal-700 rounded-xl font-mono font-bold text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-teal-300 uppercase block mb-1">ID DE COMERÇ BIZUM (TPV)</label>
+                  <input 
+                    type="text"
+                    value={bizumMerchantId}
+                    onChange={(e) => setBizumMerchantId(e.target.value)}
+                    className="w-full p-2.5 bg-teal-950 border border-teal-700 rounded-xl font-mono font-bold text-white outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Corporate Cards & Holders (Caps de Grup) */}
+          <div className="p-6 bg-white rounded-3xl border border-neutral-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2">
+                <CreditCard size={20} className="text-purple-700" /> Targetes Corporatives i Titulars (Qui en disposa)
+              </h3>
+              <span className="text-xs text-neutral-500 font-bold bg-neutral-100 px-3 py-1 rounded-full">
+                {cards.length} Targetes Actives
+              </span>
+            </div>
+
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              Targetes d'empresa assignades als Caps de Grup i Maquinistes per a benzina, peatges i despeses de camp. Els comprovants i tiquets es fotografien directament des de l'App PWA mòbil.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {cards.map((card) => (
+                <div key={card.id} className="p-4 bg-neutral-900 text-white rounded-2xl shadow-lg border border-neutral-800 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <span className="font-mono text-xs font-bold text-neutral-400">{card.bankName}</span>
+                    <span className="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-[10px] font-bold rounded">
+                      {card.status}
+                    </span>
+                  </div>
+
+                  <div className="font-mono text-base tracking-widest text-neutral-200 py-1">
+                    {card.cardNumber}
+                  </div>
+
+                  <div className="flex justify-between items-end border-t border-neutral-800 pt-2 text-xs">
+                    <div>
+                      <span className="text-[9px] text-neutral-400 block uppercase">Titular / Qui en disposa</span>
+                      <span className="font-extrabold text-white">{card.holderName}</span>
+                      <span className="text-[10px] text-neutral-400 block">{card.holderRole}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] text-neutral-400 block uppercase">Límit Mensual</span>
+                      <span className="font-bold text-emerald-400">{card.monthlyLimit} €</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 4: Telegram Bot Integration & Webhook */}
           <div className="p-6 bg-white rounded-3xl border border-neutral-200 shadow-sm space-y-4">
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2">
@@ -497,7 +623,7 @@ export default function ConfiguracioPage() {
               type="submit"
               className="px-8 py-3.5 bg-primary text-white rounded-2xl font-bold text-sm shadow-xl hover:bg-primary/90 transition-all flex items-center gap-2"
             >
-              <Save size={18} /> 💾 Desar Canvis de l'Empresa i Telegram
+              <Save size={18} /> 💾 Desar Canvis de l'Empresa, Comptes, Targetes i Telegram
             </button>
           </div>
         </form>
