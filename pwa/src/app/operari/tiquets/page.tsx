@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   Camera, CreditCard, Receipt, Upload, CheckCircle2, ArrowLeft, Fuel, 
-  Utensils, Wrench, Shield, DollarSign, Clock, Check, RefreshCw
+  Utensils, Wrench, Shield, DollarSign, Clock, Check, RefreshCw, Package, MoreHorizontal
 } from 'lucide-react';
 
 interface ExpenseReceipt {
   id: string;
   concept: string;
   amount: string;
-  category: 'BENZINA' | 'DIETES' | 'EINA_EMERGENCIA' | 'PEATGE';
+  category: 'BENZINA' | 'MATERIAL' | 'DIETES' | 'EINA_EMERGENCIA' | 'PEATGE' | 'ALTRES';
   date: string;
   cardAssigned: string;
   photoUrl: string;
@@ -32,6 +32,16 @@ const INITIAL_EXPENSES: ExpenseReceipt[] = [
   },
   {
     id: 'exp-2',
+    concept: 'Compra d\'Emergència: Fittings PE 50mm i Tefló',
+    amount: '42,80 €',
+    category: 'MATERIAL',
+    date: '02/08/2026 16:45',
+    cardAssigned: 'Targeta Jordi Soler (**** 4122)',
+    photoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+    status: 'SINCRONITZAT'
+  },
+  {
+    id: 'exp-3',
     concept: 'Dinar de la Colla (Menú del Dia)',
     amount: '32,00 €',
     category: 'DIETES',
@@ -53,7 +63,6 @@ export default function OperariTiquetsPage() {
   const [isUploading, setIsUploading] = useState(false);
 
   const handleSimulatePhoto = () => {
-    // Simulate capturing a receipt ticket photo with camera
     setPhotoPreview('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80');
   };
 
@@ -80,7 +89,7 @@ export default function OperariTiquetsPage() {
       setConcept('');
       setAmount('');
       setPhotoPreview(null);
-      alert('🟢 Tiquet registrat i sincronitzat directament amb el departament de Comptabilitat!');
+      alert('🟢 Tiquet registrat i sincronitzat directament amb el departament de Comptabilitat al Dashboard Web (/gestio/configuracio i /gestio/operaris)!');
     }, 800);
   };
 
@@ -142,16 +151,18 @@ export default function OperariTiquetsPage() {
               </div>
 
               <div>
-                <label className="font-bold text-neutral-700 block mb-1">Tipus de Despesa</label>
+                <label className="font-bold text-neutral-700 block mb-1">Tipus de Despesa *</label>
                 <select 
                   value={category}
                   onChange={(e) => setCategory(e.target.value as any)}
                   className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-bold text-neutral-900 outline-none"
                 >
                   <option value="BENZINA">⛽ Benzina / Combustible</option>
+                  <option value="MATERIAL">📦 Material de Camp / Substitució</option>
                   <option value="DIETES">🍽️ Dietes / Dinar de Colla</option>
                   <option value="PEATGE">🛣️ Peatge / Autopista</option>
                   <option value="EINA_EMERGENCIA">🛠️ Eina d'Emergència</option>
+                  <option value="ALTRES">📋 Altres despeses de camp</option>
                 </select>
               </div>
             </div>
@@ -161,7 +172,7 @@ export default function OperariTiquetsPage() {
               <input 
                 required
                 type="text" 
-                placeholder="ex: Repostatge Furgoneta 1234-BCD..."
+                placeholder="ex: Compra de fittings PE 50mm per emergència..."
                 value={concept}
                 onChange={(e) => setConcept(e.target.value)}
                 className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-medium text-neutral-900 outline-none focus:border-primary"
@@ -216,16 +227,24 @@ export default function OperariTiquetsPage() {
         {/* Expenses List */}
         <div className="space-y-3">
           <h3 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
-            <CreditCard size={18} className="text-primary" /> Historial de Tiquets i Despeses Enviades
+            <CreditCard size={18} className="text-primary" /> Historial de Tiquets Enviats al Dashboard
           </h3>
 
           {expenses.map((exp) => (
             <div key={exp.id} className="p-4 bg-white rounded-2xl border border-neutral-200 flex justify-between items-center shadow-sm">
               <div className="space-y-1">
-                <span className="font-bold text-neutral-900 text-sm block">{exp.concept}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-neutral-900 text-sm">{exp.concept}</span>
+                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded ${
+                    exp.category === 'MATERIAL' ? 'bg-purple-100 text-purple-900' :
+                    exp.category === 'BENZINA' ? 'bg-amber-100 text-amber-900' : 'bg-blue-100 text-blue-900'
+                  }`}>
+                    {exp.category}
+                  </span>
+                </div>
                 <span className="text-[11px] text-neutral-500 block">{exp.cardAssigned} • {exp.date}</span>
                 <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-block">
-                  ✓ Sincronitzat amb Comptabilitat
+                  ✓ Sincronitzat amb Comptabilitat Dashboard
                 </span>
               </div>
 
@@ -241,22 +260,30 @@ export default function OperariTiquetsPage() {
 
       {/* PWA Navigation Bar */}
       <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex justify-around items-center h-20 px-4">
-          <Link className="flex flex-col items-center justify-center gap-1 w-16 h-16 text-on-surface-variant hover:text-primary transition-colors" href="/operari/feines">
+        <div className="flex justify-around items-center h-20 px-2">
+          <Link className="flex flex-col items-center justify-center gap-1 w-14 h-16 text-on-surface-variant hover:text-primary transition-colors" href="/operari/feines">
             <span className="material-symbols-outlined">content_paste</span>
-            <span className="font-label-bold text-[10px] uppercase tracking-wider">Feines</span>
+            <span className="font-label-bold text-[9px] uppercase tracking-wider">Feines</span>
           </Link>
-          <Link className="flex flex-col items-center justify-center gap-1 w-16 h-16 text-primary font-bold" href="/operari/tiquets">
+
+          <Link className="flex flex-col items-center justify-center gap-1 w-14 h-16 text-on-surface-variant hover:text-primary transition-colors" href="/operari/jornada">
+            <span className="material-symbols-outlined">schedule</span>
+            <span className="font-label-bold text-[9px] uppercase tracking-wider">Jornada</span>
+          </Link>
+
+          <Link className="flex flex-col items-center justify-center gap-1 w-14 h-16 text-primary font-bold" href="/operari/tiquets">
             <span className="material-symbols-outlined">receipt_long</span>
-            <span className="font-label-bold text-[10px] uppercase tracking-wider">Tiquets</span>
+            <span className="font-label-bold text-[9px] uppercase tracking-wider">Tiquets</span>
           </Link>
-          <Link className="flex flex-col items-center justify-center gap-1 w-16 h-16 text-on-surface-variant hover:text-primary transition-colors" href="/operari/camera">
+
+          <Link className="flex flex-col items-center justify-center gap-1 w-14 h-16 text-on-surface-variant hover:text-primary transition-colors" href="/operari/camera">
             <span className="material-symbols-outlined">photo_camera</span>
-            <span className="font-label-bold text-[10px] uppercase tracking-wider">Càmera</span>
+            <span className="font-label-bold text-[9px] uppercase tracking-wider">Càmera</span>
           </Link>
-          <Link className="flex flex-col items-center justify-center gap-1 w-16 h-16 text-on-surface-variant hover:text-primary transition-colors" href="/operari/material">
+
+          <Link className="flex flex-col items-center justify-center gap-1 w-14 h-16 text-on-surface-variant hover:text-primary transition-colors" href="/operari/material">
             <span className="material-symbols-outlined">inventory_2</span>
-            <span className="font-label-bold text-[10px] uppercase tracking-wider">Material</span>
+            <span className="font-label-bold text-[9px] uppercase tracking-wider">Material</span>
           </Link>
         </div>
       </nav>

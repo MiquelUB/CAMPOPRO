@@ -6,7 +6,7 @@ import {
   Settings, Users, Shield, Lock, Key, UserPlus, ShieldCheck, ShieldAlert, Check, 
   X, Edit3, Trash2, Smartphone, Mail, Phone, RefreshCw, Server, Bot, CheckCircle2,
   Building2, Save, Send, AlertTriangle, Monitor, HardDrive, CreditCard, Landmark,
-  QrCode, Receipt, Plus, PlusCircle, DollarSign
+  QrCode, Receipt, Plus, PlusCircle, DollarSign, Eye, Image
 } from 'lucide-react';
 
 interface StaffUser {
@@ -39,6 +39,54 @@ interface BankAccount {
   type: 'COBRAMENTS_CLIENTS' | 'PAGAMENTS_PROVEIDORS' | 'NOMINES';
   bic: string;
 }
+
+interface ExpenseTicketDashboard {
+  id: string;
+  workerName: string;
+  concept: string;
+  amount: string;
+  category: 'BENZINA' | 'MATERIAL' | 'DIETES' | 'EINA_EMERGENCIA' | 'PEATGE' | 'ALTRES';
+  date: string;
+  cardAssigned: string;
+  photoUrl: string;
+  status: 'APROVAT' | 'SINCRONITZAT';
+}
+
+const DASHBOARD_TICKETS_DB: ExpenseTicketDashboard[] = [
+  {
+    id: 'exp-1',
+    workerName: 'Jordi Soler (Cap de Grup)',
+    concept: 'Repostatge Benzina Furgoneta 1234-BCD',
+    amount: '65,40 €',
+    category: 'BENZINA',
+    date: '03/08/2026 08:30',
+    cardAssigned: 'Targeta **** 4122',
+    photoUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
+    status: 'APROVAT'
+  },
+  {
+    id: 'exp-2',
+    workerName: 'Jordi Soler (Cap de Grup)',
+    concept: 'Compra d\'Emergència: Fittings PE 50mm i Tefló',
+    amount: '42,80 €',
+    category: 'MATERIAL',
+    date: '02/08/2026 16:45',
+    cardAssigned: 'Targeta **** 4122',
+    photoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+    status: 'SINCRONITZAT'
+  },
+  {
+    id: 'exp-3',
+    workerName: 'Pau Ribas (Maquinista)',
+    concept: 'Filtre de Recanvi i Oli Tractor John Deere',
+    amount: '88,50 €',
+    category: 'MATERIAL',
+    date: '01/08/2026 11:20',
+    cardAssigned: 'Targeta **** 8821',
+    photoUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
+    status: 'APROVAT'
+  }
+];
 
 const INITIAL_CARDS: CorporateCard[] = [
   { id: 'c1', cardNumber: '**** **** **** 4122', holderName: 'Jordi Soler', holderRole: 'Cap de Grup de Camp', monthlyLimit: 1000, bankName: 'CaixaBank', status: 'ACTIVA' },
@@ -130,7 +178,9 @@ export default function ConfiguracioPage() {
   const [users, setUsers] = useState<StaffUser[]>(INITIAL_STAFF_DATABASE);
   const [cards, setCards] = useState<CorporateCard[]>(INITIAL_CARDS);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(INITIAL_BANKS);
-  
+  const [tickets, setTickets] = useState<ExpenseTicketDashboard[]>(DASHBOARD_TICKETS_DB);
+  const [selectedTicketPhoto, setSelectedTicketPhoto] = useState<string | null>(null);
+
   const [activeTab, setActiveTab] = useState<'personal' | 'auth' | 'empresa'>('personal');
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -144,7 +194,6 @@ export default function ConfiguracioPage() {
   // Treasury & Bizum Settings
   const [bizumPhone, setBizumPhone] = useState('600 00 11 22');
   const [bizumMerchantId, setBizumMerchantId] = useState('CAMPOPRO-BIZUM-88');
-  const [bizumActive, setBizumActive] = useState(true);
 
   // Telegram Bot State
   const [telegramBotToken, setTelegramBotToken] = useState('7123984712:AAH9fklmN389f_xK923uJz8s');
@@ -216,7 +265,7 @@ export default function ConfiguracioPage() {
       <nav className="flex items-center text-xs text-neutral-500 gap-1">
         <Link href="/gestio" className="hover:text-primary">Dashboard</Link>
         <span>/</span>
-        <span className="text-primary font-semibold">Configuració, Comptes, Targetes i Telegram</span>
+        <span className="text-primary font-semibold">Configuració, Tiquets, Comptes i Telegram</span>
       </nav>
 
       {/* Header Banner */}
@@ -224,10 +273,10 @@ export default function ConfiguracioPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             <Settings className="text-primary" size={28} />
-            Paràmetres Fiscals, Comptes, Targetes i Telegram
+            Paràmetres Fiscals, Historial de Tiquets i Telegram
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
-            Gestió de plantilla, comptes IBAN, cobraments amb Bizum, targetes corporatives de Caps de Grup i paràmetres de Telegram.
+            Auditoria de tiquets enviats des de la PWA (Material, Benzina, Dietes), comptes IBAN, Bizum i permisos d'usuari.
           </p>
         </div>
 
@@ -266,7 +315,7 @@ export default function ConfiguracioPage() {
             activeTab === 'empresa' ? 'bg-white text-blue-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-900'
           }`}
         >
-          <Building2 size={16} className="text-blue-600" /> Paràmetres Fiscals, IBAN, Bizum & Telegram
+          <Building2 size={16} className="text-blue-600" /> Paràmetres Fiscals, Tiquets, IBAN & Telegram
         </button>
       </div>
 
@@ -394,11 +443,64 @@ export default function ConfiguracioPage() {
         </div>
       )}
 
-      {/* TAB 3: PARÀMETRES EMPRESA, COMPTES IBAN, BIZUM, TARGETES & TELEGRAM */}
+      {/* TAB 3: PARÀMETRES EMPRESA, HISTORIAL DE TIQUETS DASHBOARD, IBAN & TELEGRAM */}
       {activeTab === 'empresa' && (
         <form onSubmit={handleSaveCompanySettings} className="space-y-6 text-xs">
           
-          {/* Card 1: Company Fiscal & Tax Data */}
+          {/* Card 1: HISTORIAL DE TIQUETS I DESPESES DE CAMP AL DASHBOARD */}
+          <div className="p-6 bg-white rounded-3xl border border-neutral-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div>
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full uppercase">
+                  Sincronitzat des de la PWA Mòbil
+                </span>
+                <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2 mt-1">
+                  <Receipt size={20} className="text-emerald-700" />
+                  Historial i Auditoria de Tiquets de Despeses de Camp
+                </h3>
+              </div>
+              <span className="text-xs font-bold text-neutral-500 bg-neutral-100 px-3 py-1 rounded-full">
+                {tickets.length} Tiquets Registrats
+              </span>
+            </div>
+
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              Aquí el departament de <strong>Comptabilitat</strong> pot consultar i auditar l'historial complet de tiquets enviats des del terreny pels Caps de Grup (Material, Benzina, Dietes).
+            </p>
+
+            <div className="space-y-3">
+              {tickets.map((ticket) => (
+                <div key={ticket.id} className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-neutral-100 transition-colors">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-neutral-900 text-sm">{ticket.concept}</span>
+                      <span className={`px-2.5 py-0.5 text-[9px] font-bold rounded ${
+                        ticket.category === 'MATERIAL' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
+                        ticket.category === 'BENZINA' ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-blue-100 text-blue-900 border border-blue-200'
+                      }`}>
+                        {ticket.category}
+                      </span>
+                    </div>
+                    <span className="text-neutral-500 block text-xs">Treballador: <strong>{ticket.workerName}</strong> • Data: {ticket.date}</span>
+                    <span className="text-emerald-800 font-bold block text-xs">{ticket.cardAssigned} • Estat: {ticket.status}</span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-extrabold text-neutral-900">{ticket.amount}</span>
+                    <img 
+                      src={ticket.photoUrl} 
+                      alt="Foto tiquet" 
+                      onClick={() => setSelectedTicketPhoto(ticket.photoUrl)}
+                      className="w-14 h-14 rounded-xl object-cover border border-neutral-300 shadow-sm cursor-pointer hover:scale-105 transition-transform" 
+                      title="Clica per ampliar el comprovant"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 2: Company Fiscal & Tax Data */}
           <div className="p-6 bg-white rounded-3xl border border-neutral-200 shadow-sm space-y-4">
             <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2 border-b pb-3">
               <Building2 size={20} className="text-primary" /> Paràmetres Fiscals i de Contacte de l'Empresa
@@ -457,7 +559,7 @@ export default function ConfiguracioPage() {
             </div>
           </div>
 
-          {/* Card 2: Bank Accounts (IBANs) & Bizum Payment Gateways */}
+          {/* Card 3: Bank Accounts (IBANs) & Bizum Payment Gateways */}
           <div className="p-6 bg-white rounded-3xl border border-neutral-200 shadow-sm space-y-4">
             <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2 border-b pb-3">
               <Landmark size={20} className="text-emerald-700" /> Comptes Bancaris (IBAN) i Cobraments Bizum d'Empresa
@@ -516,7 +618,7 @@ export default function ConfiguracioPage() {
             </div>
           </div>
 
-          {/* Card 3: Corporate Cards & Holders (Caps de Grup) */}
+          {/* Card 4: Corporate Cards & Holders (Caps de Grup) */}
           <div className="p-6 bg-white rounded-3xl border border-neutral-200 shadow-sm space-y-4">
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2">
@@ -526,10 +628,6 @@ export default function ConfiguracioPage() {
                 {cards.length} Targetes Actives
               </span>
             </div>
-
-            <p className="text-xs text-neutral-500 leading-relaxed">
-              Targetes d'empresa assignades als Caps de Grup i Maquinistes per a benzina, peatges i despeses de camp. Els comprovants i tiquets es fotografien directament des de l'App PWA mòbil.
-            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {cards.map((card) => (
@@ -561,7 +659,7 @@ export default function ConfiguracioPage() {
             </div>
           </div>
 
-          {/* Card 4: Telegram Bot Integration & Webhook */}
+          {/* Card 5: Telegram Bot Integration */}
           <div className="p-6 bg-white rounded-3xl border border-neutral-200 shadow-sm space-y-4">
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2">
@@ -623,10 +721,23 @@ export default function ConfiguracioPage() {
               type="submit"
               className="px-8 py-3.5 bg-primary text-white rounded-2xl font-bold text-sm shadow-xl hover:bg-primary/90 transition-all flex items-center gap-2"
             >
-              <Save size={18} /> 💾 Desar Canvis de l'Empresa, Comptes, Targetes i Telegram
+              <Save size={18} /> 💾 Desar Canvis de l'Empresa, Tiquets, Comptes i Telegram
             </button>
           </div>
         </form>
+      )}
+
+      {/* MODAL AMPLIACIÓ DE FOTO DE TIQUET */}
+      {selectedTicketPhoto && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-4 max-w-lg w-full shadow-2xl relative">
+            <button onClick={() => setSelectedTicketPhoto(null)} className="absolute top-3 right-3 bg-neutral-900 text-white p-2 rounded-full">
+              <X size={20} />
+            </button>
+            <h4 className="font-bold text-sm text-neutral-900 mb-3">Comprovant Escanejat de Tiquet</h4>
+            <img src={selectedTicketPhoto} alt="Foto tiquet ampliada" className="w-full h-80 object-cover rounded-2xl border border-neutral-300 shadow-inner" />
+          </div>
+        </div>
       )}
 
       {/* MODAL AFECIÓ DE NOU PERSONAL O ENGINYER */}
