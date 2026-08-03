@@ -17,6 +17,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
 
   const navLinks = [
     { name: 'Dashboard', path: '/gestio', icon: 'dashboard' },
+    { name: 'Operaris', path: '/gestio/operaris', icon: 'engineering' },
     { name: 'Clients', path: '/gestio/clients', icon: 'group' },
     { name: 'Magatzem', path: '/gestio/magatzem', icon: 'inventory_2' },
     { name: 'Seguiment Feines', path: '/gestio/feines/mapa', icon: 'map' },
@@ -66,7 +67,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
           <div className="h-16 px-4 md:px-xl flex items-center justify-between border-b border-surface-container-highest">
             <div className="flex items-center bg-surface-container-low px-md py-xs rounded-lg w-full max-w-sm border border-outline-variant">
               <span className="material-symbols-outlined text-outline">search</span>
-              <input className="bg-transparent border-none outline-none ml-sm w-full text-sm" placeholder="Cerca feines, clients o eines..." type="text"/>
+              <input className="bg-transparent border-none outline-none ml-sm w-full text-sm" placeholder="Cerca feines, operaris, clients o eines..." type="text"/>
             </div>
 
             {/* Header Right Action Icons */}
@@ -97,12 +98,19 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
               <Link href="/gestio" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
                 FEINA (DASHBOARD)
               </Link>
+
+              <Link href="/gestio/operaris" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/operaris' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
+                OPERARIS
+              </Link>
+
               <Link href="/gestio/feines/crear" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/feines/crear' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
                 REDACTAR FEINA
               </Link>
+
               <Link href="/gestio/feines/mapa" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/feines/mapa' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
                 SEGUIMENT MAPA
               </Link>
+
               <Link href="/gestio/feines/completades" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/feines/completades' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
                 RESULTATS
               </Link>
@@ -126,6 +134,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
               <div className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
                 <p><strong>Aquesta icona (?)</strong> ofereix l'accés directe al manual d'usuari i la guia del Portal d'Enginyer de CampoPro.</p>
                 <ul className="list-disc pl-5 space-y-1">
+                  <li><strong>Operaris:</strong> Consulta de tasques, valoracions de clients, km en vehicles i eines.</li>
                   <li><strong>Redacció de Feines:</strong> Crea ordres i assigna materials/eines.</li>
                   <li><strong>Seguiment en Mapa:</strong> Monitoritza les colles sobre el terreny.</li>
                   <li><strong>Telegram:</strong> Comunicació directa amb clients via Bot.</li>
