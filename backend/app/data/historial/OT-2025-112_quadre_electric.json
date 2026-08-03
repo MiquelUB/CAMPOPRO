@@ -1,0 +1,23 @@
+{
+  "id": "OT-2025-112",
+  "client_id": "2",
+  "client_name": "Finca Valles",
+  "titol": "Revisió de quadre elèctric i instal·lació de sensor de humitat IOT",
+  "ambit": "Instal·lació Elèctrica i Sensorització IOT",
+  "element_principal": "Quadre Elèctric & Sensor IOT",
+  "abast_magnitud": "Substitució de diferencial tripolar i calibració de 1 sensor IOT 40cm",
+  "hores_estimades_pressupost": 3.5,
+  "hores_reals_pwa": 3.8,
+  "operari_principal": "Marc Andreu",
+  "materials_usats": [
+    { "code": "MAT-088", "nom": "Sensor de Humitat IOT 40cm", "quantitat": 1, "unitat": "u", "preu_unitari": 180.00 },
+    { "code": "MAT-089", "nom": "Plafo Solar i Bateria Liti 12V", "quantitat": 1, "unitat": "u", "preu_unitari": 95.00 },
+    { "code": "MAT-090", "nom": "Cable Manguera de Purí 3x2.5mm", "quantitat": 15, "unitat": "m", "preu_unitari": 3.20 }
+  ],
+  "eines_usades": [
+    "Detector de Metalls i Cables Subterrani",
+    "Trepant Bosch GSR-18"
+  ],
+  "vehicle_usat": "Furgoneta Ford Transit 1234-BCD",
+  "comentaris_pwa": "Sensor IOT sincronitzat correctament amb la PWA i la plataforma de telemetria."
+}

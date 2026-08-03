@@ -1,0 +1,22 @@
+{
+  "id": "OT-2026-003",
+  "client_id": "1",
+  "client_name": "Agro Riera SL",
+  "titol": "Adobat foliar i llaurada de preparació al Camp 5 amb tractor",
+  "ambit": "Treballs Agrícoles i Moviment de Terres",
+  "element_principal": "Adobat Foliar & Tractor Pala",
+  "abast_magnitud": "Tractament de 4 hectàrees amb adobat nitrogenat i passada de cultivador",
+  "hores_estimades_pressupost": 6.0,
+  "hores_reals_pwa": 6.0,
+  "operari_principal": "Pau Ribas",
+  "materials_usats": [
+    { "code": "MAT-004", "nom": "Adobat Foliar Nitrogenat 25kg", "quantitat": 4, "unitat": "sacs", "preu_unitari": 32.50 },
+    { "code": "MAT-005", "nom": "Filtre de Malla 2 polzades High-Pressure", "quantitat": 1, "unitat": "u", "preu_unitari": 82.50 }
+  ],
+  "eines_usades": [
+    "Nivell Laser Topcon RL-H5A",
+    "Radial Makita 125mm"
+  ],
+  "vehicle_usat": "Tractor John Deere 6120M",
+  "comentaris_pwa": "Llaurada i adobat completats en 6 hores efectives de tractor. Terreny llest per sembrar."
+}

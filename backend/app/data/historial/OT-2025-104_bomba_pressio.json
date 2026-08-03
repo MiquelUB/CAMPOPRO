@@ -1,0 +1,23 @@
+{
+  "id": "OT-2025-104",
+  "client_id": "1",
+  "client_name": "Agro Riera SL",
+  "titol": "Reparació i manteniment de bomba de reg a l'estació central",
+  "ambit": "Estació de Bombeig i Pressurització",
+  "element_principal": "Bomba de Reg i Filtres de Pressió",
+  "abast_magnitud": "Substitució de junta, vàlvules de tall i 2 filtres de malla d'alta pressió",
+  "hores_estimades_pressupost": 5.0,
+  "hores_reals_pwa": 5.5,
+  "operari_principal": "Joan Martí",
+  "materials_usats": [
+    { "code": "MAT-005", "nom": "Filtre de Malla 2 polzades High-Pressure", "quantitat": 2, "unitat": "u", "preu_unitari": 82.50 },
+    { "code": "MAT-006", "nom": "Connector Rapid Inox 2 polzades", "quantitat": 4, "unitat": "u", "preu_unitari": 42.00 },
+    { "code": "MAT-002", "nom": "Valvula de Tall 1 polzada Inox", "quantitat": 1, "unitat": "u", "preu_unitari": 18.20 }
+  ],
+  "eines_usades": [
+    "Joc de Claus Stillson Heavy-Duty",
+    "Trepant Bosch GSR-18"
+  ],
+  "vehicle_usat": "Furgoneta Ford Transit 1234-BCD",
+  "comentaris_pwa": "Neteja de vàlvules i purga de l'estació de bombeig completada. Pressió estabilitzada a 5.0 bar."
+}

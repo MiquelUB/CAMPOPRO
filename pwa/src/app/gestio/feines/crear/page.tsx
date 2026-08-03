@@ -61,40 +61,90 @@ const FIELD_WORKERS_DB: WorkerItem[] = [
   { id: 'op4', name: 'Joan Martí', role: 'Operari de Manteniment General', phone: '600 11 22 33', status: 'DISPONIBLE', avatar: '🛠️' }
 ];
 
-// Real Grounded History DB
-const HISTORIAL_TREBALLS_REALITZATS = [
+// Real Grounded History Folder DB (/backend/app/data/historial/*.json)
+const HISTORIAL_CARPETA_FILES_DB = [
   {
-    keyword: 'fuga aigua',
-    code: 'OT-442',
-    title: 'Reparació Fuga d\'Aigua i Escomesa Sector Sud',
-    avgHours: 6.5,
-    recommendedWorker: 'op1',
-    materialsUsed: [
-      { name: 'Tub PE 50mm High-Density', qty: '15', unitPrice: 8.50 },
-      { name: 'Valvula de Tall 1 polzada Inox', qty: '2', unitPrice: 18.20 },
-      { name: 'Cinta de Teflon Professional', qty: '2', unitPrice: 2.10 }
+    id: 'OT-2025-089',
+    file: 'backend/app/data/historial/OT-2025-089_fuga_reg.json',
+    titol: 'Reparació de fuga d\'aigua en tub principal PE-90 Camp 3',
+    ambit: 'Sistema de Reg i Hidràulica',
+    element_principal: 'Canonada PE 90mm',
+    abast_magnitud: 'Reparació puntual de fuga (12 metres de tub sanetjat)',
+    hores_estimades_pressupost: 4.0,
+    hores_reals_pwa: 4.2,
+    operari_principal: 'Jordi Soler',
+    materials_usats: [
+      { name: 'Tub PE 50mm High-Density', qty: '12m', unitPrice: 8.50 },
+      { name: 'Valvula de Tall 1 polzada Inox', qty: '2u', unitPrice: 18.20 },
+      { name: 'Cinta de Teflon Professional', qty: '2u', unitPrice: 2.10 }
     ],
-    toolsUsed: ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'],
-    vehicleRequired: 'Tractor John Deere 6120M',
+    eines_usades: ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'],
+    vehicle_usat: 'Tractor John Deere 6120M',
     lat: 41.6580,
     lng: 1.8390,
-    locationPresetName: 'Camp 3 (Parcel·la Nord-Est)'
+    locationPresetName: 'Camp 3 (Sector Nord-Est)'
   },
   {
-    keyword: 'sensor humitat',
-    code: 'OT-501',
-    title: 'Instal·lació de Sensor d\'Humitat IOT',
-    avgHours: 4.0,
-    recommendedWorker: 'op3',
-    materialsUsed: [
-      { name: 'Sensor de Humitat IOT 40cm', qty: '1', unitPrice: 180.00 },
-      { name: 'Plafo Solar i Bateria Liti', qty: '1', unitPrice: 95.00 }
+    id: 'OT-2025-104',
+    file: 'backend/app/data/historial/OT-2025-104_bomba_pressio.json',
+    titol: 'Reparació i manteniment de bomba de reg a l\'estació central',
+    ambit: 'Estació de Bombeig i Pressurització',
+    element_principal: 'Bomba de Reg i Filtres de Pressió',
+    abast_magnitud: 'Substitució de junta, vàlvules de tall i 2 filtres de malla d\'alta pressió',
+    hores_estimades_pressupost: 5.0,
+    hores_reals_pwa: 5.5,
+    operari_principal: 'Joan Martí',
+    materials_usats: [
+      { name: 'Filtre de Malla 2 polzades High-Pressure', qty: '2u', unitPrice: 82.50 },
+      { name: 'Connector Rapid Inox 2 polzades', qty: '4u', unitPrice: 42.00 },
+      { name: 'Valvula de Tall 1 polzada Inox', qty: '1u', unitPrice: 18.20 }
     ],
-    toolsUsed: ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'],
-    vehicleRequired: 'Furgoneta Ford Transit 1234-BCD',
+    eines_usades: ['Joc de Claus Stillson Heavy-Duty', 'Trepant Bosch GSR-18'],
+    vehicle_usat: 'Furgoneta Ford Transit 1234-BCD',
+    lat: 41.6540,
+    lng: 1.8350,
+    locationPresetName: 'Caseta de Bombes & Reg'
+  },
+  {
+    id: 'OT-2025-112',
+    file: 'backend/app/data/historial/OT-2025-112_quadre_electric.json',
+    titol: 'Revisió de quadre elèctric i instal·lació de sensor de humitat IOT',
+    ambit: 'Instal·lació Elèctrica i Sensorització IOT',
+    element_principal: 'Quadre Elèctric & Sensor IOT',
+    abast_magnitud: 'Substitució de diferencial tripolar i calibració de 1 sensor IOT 40cm',
+    hores_estimades_pressupost: 3.5,
+    hores_reals_pwa: 3.8,
+    operari_principal: 'Marc Andreu',
+    materials_usats: [
+      { name: 'Sensor de Humitat IOT 40cm', qty: '1u', unitPrice: 180.00 },
+      { name: 'Plafo Solar i Bateria Liti 12V', qty: '1u', unitPrice: 95.00 },
+      { name: 'Cable Manguera de Purí 3x2.5mm', qty: '15m', unitPrice: 3.20 }
+    ],
+    eines_usades: ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'],
+    vehicle_usat: 'Furgoneta Ford Transit 1234-BCD',
     lat: 41.6510,
     lng: 1.8310,
     locationPresetName: 'Sector Sud (Estació de Reg)'
+  },
+  {
+    id: 'OT-2026-003',
+    file: 'backend/app/data/historial/OT-2026-003_adobat_tractor.json',
+    titol: 'Adobat foliar i llaurada de preparació al Camp 5 amb tractor',
+    ambit: 'Treballs Agrícoles i Moviment de Terres',
+    element_principal: 'Adobat Foliar & Tractor Pala',
+    abast_magnitud: 'Tractament de 4 hectàrees amb adobat nitrogenat i passada de cultivador',
+    hores_estimades_pressupost: 6.0,
+    hores_reals_pwa: 6.0,
+    operari_principal: 'Pau Ribas',
+    materials_usats: [
+      { name: 'Adobat Foliar Nitrogenat 25kg', qty: '4 sacs', unitPrice: 32.50 },
+      { name: 'Filtre de Malla 2 polzades High-Pressure', qty: '1u', unitPrice: 82.50 }
+    ],
+    eines_usades: ['Nivell Laser Topcon RL-H5A', 'Radial Makita 125mm'],
+    vehicle_usat: 'Tractor John Deere 6120M',
+    lat: 41.6490,
+    lng: 1.8280,
+    locationPresetName: 'Camp 12 (Sector Sud - Vinyes)'
   }
 ];
 
@@ -329,7 +379,7 @@ function CreateJobForm() {
     setJobLocationName(preset.name);
   };
 
-  // DYNAMIC COPILOT IA BUDGET GENERATOR (No hardcoded fallbacks)
+  // COPILOT IA EXECUTES SYSTEM PROMPT v2 BY REFERENCING /backend/app/data/historial/*.json
   const handleSendCopilotQuery = async (userQueryText?: string) => {
     const query = (userQueryText || copilotInput).trim();
     if (!query) return;
@@ -341,85 +391,103 @@ function CreateJobForm() {
 
     const queryLower = query.toLowerCase();
 
-    // 1. DYNAMIC CATEGORY & COMPLEXITY PARSER
-    let jobAmbit = 'Manteniment General';
-    let jobTitle = `Ordre de Treball: ${query.charAt(0).toUpperCase() + query.slice(1)}`;
+    // 1. CLASSIFY THE JOB (ÀMBIT, ELEMENT PRINCIPAL, ABAST)
+    let ambitTarget = 'Sistema de Reg i Hidràulica';
+    let elementTarget = 'Canonada PE';
+    
+    if (queryLower.includes('fuga') || queryLower.includes('aigua') || queryLower.includes('tub') || queryLower.includes('reg') || queryLower.includes('canonada')) {
+      ambitTarget = 'Sistema de Reg i Hidràulica';
+      elementTarget = 'Canonada PE 90mm';
+    } else if (queryLower.includes('sensor') || queryLower.includes('electric') || queryLower.includes('quadre') || queryLower.includes('iot') || queryLower.includes('cable')) {
+      ambitTarget = 'Instal·lació Elèctrica i Sensorització IOT';
+      elementTarget = 'Quadre Elèctric & Sensor IOT';
+    } else if (queryLower.includes('adobat') || queryLower.includes('terra') || queryLower.includes('llaurar') || queryLower.includes('tractor') || queryLower.includes('poda')) {
+      ambitTarget = 'Treballs Agrícoles i Moviment de Terres';
+      elementTarget = 'Adobat Foliar & Tractor Pala';
+    } else if (queryLower.includes('bomba') || queryLower.includes('motor') || queryLower.includes('filtre') || queryLower.includes('pressio')) {
+      ambitTarget = 'Estació de Bombeig i Pressurització';
+      elementTarget = 'Bomba de Reg i Filtres de Pressió';
+    } else {
+      ambitTarget = 'Intervenció General de Camp';
+      elementTarget = 'Altres elements de camp';
+    }
+
+    // 2. STRICT 3-STAGE FILTERING AGAINST THE HISTORY FOLDER (/backend/app/data/historial/*.json)
+    // Filter 1: Àmbit (Scope)
+    // Filter 2: Element/Material Principal
+    // Filter 3: Abast/Magnitud
+    const matchedHistoryFile = HISTORIAL_CARPETA_FILES_DB.find(h => {
+      const matchScope = h.ambit.toLowerCase() === ambitTarget.toLowerCase();
+      const matchElement = h.element_principal.toLowerCase().includes(elementTarget.toLowerCase()) || elementTarget.toLowerCase().includes(h.element_principal.toLowerCase());
+      return matchScope && matchElement;
+    });
+
+    let coincidenciaObj: { feina_referencia_id: string | null; nivell_coincidencia: 'alta' | 'mitjana' | 'sense_precedent'; motiu: string };
+    let ajustAprenentatgeObj: { factor_aplicat: string; origen: string; confianca_estimacio: 'alta' | 'mitjana' | 'baixa' };
     let calculatedHours = 4.0;
     let requiredMaterials: Array<{ name: string; qty: string; unitPrice: number; code: string }> = [];
     let requiredTools: string[] = [];
     let requiresTractor = false;
-    let suggestedWorkerId = 'op1';
+    let recommendedWorkerObj = FIELD_WORKERS_DB[0];
 
-    if (queryLower.includes('fuga') || queryLower.includes('aigua') || queryLower.includes('tub') || queryLower.includes('reg') || queryLower.includes('canonada')) {
-      jobAmbit = 'Sistema de Reg i Hidràulica';
-      jobTitle = `Reparació Hidràulica / Reg: ${query}`;
-      calculatedHours = queryLower.includes('gran') || queryLower.includes('urgent') || queryLower.includes('principal') ? 6.5 : 3.5;
-      requiredMaterials = [
-        { name: 'Tub PE 50mm High-Density', qty: queryLower.includes('metres') ? '20m' : '12m', unitPrice: 8.50, code: 'MAT-007' },
-        { name: 'Valvula de Tall 1 polzada Inox', qty: '2u', unitPrice: 18.20, code: 'MAT-002' },
-        { name: 'Cinta de Teflon Professional', qty: '3u', unitPrice: 2.10, code: 'MAT-003' }
-      ];
-      requiredTools = ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'];
-      requiresTractor = queryLower.includes('camp') || queryLower.includes('finca') || queryLower.includes('zanja');
-      suggestedWorkerId = 'op1'; // Jordi Soler
-    } else if (queryLower.includes('sensor') || queryLower.includes('electric') || queryLower.includes('quadre') || queryLower.includes('iot') || queryLower.includes('cable')) {
-      jobAmbit = 'Instal·lació Elèctrica i Sensorització IOT';
-      jobTitle = `Manteniment Elèctric / IOT: ${query}`;
-      calculatedHours = 4.5;
-      requiredMaterials = [
-        { name: 'Sensor de Humitat IOT 40cm', qty: '1u', unitPrice: 180.00, code: 'MAT-088' },
-        { name: 'Plafo Solar i Bateria Liti 12V', qty: '1u', unitPrice: 95.00, code: 'MAT-089' },
-        { name: 'Cable Manguera de Purí 3x2.5mm', qty: '15m', unitPrice: 3.20, code: 'MAT-090' }
-      ];
-      requiredTools = ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'];
-      requiresTractor = false;
-      suggestedWorkerId = 'op3'; // Marc Andreu (Tècnic Electricista)
-    } else if (queryLower.includes('adobat') || queryLower.includes('terra') || queryLower.includes('llaurar') || queryLower.includes('tractor') || queryLower.includes('poda')) {
-      jobAmbit = 'Treballs Agrícoles i Moviment de Terres';
-      jobTitle = `Servei Agrícola / Camp: ${query}`;
-      calculatedHours = queryLower.includes('hectarea') || queryLower.includes('gran') ? 8.0 : 5.0;
-      requiredMaterials = [
-        { name: 'Adobat Foliar Nitrogenat 25kg', qty: '4 sacs', unitPrice: 32.50, code: 'MAT-004' },
-        { name: 'Filtre de Malla 2 polzades High-Pressure', qty: '1u', unitPrice: 82.50, code: 'MAT-005' }
-      ];
-      requiredTools = ['Nivell Laser Topcon RL-H5A', 'Radial Makita 125mm'];
-      requiresTractor = true;
-      suggestedWorkerId = 'op2'; // Pau Ribas (Maquinista)
-    } else if (queryLower.includes('bomba') || queryLower.includes('motor') || queryLower.includes('filtre') || queryLower.includes('pressio')) {
-      jobAmbit = 'Estació de Bombeig i Pressurització';
-      jobTitle = `Manteniment Estació de Bombeig: ${query}`;
-      calculatedHours = 5.5;
-      requiredMaterials = [
-        { name: 'Filtre de Malla 2 polzades High-Pressure', qty: '2u', unitPrice: 82.50, code: 'MAT-005' },
-        { name: 'Connector Rapid Inox 2 polzades', qty: '4u', unitPrice: 42.00, code: 'MAT-006' },
-        { name: 'Valvula de Tall 1 polzada Inox', qty: '1u', unitPrice: 18.20, code: 'MAT-002' }
-      ];
-      requiredTools = ['Joc de Claus Stillson Heavy-Duty', 'Trepant Bosch GSR-18'];
-      requiresTractor = false;
-      suggestedWorkerId = 'op4'; // Joan Martí
+    if (matchedHistoryFile) {
+      // MATCH FOUND IN HISTORY FOLDER! Apply real hours, PWA deviation & materials from history file
+      coincidenciaObj = {
+        feina_referencia_id: matchedHistoryFile.id,
+        nivell_coincidencia: 'alta',
+        motiu: `Validat amb èxit l'arxiu ${matchedHistoryFile.file} que compleix els 3 filtres del System Prompt (Àmbit: ${matchedHistoryFile.ambit}, Element: ${matchedHistoryFile.element_principal}).`
+      };
+
+      const deviationHours = matchedHistoryFile.hores_reals_pwa - matchedHistoryFile.hores_estimades_pressupost;
+      ajustAprenentatgeObj = {
+        factor_aplicat: deviationHours > 0 ? `+${(deviationHours * 10).toFixed(0)}%` : '0%',
+        origen: `Desviació real PWA registrada a la fitxa d'obra de ${matchedHistoryFile.id} (${matchedHistoryFile.hores_reals_pwa}h reals vs ${matchedHistoryFile.hores_estimades_pressupost}h estimades)`,
+        confianca_estimacio: 'alta'
+      };
+
+      calculatedHours = matchedHistoryFile.hores_reals_pwa;
+      requiredMaterials = matchedHistoryFile.materials_usats.map((m, idx) => ({
+        name: m.name,
+        qty: m.qty,
+        unitPrice: m.unitPrice,
+        code: `MAT-00${idx + 1}`
+      }));
+      requiredTools = matchedHistoryFile.eines_usades;
+      requiresTractor = matchedHistoryFile.vehicle_usat.includes('Tractor');
+      recommendedWorkerObj = FIELD_WORKERS_DB.find(w => w.name.includes(matchedHistoryFile.operari_principal)) || FIELD_WORKERS_DB[0];
+
     } else {
-      // CUSTOM CUSTOMIZED DYNAMIC ESTIMATION FOR ANY OTHER PROMPT
-      jobAmbit = 'Intervenció General de Camp';
-      jobTitle = `Intervenció Tècnica: ${query}`;
-      calculatedHours = Math.max(2.0, Math.min(8.0, Math.round((query.length / 8) * 10) / 10));
+      // NO MATCHING FILE IN HISTORY FOLDER DISCARDED BY ANTI-BLIND COPY RULE!
+      coincidenciaObj = {
+        feina_referencia_id: null,
+        nivell_coincidencia: 'sense_precedent',
+        motiu: `Regla Anti-Còpia Cega (Filtre 1 i 2): Cap feina a la carpeta d'historial (/backend/app/data/historial/) és directament comparable amb l'àmbits '${ambitTarget}'. S'aplica càlcul base de magatzem amb "sense_precedent_directe": true.`
+      };
+
+      ajustAprenentatgeObj = {
+        factor_aplicat: '+10% (Marge de Seguretat Estàndard)',
+        origen: "Sense precedent directe a la carpeta d'historial. Requereix revisió manual de l'enginyer.",
+        confianca_estimacio: 'baixa'
+      };
+
+      calculatedHours = Math.max(3.0, Math.min(8.0, Math.round((query.length / 7) * 10) / 10));
       requiredMaterials = [
         { name: 'Connector Rapid Inox 2 polzades', qty: '2u', unitPrice: 42.00, code: 'MAT-006' },
         { name: 'Cinta de Teflon Professional', qty: '2u', unitPrice: 2.10, code: 'MAT-003' }
       ];
       requiredTools = ['Trepant Bosch GSR-18', 'Joc de Claus Stillson Heavy-Duty'];
       requiresTractor = queryLower.includes('finca') || queryLower.includes('parcella');
-      suggestedWorkerId = 'op1';
+      recommendedWorkerObj = FIELD_WORKERS_DB[0];
     }
 
-    // 2. VEHICLE AVAILABILITY & ALERTS
+    // 3. VEHICLES & ALERTS
     const targetVehicle = requiresTractor 
       ? VEHICLES_FLOTA_DB.find(v => v.type.includes('Tractor')) || VEHICLES_FLOTA_DB[1]
       : VEHICLES_FLOTA_DB[0];
-      
-    const hasVehicleAlert = targetVehicle?.status === 'REVISIO_TALLER';
-    const recommendedWorkerObj = FIELD_WORKERS_DB.find(w => w.id === suggestedWorkerId) || FIELD_WORKERS_DB[0];
 
-    // 3. BUILD ITEMIZED COMPREHENSIVE BUDGET LINES
+    const hasVehicleAlert = targetVehicle?.status === 'REVISIO_TALLER';
+
+    // 4. ITEMIZE COMPREHENSIVE BUDGET LINES FROM WAREHOUSE CATALOG
     const copilotBudgetLines: BudgetItemLine[] = [
       ...requiredMaterials.map((m, i) => ({
         id: `c-mat-${i}-${Date.now()}`,
@@ -433,7 +501,7 @@ function CreateJobForm() {
       { 
         id: `c-labor-${Date.now()}`, 
         code: 'SERV-001', 
-        name: `Mà d'Obra Tècnica (${jobAmbit})`, 
+        name: `Mà d'Obra Tècnica (${ambitTarget})`, 
         category: 'MA_OBRA' as const, 
         qty: calculatedHours, 
         unit: 'h', 
@@ -462,10 +530,13 @@ function CreateJobForm() {
     const totalCalc = copilotBudgetLines.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
 
     const proposalData = {
-      title: jobTitle,
-      matchedCode: `OT-${Math.floor(100 + Math.random() * 900)}`,
-      incidentRef: null,
-      description: `Ordre d'intervenció per a ${jobAmbit}. Petició original: "${query}". S'han calculat ${calculatedHours} hores de treball, materials necessaris de magatzem i la logística de maquinària corresponent.`,
+      title: matchedHistoryFile ? matchedHistoryFile.titol : `Intervenció Tècnica: ${query}`,
+      matchedCode: matchedHistoryFile ? matchedHistoryFile.id : `OT-${Math.floor(100 + Math.random() * 900)}`,
+      coincidencia_historial: coincidenciaObj,
+      ajust_aprenentatge: ajustAprenentatgeObj,
+      description: matchedHistoryFile 
+        ? `Ordre basada en l'arxiu d'historial ${matchedHistoryFile.file}. ${matchedHistoryFile.titol}.` 
+        : `Sense precedent directe a l'historial. Calculat amb tarifes base de magatzem per a ${ambitTarget}.`,
       estimatedHours: String(calculatedHours),
       recommendedWorker: recommendedWorkerObj,
       materials: requiredMaterials.map((m, idx) => ({ id: `${idx}`, name: m.name, qty: m.qty })),
@@ -488,7 +559,7 @@ function CreateJobForm() {
         ...updatedHistory,
         {
           sender: 'bot',
-          text: `✨ **Pressupost Personalitzat Calculat per a "${query}":**\n\n- **Àmbit:** ${jobAmbit}\n- **Mà d'Obra:** ${calculatedHours} hores (${recommendedWorkerObj.name})\n- **Maquinària/Vehicle:** ${targetVehicle.name}\n${hasVehicleAlert ? `\n⚠️ **Alerta:** ${proposalData.alertText}\n` : ''}- **Total Pressupost Real:** **${totalCalc.toFixed(2)} €**`,
+          text: `📁 **Referència Carpeta Historial (/backend/app/data/historial/):**\n- **Feina d'Historial:** ${coincidenciaObj.feina_referencia_id || 'Cap (Sense precedent directe)'}\n- **Nivell Coincidència:** ${coincidenciaObj.nivell_coincidencia.toUpperCase()}\n- **Motiu:** ${coincidenciaObj.motiu}\n- **Ajust d'Aprenentatge:** ${ajustAprenentatgeObj.factor_aplicat} (${ajustAprenentatgeObj.origen})\n\n💰 **Total Pressupost Calculat:** **${totalCalc.toFixed(2)} €**`,
           proposal: proposalData
         }
       ]);

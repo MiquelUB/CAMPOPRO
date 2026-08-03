@@ -1,0 +1,24 @@
+{
+  "id": "OT-2025-089",
+  "client_id": "1",
+  "client_name": "Agro Riera SL",
+  "titol": "Reparació de fuga d'aigua en tub principal PE-90 Camp 3",
+  "ambit": "Sistema de Reg i Hidràulica",
+  "element_principal": "Canonada PE 90mm",
+  "abast_magnitud": "Reparació puntual de fuga (12 metres de tub sanetjat)",
+  "hores_estimades_pressupost": 4.0,
+  "hores_reals_pwa": 4.2,
+  "operari_principal": "Jordi Soler",
+  "materials_usats": [
+    { "code": "MAT-007", "nom": "Tub PE 50mm High-Density", "quantitat": 12, "unitat": "m", "preu_unitari": 8.50 },
+    { "code": "MAT-002", "nom": "Valvula de Tall 1 polzada Inox", "quantitat": 2, "unitat": "u", "preu_unitari": 18.20 },
+    { "code": "MAT-003", "nom": "Cinta de Teflon Professional", "quantitat": 2, "unitat": "u", "preu_unitari": 2.10 }
+  ],
+  "eines_usades": [
+    "Trepant Bosch GSR-18",
+    "Radial Makita 125mm",
+    "Joc de Claus Stillson Heavy-Duty"
+  ],
+  "vehicle_usat": "Tractor John Deere 6120M",
+  "comentaris_pwa": "S'ha reobert rasa amb pala de tractor. Canonada reparada satisfactòriament i provada a 4.5 bar."
+}
