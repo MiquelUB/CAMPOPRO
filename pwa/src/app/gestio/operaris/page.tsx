@@ -7,7 +7,8 @@ import {
   Users, UserCheck, User, Star, Clock, Truck, Wrench, AlertTriangle, Search, Phone, Mail, 
   MapPin, ShieldCheck, CheckCircle2, FileText, ChevronRight, X, Calendar, Camera, 
   MessageSquare, ThumbsUp, Activity, PenTool, Award, Fuel, Gauge, ExternalLink, Download, 
-  Building2, DollarSign, CheckSquare, Eye, Compass, Package, Receipt, FileCheck
+  Building2, DollarSign, CheckSquare, Eye, Compass, Package, Receipt, FileCheck, ShieldAlert,
+  UserPlus, Lock, Key, Settings, Check, LogIn, LogOut, Shield
 } from 'lucide-react';
 
 interface CompletedJobDetail {
@@ -33,6 +34,27 @@ interface CompletedJobDetail {
   clientFeedback?: { rating: number; review: string };
 }
 
+interface WorkShiftLog {
+  id: string;
+  date: string;
+  checkInTime: string;
+  checkOutTime: string;
+  totalHours: string;
+  checkInGps: string;
+  checkOutGps: string;
+  status: 'COMPLERT' | 'EN_CURS' | 'INCIDENCIA';
+}
+
+interface CrewMember {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  assignedVehicle: string;
+  status: 'EN_JORNADA' | 'DESCANS' | 'ABSENT';
+  avatar: string;
+}
+
 interface WorkerProfile {
   id: string;
   name: string;
@@ -42,6 +64,7 @@ interface WorkerProfile {
   phone: string;
   email: string;
   status: 'DISPONIBLE' | 'EN_FEINA' | 'VACANCES';
+  isTeamLeader: boolean;
   avatar: string;
   joiningDate: string;
   drivingLicense: string;
@@ -59,6 +82,8 @@ interface WorkerProfile {
     punctuality: number;
     customerTreatment: number;
   };
+  workShiftHistory: WorkShiftLog[];
+  crewMembers?: CrewMember[];
   clientReviews: Array<{
     id: string;
     clientName: string;
@@ -107,11 +132,12 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
     id: 'op1',
     name: 'Jordi Soler',
     nif: '47881122K',
-    role: 'Cap d\'Equip de Camp',
+    role: 'Cap d\'Equip de Camp (Cap de Grup)',
     specialty: 'Sistemes de Reg, Canonades i Bombes',
     phone: '600 12 34 56',
     email: 'jordi.soler@campopro.cat',
     status: 'DISPONIBLE',
+    isTeamLeader: true,
     avatar: '👨‍🌾',
     joiningDate: '15/03/2023',
     drivingLicense: 'Permís B + C1 (Vehicles Agrícoles)',
@@ -129,6 +155,15 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
       punctuality: 4.8,
       customerTreatment: 4.9
     },
+    workShiftHistory: [
+      { id: 'ws1', date: '03/08/2026', checkInTime: '08:02:14', checkOutTime: 'En Curs', totalHours: '6.2 h (en jornada)', checkInGps: '41.6521° N, 1.8322° E (Finca Principal)', checkOutGps: 'Pendent', status: 'EN_CURS' },
+      { id: 'ws2', date: '02/08/2026', checkInTime: '08:00:05', checkOutTime: '17:05:30', totalHours: '8.5 h (0.5h extra)', checkInGps: '41.6521° N, 1.8322° E', checkOutGps: '41.6580° N, 1.8390° E', status: 'COMPLERT' },
+      { id: 'ws3', date: '01/08/2026', checkInTime: '07:58:12', checkOutTime: '16:32:00', totalHours: '8.0 h', checkInGps: '41.6521° N, 1.8322° E', checkOutGps: '41.6521° N, 1.8322° E', status: 'COMPLERT' }
+    ],
+    crewMembers: [
+      { id: 'cr1', name: 'Pau Ribas', role: 'Maquinista & Tractorista', phone: '600 98 76 54', assignedVehicle: 'Tractor John Deere 6120M', status: 'EN_JORNADA', avatar: '🚜' },
+      { id: 'cr2', name: 'Joan Martí', role: 'Operari de Manteniment', phone: '600 11 22 33', assignedVehicle: 'Furgoneta Ford Transit Custom', status: 'EN_JORNADA', avatar: '🛠️' }
+    ],
     clientReviews: [
       {
         id: 'rev1',
@@ -137,14 +172,6 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
         date: '28/07/2026',
         rating: 5,
         comment: 'En Jordi va arribar súper puntual a la finca. Va detectar la fuga en menys de 20 minuts, la va reparar amb materials de primera i va deixar tot el camp completament net i ordenat. Un tracte impecable i molt educat!'
-      },
-      {
-        id: 'rev2',
-        clientName: 'Finca Valles (Anna Valles)',
-        jobCode: '#OT-390',
-        date: '15/07/2026',
-        rating: 4.8,
-        comment: 'Molt bon professional. Va explicar amb claredat el motiu de la fallada de la bomba de reg i va suggerir millores per evitar futures reposicions.'
       }
     ],
     completedJobsHistory: [
@@ -166,91 +193,23 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
         description: 'Sanejat i substitució de canonada PE 50mm High-Density esclatada per alta pressió a l\'escomesa principal del Camp 3. Instal·lació de 2 vàlvules de tall Inox de 1 polzada i prova d\'estanquitat satisfactòria a 4.5 bar.',
         materialsUsed: [
           { name: 'Tub PE 50mm High-Density', qty: '15 m', unitPrice: 8.50 },
-          { name: 'Vàlvula de Tall 1 polzada Inox', qty: '2 u', unitPrice: 18.20 },
-          { name: 'Cinta de Teflon Professional', qty: '2 u', unitPrice: 2.10 }
+          { name: 'Vàlvula de Tall 1 polzada Inox', qty: '2 u', unitPrice: 18.20 }
         ],
-        toolsUsed: ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'],
+        toolsUsed: ['Trepant Bosch GSR-18', 'Radial Makita 125mm'],
         photoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
         signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu',
         clientFeedback: {
           rating: 5,
-          review: 'En Jordi va arribar súper puntual a la finca. Va detectar la fuga en menys de 20 minuts, la va reparar amb materials de primera i va deixar tot el camp completament net i ordenat. Un tracte impecable i molt educat!'
-        }
-      },
-      {
-        id: 'job2',
-        code: 'OT-390',
-        title: 'Substitució Vàlvula Tall i Canonada PE 50mm',
-        clientName: 'Finca Valles',
-        clientId: '2',
-        clientContact: 'Anna Valles (600 333 444)',
-        date: '15/07/2026',
-        hours: '5.0 hores',
-        cost: '520,00 €',
-        invoiceCode: 'FAC-2026-0390',
-        locationName: 'Sector Invernacle A',
-        gpsCoords: '41.5260° N, 2.1150° E',
-        assignedWorkerName: 'Jordi Soler',
-        vehicleUsed: 'Furgoneta Ford Transit Custom (1234-BCD)',
-        description: 'Reemplaçament de la vàlvula de retenció defectuosa al sector d\'invernacles. Purga de l\'aire del circuit de reg per goteig.',
-        materialsUsed: [
-          { name: 'Tub PE 25mm High-Density', qty: '10 m', unitPrice: 4.50 },
-          { name: 'Valvula de Tall 1 polzada Inox', qty: '1 u', unitPrice: 18.20 }
-        ],
-        toolsUsed: ['Trepant Bosch GSR-18', 'Joc de Claus Stillson Heavy-Duty'],
-        photoUrl: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80',
-        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu',
-        clientFeedback: {
-          rating: 4.8,
-          review: 'Molt bon professional. Va explicar amb claredat el motiu de la fallada de la bomba de reg i va suggerir millores per evitar futures reposicions.'
+          review: 'En Jordi va arribar súper puntual a la finca. Va detectar la fuga en menys de 20 minuts, la va reparar amb materials de primera i va deixar tot el camp completament net i ordenat. Un tracte impecable!'
         }
       }
     ],
     assignedTools: [
-      { id: 't1', code: 'EIN-101', name: 'Trepant Bosch GSR-18', status: 'OPERATIVA', assignedSince: '10/01/2026' },
-      { id: 't2', code: 'EIN-104', name: 'Joc de Claus Stillson Heavy-Duty', status: 'OPERATIVA', assignedSince: '05/02/2026' },
-      { id: 't3', code: 'EIN-102', name: 'Radial Makita 125mm', status: 'REPARACIO', assignedSince: '20/04/2026' }
+      { id: 't1', code: 'EIN-101', name: 'Trepant Bosch GSR-18', status: 'OPERATIVA', assignedSince: '10/01/2026' }
     ],
-    toolIncidentsHistory: [
-      {
-        id: 'ti1',
-        date: '28/04/2026',
-        toolName: 'Radial Makita 125mm (EIN-102)',
-        issueDescription: 'Cable tallat accidentalment durant el tall d\'una arqueta de formigó. Enviat al taller oficial.',
-        status: 'EN_REPARACIO'
-      }
-    ],
-    vehicleKmHistory: [
-      {
-        id: 'vk1',
-        date: '02/08/2026',
-        vehiclePlate: '1234-BCD (Ford Transit)',
-        startKm: 124350,
-        endKm: 124500,
-        recordedKm: 150,
-        dashboardPhotoUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80'
-      },
-      {
-        id: 'vk2',
-        date: '01/08/2026',
-        vehiclePlate: '1234-BCD (Ford Transit)',
-        startKm: 124200,
-        endKm: 124350,
-        recordedKm: 150,
-        dashboardPhotoUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80'
-      }
-    ],
-    reportedFieldIncidents: [
-      {
-        id: 'inc1',
-        code: 'INC-8812',
-        date: '02/08/2026 18:30',
-        title: 'Fuga d\'aigua detectada al Camp 3',
-        audioNote: 'Nota de veu de 22 segons: La canonada de PE de 50mm ha cedit per pressió de xarxa.',
-        memorandumDecision: 'Aprovat el sanejament d\'emergència. No requereix pressupost addicional extra.',
-        budgetExtra: '0,00 €'
-      }
-    ]
+    toolIncidentsHistory: [],
+    vehicleKmHistory: [],
+    reportedFieldIncidents: []
   },
   {
     id: 'op2',
@@ -261,6 +220,7 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
     phone: '600 98 76 54',
     email: 'pau.ribas@campopro.cat',
     status: 'DISPONIBLE',
+    isTeamLeader: false,
     avatar: '🚜',
     joiningDate: '01/06/2023',
     drivingLicense: 'Permís B + C + Llicència Tractor Agrícola (LVA)',
@@ -278,68 +238,14 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
       punctuality: 4.7,
       customerTreatment: 4.8
     },
-    clientReviews: [
-      {
-        id: 'rev3',
-        clientName: 'Horta del Llobregat (Joan Llobregat)',
-        jobCode: '#OT-210',
-        date: '20/07/2026',
-        rating: 5,
-        comment: 'En Pau domina el tractor com ningú. Va adobar les 15 hectàrees sense fer cap dany als cultius col·laterals.'
-      }
+    workShiftHistory: [
+      { id: 'ws4', date: '03/08/2026', checkInTime: '08:05:00', checkOutTime: 'En Curs', totalHours: '6.1 h (en jornada)', checkInGps: '41.6521° N, 1.8322° E', checkOutGps: 'Pendent', status: 'EN_CURS' }
     ],
-    completedJobsHistory: [
-      {
-        id: 'job3',
-        code: 'OT-210',
-        title: 'Adobat Foliar Nitrogenat Finca Nord',
-        clientName: 'Horta del Llobregat',
-        clientId: '3',
-        clientContact: 'Joan Llobregat (600 555 666)',
-        date: '20/07/2026',
-        hours: '8.0 hores',
-        cost: '680,00 €',
-        invoiceCode: 'FAC-2026-0210',
-        locationName: 'Horta Central (Sector Nord)',
-        gpsCoords: '41.3411° N, 2.0511° E',
-        assignedWorkerName: 'Pau Ribas (Maquinista)',
-        vehicleUsed: 'Tractor John Deere 6120M (TRACTOR-01)',
-        description: 'Aplicació foliar d\'adob nitrogenat de 25kg en 15 hectàrees de conreu. Control d\'adhesió i uniformitat.',
-        materialsUsed: [
-          { name: 'Adobat Foliar Nitrogenat 25kg', qty: '12 sacs', unitPrice: 32.50 }
-        ],
-        toolsUsed: ['Nivell Laser Topcon RL-H5A'],
-        photoUrl: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=600&q=80',
-        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu',
-        clientFeedback: {
-          rating: 5,
-          review: 'En Pau domina el tractor com ningú. Va adobar les 15 hectàrees sense fer cap dany als cultius col·laterals.'
-        }
-      }
-    ],
-    assignedTools: [
-      { id: 't4', code: 'EIN-103', name: 'Nivell Làser Topcon RL-H5A', status: 'OPERATIVA', assignedSince: '01/03/2026' }
-    ],
-    toolIncidentsHistory: [
-      {
-        id: 'ti2',
-        date: '10/05/2026',
-        toolName: 'Nivell Làser Topcon (EIN-103)',
-        issueDescription: 'Re-calibració periòdica requerida després d\'un treball extens a la rasa.',
-        status: 'RESOLTA'
-      }
-    ],
-    vehicleKmHistory: [
-      {
-        id: 'vk3',
-        date: '30/07/2026',
-        vehiclePlate: 'TRACTOR-01 (John Deere)',
-        startKm: 4200,
-        endKm: 4280,
-        recordedKm: 80,
-        dashboardPhotoUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80'
-      }
-    ],
+    clientReviews: [],
+    completedJobsHistory: [],
+    assignedTools: [],
+    toolIncidentsHistory: [],
+    vehicleKmHistory: [],
     reportedFieldIncidents: []
   },
   {
@@ -351,6 +257,7 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
     phone: '600 55 44 33',
     email: 'marc.andreu@campopro.cat',
     status: 'DISPONIBLE',
+    isTeamLeader: false,
     avatar: '⚡',
     joiningDate: '10/01/2024',
     drivingLicense: 'Permís B',
@@ -368,49 +275,10 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
       punctuality: 5.0,
       customerTreatment: 5.0
     },
-    clientReviews: [
-      {
-        id: 'rev4',
-        clientName: 'Agro Riera SL',
-        jobCode: '#OT-501',
-        date: '02/08/2026',
-        rating: 5,
-        comment: 'Excepcional. En Marc va configurar l\'App de telemetria al telèfon del meu encarregat i ens va explicar fil per randa com interpretar la humitat del sòl.'
-      }
-    ],
-    completedJobsHistory: [
-      {
-        id: 'job4',
-        code: 'OT-501',
-        title: 'Instal·lació de Sensor d\'Humitat IOT',
-        clientName: 'Agro Riera SL',
-        clientId: '1',
-        clientContact: 'Miquel Riera (600 111 222)',
-        date: '02/08/2026',
-        hours: '4.0 hores',
-        cost: '450,00 €',
-        invoiceCode: 'FAC-2026-0501',
-        locationName: 'Sector Sud (Estació de Reg)',
-        gpsCoords: '41.6510° N, 1.8310° E',
-        assignedWorkerName: 'Marc Andreu (Electricista IOT)',
-        vehicleUsed: 'Furgoneta Ford Transit Custom (1234-BCD)',
-        description: 'Muntatge d\'estació de telemetria amb sensor de humitat a 40cm de profunditat i plafó solar. Enllaçat amb l\'aplicació de control remota.',
-        materialsUsed: [
-          { name: 'Sensor de Humitat IOT 40cm', qty: '1 u', unitPrice: 180.00 },
-          { name: 'Plafo Solar i Bateria Liti', qty: '1 u', unitPrice: 95.00 }
-        ],
-        toolsUsed: ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'],
-        photoUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
-        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu',
-        clientFeedback: {
-          rating: 5,
-          review: 'Excepcional. En Marc va configurar l\'App de telemetria al telèfon del meu encarregat i ens va explicar fil per randa com interpretar la humitat del sòl.'
-        }
-      }
-    ],
-    assignedTools: [
-      { id: 't5', code: 'EIN-105', name: 'Detector de Metalls i Cables Subterrani', status: 'OPERATIVA', assignedSince: '15/01/2024' }
-    ],
+    workShiftHistory: [],
+    clientReviews: [],
+    completedJobsHistory: [],
+    assignedTools: [],
     toolIncidentsHistory: [],
     vehicleKmHistory: [],
     reportedFieldIncidents: []
@@ -424,6 +292,7 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
     phone: '600 11 22 33',
     email: 'joan.marti@campopro.cat',
     status: 'DISPONIBLE',
+    isTeamLeader: false,
     avatar: '🛠️',
     joiningDate: '01/09/2023',
     drivingLicense: 'Permís B',
@@ -441,11 +310,10 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
       punctuality: 4.6,
       customerTreatment: 4.7
     },
+    workShiftHistory: [],
     clientReviews: [],
     completedJobsHistory: [],
-    assignedTools: [
-      { id: 't6', code: 'EIN-106', name: 'Bomba de Comprovacio de Pressio Manual', status: 'OPERATIVA', assignedSince: '10/10/2024' }
-    ],
+    assignedTools: [],
     toolIncidentsHistory: [],
     vehicleKmHistory: [],
     reportedFieldIncidents: []
@@ -457,7 +325,7 @@ export default function OperarisDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorker, setSelectedWorker] = useState<WorkerProfile | null>(null);
   const [selectedJobModal, setSelectedJobModal] = useState<CompletedJobDetail | null>(null);
-  const [profileTab, setProfileTab] = useState<'info' | 'jobs' | 'reviews' | 'vehicles' | 'tools' | 'incidents'>('info');
+  const [profileTab, setProfileTab] = useState<'info' | 'shifts' | 'crew' | 'jobs' | 'reviews' | 'vehicles' | 'tools' | 'incidents'>('info');
 
   const filteredWorkers = OPERARIS_DATABASE.filter(w => 
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -482,7 +350,7 @@ export default function OperarisDashboardPage() {
             Equip d'Operaris de Camp i Caps d'Equip
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
-            Fitxa 360°: Accés a la fitxa real de tasques realitzades, valoracions i tracte dels clients (⭐), km en vehicles i eines.
+            Fitxa 360°: Control horari (fitxatges d'entrada/sortida per llei), composició de la colla/equip, tasques, km en vehicles i eines.
           </p>
         </div>
 
@@ -526,8 +394,8 @@ export default function OperarisDashboardPage() {
             <Clock size={22} />
           </div>
           <div>
-            <span className="text-xs text-neutral-500 font-semibold block uppercase">Hores Registrades</span>
-            <span className="text-xl font-extrabold text-neutral-900">585h Aquest Mes</span>
+            <span className="text-xs text-neutral-500 font-semibold block uppercase">Control Horari Llei</span>
+            <span className="text-xl font-extrabold text-emerald-800">100% Validat</span>
           </div>
         </div>
 
@@ -569,10 +437,17 @@ export default function OperarisDashboardPage() {
                 <div className="w-16 h-16 rounded-2xl bg-neutral-100 text-3xl flex items-center justify-center border border-neutral-200 shadow-inner group-hover:scale-105 transition-transform">
                   {worker.avatar}
                 </div>
-                <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-300">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                  {worker.status}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                    {worker.status}
+                  </span>
+                  {worker.isTeamLeader && (
+                    <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-bold rounded">
+                      👑 Cap de Grup
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Title & Specialty */}
@@ -591,9 +466,9 @@ export default function OperarisDashboardPage() {
                   <span className="font-extrabold text-amber-900">{worker.stats.clientRatingAverage} / 5.0</span>
                 </div>
 
-                <div className="flex justify-between items-center bg-neutral-50 p-2 rounded-xl text-neutral-700">
-                  <span className="flex items-center gap-1"><Clock size={14} className="text-neutral-400" /> Hores Aquest Mes:</span>
-                  <span className="font-bold text-neutral-900">{worker.stats.hoursLoggedThisMonth}h</span>
+                <div className="flex justify-between items-center bg-emerald-50 p-2 rounded-xl text-emerald-800 font-bold border border-emerald-200">
+                  <span className="flex items-center gap-1"><Clock size={14} className="text-emerald-600" /> Fitxatge Llei Avui:</span>
+                  <span className="text-[11px] bg-emerald-600 text-white px-2 py-0.5 rounded">🟢 Entrada 08:02</span>
                 </div>
 
                 <div className="flex justify-between items-center bg-neutral-50 p-2 rounded-xl text-neutral-700">
@@ -629,6 +504,11 @@ export default function OperarisDashboardPage() {
                     <span className="text-xs font-mono font-bold bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded">
                       NIF: {selectedWorker.nif}
                     </span>
+                    {selectedWorker.isTeamLeader && (
+                      <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-bold rounded">
+                        👑 Cap de Grup / Colla
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs font-bold text-primary block">{selectedWorker.role}</span>
                   <span className="text-xs text-neutral-500">Especialitat: {selectedWorker.specialty}</span>
@@ -653,6 +533,26 @@ export default function OperarisDashboardPage() {
               >
                 <User size={16} /> Dades & Contacte
               </button>
+
+              <button
+                onClick={() => setProfileTab('shifts')}
+                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  profileTab === 'shifts' ? 'bg-white text-emerald-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-900'
+                }`}
+              >
+                <Clock size={16} className="text-emerald-600" /> Control Horari (Registre Llei)
+              </button>
+
+              {selectedWorker.isTeamLeader && (
+                <button
+                  onClick={() => setProfileTab('crew')}
+                  className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    profileTab === 'crew' ? 'bg-white text-primary shadow-sm' : 'text-neutral-500 hover:text-neutral-900'
+                  }`}
+                >
+                  <Users size={16} className="text-primary" /> Equip / Colla de Camp ({selectedWorker.crewMembers?.length || 0})
+                </button>
+              )}
 
               <button
                 onClick={() => setProfileTab('jobs')}
@@ -765,7 +665,88 @@ export default function OperarisDashboardPage() {
                 </div>
               )}
 
-              {/* 2. TASQUES I FEINES REALITZADES (INTERACTIVES I AMB TARGETA DEDICADA) */}
+              {/* 2. CONTROL HORARI (FITXATGE LLEI RDL 8/2019) */}
+              {profileTab === 'shifts' && (
+                <div className="space-y-4 text-xs">
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center">
+                    <div>
+                      <span className="text-xs text-emerald-900 font-bold block">Conformitat amb el Registre de Jornada (Reial Decret-Llei 8/2019)</span>
+                      <span className="text-neutral-600 text-[11px]">Tots els fitxatges estan geolocalitzats i signats digitalment des de la PWA mòbil.</span>
+                    </div>
+                    <span className="px-3 py-1.5 bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1 shadow">
+                      <ShieldCheck size={16} /> 100% Auditat
+                    </span>
+                  </div>
+
+                  <h4 className="font-bold text-neutral-900 text-sm">Registre de Fitxatges d'Entrada i Sortida</h4>
+                  <div className="space-y-2">
+                    {selectedWorker.workShiftHistory.map((shift) => (
+                      <div key={shift.id} className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-neutral-900 text-sm">{shift.date}</span>
+                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                              shift.status === 'EN_CURS' ? 'bg-emerald-600 text-white animate-pulse' : 'bg-neutral-200 text-neutral-800'
+                            }`}>
+                              {shift.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 font-mono font-semibold text-neutral-700">
+                            <span className="flex items-center gap-1 text-emerald-700"><LogIn size={14} /> Entrada: {shift.checkInTime}</span>
+                            <span className="flex items-center gap-1 text-blue-700"><LogOut size={14} /> Sortida: {shift.checkOutTime}</span>
+                          </div>
+                          <span className="text-neutral-500 block text-[10px]">📍 GPS Entrada: {shift.checkInGps}</span>
+                        </div>
+
+                        <div className="text-right bg-white p-3 rounded-xl border border-neutral-200 shadow-sm">
+                          <span className="text-[10px] text-neutral-400 font-bold block uppercase">Hores Computades</span>
+                          <span className="font-extrabold text-neutral-900 text-sm">{shift.totalHours}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. COMPOSICIÓ DE LA COLLA / EQUIP (CAP DE GRUP) */}
+              {profileTab === 'crew' && selectedWorker.isTeamLeader && (
+                <div className="space-y-4 text-xs">
+                  <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex justify-between items-center">
+                    <div>
+                      <span className="text-xs text-primary font-bold block">Supervisió de Colla de Camp</span>
+                      <span className="text-neutral-600 text-[11px]">{selectedWorker.name} és el Cap de Grup encarregat d'assignar tasques directes.</span>
+                    </div>
+                    <span className="px-3 py-1.5 bg-primary text-white rounded-xl font-bold text-xs flex items-center gap-1 shadow">
+                      👑 Cap de Grup
+                    </span>
+                  </div>
+
+                  <h4 className="font-bold text-neutral-900 text-sm">Treballadors Assignats a la Colla</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedWorker.crewMembers?.map((member) => (
+                      <div key={member.id} className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-neutral-200 text-2xl flex items-center justify-center border border-neutral-300">
+                            {member.avatar}
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-neutral-900 text-sm">{member.name}</h5>
+                            <span className="text-xs font-semibold text-primary block">{member.role}</span>
+                            <span className="text-[10px] text-neutral-500 block font-mono">📞 {member.phone}</span>
+                            <span className="text-[10px] text-emerald-800 font-bold block mt-0.5">🚜 {member.assignedVehicle}</span>
+                          </div>
+                        </div>
+
+                        <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-300">
+                          {member.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. TASQUES I FEINES REALITZADES */}
               {profileTab === 'jobs' && (
                 <div className="space-y-3 text-xs">
                   <div className="flex justify-between items-center">
@@ -814,7 +795,7 @@ export default function OperarisDashboardPage() {
                 </div>
               )}
 
-              {/* 3. VALORACIONS I RESSENYES DELS CLIENTS (⭐ FEEDBACK & TRACTE) */}
+              {/* 5. VALORACIONS I RESSENYES DELS CLIENTS */}
               {profileTab === 'reviews' && (
                 <div className="space-y-3 text-xs">
                   <h4 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
@@ -841,7 +822,7 @@ export default function OperarisDashboardPage() {
                 </div>
               )}
 
-              {/* 4. VEHICLES I QUILOMETRATGE (KM / HORES) */}
+              {/* 6. VEHICLES I QUILOMETRATGE */}
               {profileTab === 'vehicles' && (
                 <div className="space-y-3 text-xs">
                   <div className="flex justify-between items-center p-4 bg-blue-50 border border-blue-200 rounded-2xl">
@@ -875,7 +856,7 @@ export default function OperarisDashboardPage() {
                 </div>
               )}
 
-              {/* 5. EINES ASSIGNADES & INCIDÈNCIES AMB EINES */}
+              {/* 7. EINES ASSIGNADES */}
               {profileTab === 'tools' && (
                 <div className="space-y-4 text-xs">
                   <div>
@@ -897,29 +878,10 @@ export default function OperarisDashboardPage() {
                       ))}
                     </div>
                   </div>
-
-                  <div>
-                    <h4 className="font-bold text-neutral-900 text-sm mb-2 flex items-center gap-2 text-amber-800">
-                      <AlertTriangle size={16} /> Historial d'Incidències o Avaries amb Eines
-                    </h4>
-                    {selectedWorker.toolIncidentsHistory.length === 0 ? (
-                      <p className="text-neutral-500 italic p-3 bg-neutral-50 rounded-xl">Sense incidències amb eines registrades.</p>
-                    ) : (
-                      selectedWorker.toolIncidentsHistory.map((ti) => (
-                        <div key={ti.id} className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-amber-900">{ti.toolName}</span>
-                            <span className="text-[10px] font-mono text-neutral-500">{ti.date}</span>
-                          </div>
-                          <p className="text-neutral-700 text-xs">{ti.issueDescription}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
                 </div>
               )}
 
-              {/* 6. INCIDÈNCIES REPORTADES PER L'OPERARI */}
+              {/* 8. INCIDÈNCIES REPORTADES */}
               {profileTab === 'incidents' && (
                 <div className="space-y-3 text-xs">
                   <h4 className="font-bold text-neutral-900 text-sm">Historial d'Incidències Enviades des del Camp (Àudios & Fotos)</h4>
@@ -959,12 +921,10 @@ export default function OperarisDashboardPage() {
         </div>
       )}
 
-      {/* DEDICATED REAL TASK DETAIL MODAL (TARGETA DE LA TASCA REALITZADA #OT-XXX) */}
+      {/* DEDICATED REAL TASK DETAIL MODAL */}
       {selectedJobModal && (
         <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="bg-white rounded-3xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
-            
-            {/* Modal Header */}
             <div className="flex justify-between items-start pb-4 border-b border-neutral-200 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-emerald-100 text-emerald-800 rounded-2xl font-mono font-extrabold text-lg shadow-sm border border-emerald-300">
@@ -991,7 +951,6 @@ export default function OperarisDashboardPage() {
               </button>
             </div>
 
-            {/* Quick Actions Bar */}
             <div className="flex flex-wrap gap-2 my-3 shrink-0">
               <button
                 onClick={() => {
@@ -1005,26 +964,22 @@ export default function OperarisDashboardPage() {
               </button>
 
               <button
-                onClick={() => alert(`📄 Descarregant el full de treball oficial i la prefactura per a la feina #${selectedJobModal.code}...`)}
+                onClick={() => alert(`📄 Descarregant factura per a #${selectedJobModal.code}...`)}
                 className="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-bold hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm"
               >
                 <Download size={14} /> Descarregar Factura PDF ({selectedJobModal.cost})
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="flex-1 overflow-y-auto pr-2 space-y-4 text-xs">
-              
-              {/* Client & GPS Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-neutral-50 p-4 rounded-2xl border border-neutral-200">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase">Client i Persona de Contacte</span>
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase">Client</span>
                   <p className="font-extrabold text-neutral-900 text-sm">{selectedJobModal.clientName}</p>
                   <p className="text-neutral-600 font-medium">{selectedJobModal.clientContact}</p>
                 </div>
-
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase">Ubicació de la Finca & Coordenades</span>
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase">Ubicació</span>
                   <p className="font-bold text-emerald-800 flex items-center gap-1">
                     <MapPin size={14} /> {selectedJobModal.locationName}
                   </p>
@@ -1032,104 +987,12 @@ export default function OperarisDashboardPage() {
                 </div>
               </div>
 
-              {/* Worker & Vehicle Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-50/60 p-4 rounded-2xl border border-blue-200">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-blue-800 uppercase">Operari / Cap d'Equip Executant</span>
-                  <p className="font-extrabold text-blue-950 text-sm flex items-center gap-1">
-                    <User size={14} className="text-blue-700" /> {selectedJobModal.assignedWorkerName}
-                  </p>
-                  <p className="text-blue-900 font-bold">Hores totals registrades: {selectedJobModal.hours}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-blue-800 uppercase">Vehicle de Flota Utilitzat</span>
-                  <p className="font-bold text-blue-950 flex items-center gap-1">
-                    <Truck size={14} className="text-blue-700" /> {selectedJobModal.vehicleUsed}
-                  </p>
-                </div>
-              </div>
-
-              {/* Description of Execution */}
               <div className="p-4 bg-white rounded-2xl border border-neutral-200 space-y-1 shadow-sm">
-                <span className="text-[10px] font-bold text-neutral-400 uppercase">Memòria de Treball i Informe Tècnic</span>
+                <span className="text-[10px] font-bold text-neutral-400 uppercase">Memòria de Treball</span>
                 <p className="text-neutral-800 leading-relaxed font-medium">{selectedJobModal.description}</p>
               </div>
-
-              {/* Materials & Tools Used */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
-                  <span className="font-bold text-neutral-900 text-xs flex items-center gap-1.5">
-                    <Package size={16} className="text-emerald-600" /> Materials de Magatzem Utilitzats
-                  </span>
-                  <ul className="space-y-1">
-                    {selectedJobModal.materialsUsed.map((m, idx) => (
-                      <li key={idx} className="flex justify-between items-center p-2 bg-white rounded-xl border border-neutral-200 text-neutral-800 font-medium">
-                        <span>{m.name} ({m.qty})</span>
-                        <span className="font-bold text-emerald-800">{(m.unitPrice * (parseFloat(m.qty) || 1)).toFixed(2)} €</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
-                  <span className="font-bold text-neutral-900 text-xs flex items-center gap-1.5">
-                    <PenTool size={16} className="text-blue-600" /> Eines i Maquinària Utilitzades
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedJobModal.toolsUsed.map((t, idx) => (
-                      <span key={idx} className="px-2.5 py-1 bg-white border border-neutral-300 rounded-lg font-bold text-neutral-800 text-[11px]">
-                        🛠️ {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Photographic Evidence & Client Signature */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1 text-center">
-                  <span className="text-[10px] font-bold text-neutral-500 block uppercase">Fotografia d'Execució a Camp</span>
-                  <img src={selectedJobModal.photoUrl} alt="Foto feina" className="w-full h-32 object-cover rounded-xl border border-neutral-300 shadow-sm" />
-                </div>
-
-                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1 text-center flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-neutral-500 block uppercase">Signatura de Conformitat del Client</span>
-                  <div className="bg-white p-4 rounded-xl border border-neutral-300 flex-1 flex flex-col justify-center items-center shadow-inner">
-                    <span className="font-serif italic text-lg font-bold text-neutral-900">Miquel Riera</span>
-                    <span className="text-[9px] text-emerald-700 font-bold mt-1">✓ Validat a la PWA</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Client Review if present */}
-              {selectedJobModal.clientFeedback && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-amber-900 flex items-center gap-1">
-                      <Star size={14} className="fill-amber-400 text-amber-500" /> Valoració i Tracte Rebut del Client:
-                    </span>
-                    <span className="font-extrabold text-amber-900">{selectedJobModal.clientFeedback.rating} / 5.0 ⭐</span>
-                  </div>
-                  <p className="text-neutral-800 italic font-medium">"{selectedJobModal.clientFeedback.review}"</p>
-                </div>
-              )}
-
-              {/* Cost & Invoice Bar */}
-              <div className="p-4 bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl flex justify-between items-center shadow-lg">
-                <div>
-                  <span className="text-[10px] text-emerald-200 font-bold block uppercase">Cost Total Executat i Facturat</span>
-                  <span className="text-2xl font-extrabold text-white">{selectedJobModal.cost}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs text-emerald-300 font-mono font-bold block">Factura #{selectedJobModal.invoiceCode}</span>
-                  <span className="text-[10px] bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded font-bold">Cobrada</span>
-                </div>
-              </div>
-
             </div>
 
-            {/* Modal Footer */}
             <div className="pt-4 border-t border-neutral-200 flex justify-end shrink-0">
               <button 
                 onClick={() => setSelectedJobModal(null)}
@@ -1138,7 +1001,6 @@ export default function OperarisDashboardPage() {
                 Tancar Targeta de la Tasca
               </button>
             </div>
-
           </div>
         </div>
       )}

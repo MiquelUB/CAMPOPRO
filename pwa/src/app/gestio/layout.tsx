@@ -25,6 +25,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
     { name: 'Incidències', path: '/gestio/incidencies', icon: 'report_problem' },
     { name: 'Notificacions Telegram', path: '/gestio/notificacions', icon: 'send' },
     { name: 'Plànols', path: '/gestio/planols', icon: 'architecture' },
+    { name: 'Configuració & Auth', path: '/gestio/configuracio', icon: 'settings' },
   ];
 
   return (
@@ -36,7 +37,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
           <span className="font-display-lg text-lg text-white tracking-tight hidden md:inline group-hover:inline whitespace-nowrap">CampoPro</span>
         </div>
         
-        <nav className="flex-1 space-y-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto">
           {navLinks.map((link) => {
             const isActive = pathname === link.path || (link.path !== '/gestio' && pathname.startsWith(link.path));
             return (
@@ -111,8 +112,8 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
                 SEGUIMENT MAPA
               </Link>
 
-              <Link href="/gestio/feines/completades" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/feines/completades' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-                RESULTATS
+              <Link href="/gestio/configuracio" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/configuracio' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
+                CONFIGURACIÓ
               </Link>
             </nav>
           </div>
@@ -134,10 +135,9 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
               <div className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
                 <p><strong>Aquesta icona (?)</strong> ofereix l'accés directe al manual d'usuari i la guia del Portal d'Enginyer de CampoPro.</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li><strong>Operaris:</strong> Consulta de tasques, valoracions de clients, km en vehicles i eines.</li>
+                  <li><strong>Operaris & Fitxatge Llei:</strong> Registre d'entrada/sortida geolocalitzat.</li>
+                  <li><strong>Configuració:</strong> Gestió d'enginyers, caps de personal i permisos d'accés.</li>
                   <li><strong>Redacció de Feines:</strong> Crea ordres i assigna materials/eines.</li>
-                  <li><strong>Seguiment en Mapa:</strong> Monitoritza les colles sobre el terreny.</li>
-                  <li><strong>Telegram:</strong> Comunicació directa amb clients via Bot.</li>
                 </ul>
               </div>
               <button onClick={() => setShowHelpModal(false)} className="mt-5 w-full py-3 bg-primary text-white rounded-xl font-body-strong">
@@ -161,10 +161,6 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
               <div onClick={() => { setShowNotificationsModal(false); router.push('/gestio/incidencies'); }} className="p-3 bg-error-container/10 border border-error/20 rounded-xl cursor-pointer hover:bg-error-container/20">
                 <p className="font-bold text-error">Nova Incidència: Finca Sud</p>
                 <p className="text-on-surface-variant">L'operari Jordi S. ha enviat una nota de veu.</p>
-              </div>
-              <div onClick={() => { setShowNotificationsModal(false); router.push('/gestio/notificacions'); }} className="p-3 bg-blue-50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100">
-                <p className="font-bold text-blue-800">Bot Telegram: Resposta Client</p>
-                <p className="text-on-surface-variant">Agro Riera SL ha confirmat l'arribada.</p>
               </div>
             </div>
           </div>
