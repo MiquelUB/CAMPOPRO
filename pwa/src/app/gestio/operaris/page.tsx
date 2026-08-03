@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
-  Users, UserCheck, Star, Clock, Truck, Wrench, AlertTriangle, Search, Phone, Mail, 
+  Users, UserCheck, User, Star, Clock, Truck, Wrench, AlertTriangle, Search, Phone, Mail, 
   MapPin, ShieldCheck, CheckCircle2, FileText, ChevronRight, X, Calendar, Camera, 
   MessageSquare, ThumbsUp, Activity, PenTool, Award, Fuel, Gauge
 } from 'lucide-react';
