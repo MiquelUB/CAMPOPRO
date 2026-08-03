@@ -2,11 +2,36 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Users, UserCheck, User, Star, Clock, Truck, Wrench, AlertTriangle, Search, Phone, Mail, 
   MapPin, ShieldCheck, CheckCircle2, FileText, ChevronRight, X, Calendar, Camera, 
-  MessageSquare, ThumbsUp, Activity, PenTool, Award, Fuel, Gauge
+  MessageSquare, ThumbsUp, Activity, PenTool, Award, Fuel, Gauge, ExternalLink, Download, 
+  Building2, DollarSign, CheckSquare, Eye, Compass, Package, Receipt, FileCheck
 } from 'lucide-react';
+
+interface CompletedJobDetail {
+  id: string;
+  code: string;
+  title: string;
+  clientName: string;
+  clientId: string;
+  clientContact: string;
+  date: string;
+  hours: string;
+  cost: string;
+  invoiceCode: string;
+  photoUrl: string;
+  signatureUrl: string;
+  locationName: string;
+  gpsCoords: string;
+  assignedWorkerName: string;
+  vehicleUsed: string;
+  materialsUsed: Array<{ name: string; qty: string; unitPrice: number }>;
+  toolsUsed: string[];
+  description: string;
+  clientFeedback?: { rating: number; review: string };
+}
 
 interface WorkerProfile {
   id: string;
@@ -42,17 +67,7 @@ interface WorkerProfile {
     rating: number;
     comment: string;
   }>;
-  completedJobsHistory: Array<{
-    id: string;
-    code: string;
-    title: string;
-    clientName: string;
-    date: string;
-    hours: string;
-    cost: string;
-    photoUrl: string;
-    signatureUrl: string;
-  }>;
+  completedJobsHistory: CompletedJobDetail[];
   assignedTools: Array<{
     id: string;
     code: string;
@@ -138,22 +153,57 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
         code: 'OT-442',
         title: 'Reparació Fuga d\'Aigua i Escomesa Sector Sud',
         clientName: 'Agro Riera SL',
+        clientId: '1',
+        clientContact: 'Miquel Riera (600 111 222)',
         date: '28/07/2026',
         hours: '6.5 hores',
         cost: '850,00 €',
+        invoiceCode: 'FAC-2026-0442',
+        locationName: 'Camp 3 (Sector Nord - Fuga Aigua)',
+        gpsCoords: '41.6580° N, 1.8390° E',
+        assignedWorkerName: 'Jordi Soler (Cap d\'Equip)',
+        vehicleUsed: 'Furgoneta Ford Transit Custom (1234-BCD)',
+        description: 'Sanejat i substitució de canonada PE 50mm High-Density esclatada per alta pressió a l\'escomesa principal del Camp 3. Instal·lació de 2 vàlvules de tall Inox de 1 polzada i prova d\'estanquitat satisfactòria a 4.5 bar.',
+        materialsUsed: [
+          { name: 'Tub PE 50mm High-Density', qty: '15 m', unitPrice: 8.50 },
+          { name: 'Vàlvula de Tall 1 polzada Inox', qty: '2 u', unitPrice: 18.20 },
+          { name: 'Cinta de Teflon Professional', qty: '2 u', unitPrice: 2.10 }
+        ],
+        toolsUsed: ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'],
         photoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu'
+        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu',
+        clientFeedback: {
+          rating: 5,
+          review: 'En Jordi va arribar súper puntual a la finca. Va detectar la fuga en menys de 20 minuts, la va reparar amb materials de primera i va deixar tot el camp completament net i ordenat. Un tracte impecable i molt educat!'
+        }
       },
       {
         id: 'job2',
         code: 'OT-390',
         title: 'Substitució Vàlvula Tall i Canonada PE 50mm',
         clientName: 'Finca Valles',
+        clientId: '2',
+        clientContact: 'Anna Valles (600 333 444)',
         date: '15/07/2026',
         hours: '5.0 hores',
         cost: '520,00 €',
+        invoiceCode: 'FAC-2026-0390',
+        locationName: 'Sector Invernacle A',
+        gpsCoords: '41.5260° N, 2.1150° E',
+        assignedWorkerName: 'Jordi Soler',
+        vehicleUsed: 'Furgoneta Ford Transit Custom (1234-BCD)',
+        description: 'Reemplaçament de la vàlvula de retenció defectuosa al sector d\'invernacles. Purga de l\'aire del circuit de reg per goteig.',
+        materialsUsed: [
+          { name: 'Tub PE 25mm High-Density', qty: '10 m', unitPrice: 4.50 },
+          { name: 'Valvula de Tall 1 polzada Inox', qty: '1 u', unitPrice: 18.20 }
+        ],
+        toolsUsed: ['Trepant Bosch GSR-18', 'Joc de Claus Stillson Heavy-Duty'],
         photoUrl: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80',
-        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu'
+        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu',
+        clientFeedback: {
+          rating: 4.8,
+          review: 'Molt bon professional. Va explicar amb claredat el motiu de la fallada de la bomba de reg i va suggerir millores per evitar futures reposicions.'
+        }
       }
     ],
     assignedTools: [
@@ -244,11 +294,27 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
         code: 'OT-210',
         title: 'Adobat Foliar Nitrogenat Finca Nord',
         clientName: 'Horta del Llobregat',
+        clientId: '3',
+        clientContact: 'Joan Llobregat (600 555 666)',
         date: '20/07/2026',
         hours: '8.0 hores',
         cost: '680,00 €',
+        invoiceCode: 'FAC-2026-0210',
+        locationName: 'Horta Central (Sector Nord)',
+        gpsCoords: '41.3411° N, 2.0511° E',
+        assignedWorkerName: 'Pau Ribas (Maquinista)',
+        vehicleUsed: 'Tractor John Deere 6120M (TRACTOR-01)',
+        description: 'Aplicació foliar d\'adob nitrogenat de 25kg en 15 hectàrees de conreu. Control d\'adhesió i uniformitat.',
+        materialsUsed: [
+          { name: 'Adobat Foliar Nitrogenat 25kg', qty: '12 sacs', unitPrice: 32.50 }
+        ],
+        toolsUsed: ['Nivell Laser Topcon RL-H5A'],
         photoUrl: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=600&q=80',
-        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDYK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu'
+        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu',
+        clientFeedback: {
+          rating: 5,
+          review: 'En Pau domina el tractor com ningú. Va adobar les 15 hectàrees sense fer cap dany als cultius col·laterals.'
+        }
       }
     ],
     assignedTools: [
@@ -318,11 +384,28 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
         code: 'OT-501',
         title: 'Instal·lació de Sensor d\'Humitat IOT',
         clientName: 'Agro Riera SL',
+        clientId: '1',
+        clientContact: 'Miquel Riera (600 111 222)',
         date: '02/08/2026',
         hours: '4.0 hores',
         cost: '450,00 €',
+        invoiceCode: 'FAC-2026-0501',
+        locationName: 'Sector Sud (Estació de Reg)',
+        gpsCoords: '41.6510° N, 1.8310° E',
+        assignedWorkerName: 'Marc Andreu (Electricista IOT)',
+        vehicleUsed: 'Furgoneta Ford Transit Custom (1234-BCD)',
+        description: 'Muntatge d\'estació de telemetria amb sensor de humitat a 40cm de profunditat i plafó solar. Enllaçat amb l\'aplicació de control remota.',
+        materialsUsed: [
+          { name: 'Sensor de Humitat IOT 40cm', qty: '1 u', unitPrice: 180.00 },
+          { name: 'Plafo Solar i Bateria Liti', qty: '1 u', unitPrice: 95.00 }
+        ],
+        toolsUsed: ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'],
         photoUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
-        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDYK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu'
+        signatureUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu',
+        clientFeedback: {
+          rating: 5,
+          review: 'Excepcional. En Marc va configurar l\'App de telemetria al telèfon del meu encarregat i ens va explicar fil per randa com interpretar la humitat del sòl.'
+        }
       }
     ],
     assignedTools: [
@@ -370,8 +453,10 @@ const OPERARIS_DATABASE: WorkerProfile[] = [
 ];
 
 export default function OperarisDashboardPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorker, setSelectedWorker] = useState<WorkerProfile | null>(null);
+  const [selectedJobModal, setSelectedJobModal] = useState<CompletedJobDetail | null>(null);
   const [profileTab, setProfileTab] = useState<'info' | 'jobs' | 'reviews' | 'vehicles' | 'tools' | 'incidents'>('info');
 
   const filteredWorkers = OPERARIS_DATABASE.filter(w => 
@@ -397,7 +482,7 @@ export default function OperarisDashboardPage() {
             Equip d'Operaris de Camp i Caps d'Equip
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
-            Fitxa 360°: Tasques realitzades, valoracions i tracte dels clients (⭐), quilometratge de vehicles, eines assignades i incidències.
+            Fitxa 360°: Accés a la fitxa real de tasques realitzades, valoracions i tracte dels clients (⭐), km en vehicles i eines.
           </p>
         </div>
 
@@ -680,27 +765,49 @@ export default function OperarisDashboardPage() {
                 </div>
               )}
 
-              {/* 2. TASQUES I FEINES REALITZADES */}
+              {/* 2. TASQUES I FEINES REALITZADES (INTERACTIVES I AMB TARGETA DEDICADA) */}
               {profileTab === 'jobs' && (
                 <div className="space-y-3 text-xs">
-                  <h4 className="font-bold text-neutral-900 text-sm">Historial de Feines Completades per {selectedWorker.name}</h4>
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-neutral-900 text-sm">Historial de Feines Completades per {selectedWorker.name}</h4>
+                    <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-1 rounded">
+                      Clica sobre qualsevol feina per obrir la seva fitxa real
+                    </span>
+                  </div>
+
                   {selectedWorker.completedJobsHistory.map((job) => (
-                    <div key={job.id} className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-neutral-100 transition-colors">
+                    <div 
+                      key={job.id} 
+                      onClick={() => setSelectedJobModal(job)}
+                      className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-emerald-50/70 hover:border-emerald-300 transition-all cursor-pointer group shadow-sm"
+                    >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold bg-primary/10 text-primary px-2 py-0.5 rounded text-[11px]">{job.code}</span>
-                          <span className="font-bold text-neutral-900 text-sm">{job.title}</span>
+                          <span className="font-mono font-bold bg-primary text-white px-2.5 py-0.5 rounded text-xs shadow-sm">
+                            #{job.code}
+                          </span>
+                          <span className="font-bold text-neutral-900 text-sm group-hover:text-primary transition-colors">
+                            {job.title}
+                          </span>
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-300">
+                            🟢 COMPLETADA
+                          </span>
                         </div>
                         <span className="text-neutral-500 block">Client: <strong>{job.clientName}</strong> • Data: {job.date}</span>
                         <span className="text-emerald-800 font-bold block">Hores dedicades: {job.hours} • Cost executat: {job.cost}</span>
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <img src={job.photoUrl} alt="Foto feina" className="w-14 h-14 rounded-xl object-cover border border-neutral-300 shadow-sm" />
-                        <div className="flex flex-col items-center bg-white p-2 rounded-xl border border-neutral-200">
-                          <span className="text-[9px] font-bold text-neutral-400">Signatura Client</span>
-                          <span className="font-serif italic text-xs font-bold text-neutral-800">Miquel R.</span>
-                        </div>
+                        <img src={job.photoUrl} alt="Foto feina" className="w-14 h-14 rounded-xl object-cover border border-neutral-300 shadow-sm group-hover:scale-105 transition-transform" />
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedJobModal(job);
+                          }}
+                          className="px-3 py-2 bg-primary text-white rounded-xl font-bold text-xs shadow hover:bg-primary/90 flex items-center gap-1"
+                        >
+                          <Eye size={14} /> Veure Fitxa
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -845,6 +952,190 @@ export default function OperarisDashboardPage() {
                 className="px-6 py-2.5 bg-primary text-white rounded-xl font-bold text-xs shadow-md hover:bg-primary/90 transition-colors"
               >
                 Tancar Fitxa 360°
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* DEDICATED REAL TASK DETAIL MODAL (TARGETA DE LA TASCA REALITZADA #OT-XXX) */}
+      {selectedJobModal && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-start pb-4 border-b border-neutral-200 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-100 text-emerald-800 rounded-2xl font-mono font-extrabold text-lg shadow-sm border border-emerald-300">
+                  #{selectedJobModal.code}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-neutral-900">{selectedJobModal.title}</h2>
+                    <span className="px-2.5 py-0.5 bg-emerald-600 text-white rounded-full text-[10px] font-bold">
+                      🟢 COMPLETADA
+                    </span>
+                  </div>
+                  <span className="text-xs text-neutral-500 block">
+                    Data d'execució: <strong>{selectedJobModal.date}</strong> • Factura vinculada: <strong className="font-mono text-primary">{selectedJobModal.invoiceCode}</strong>
+                  </span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setSelectedJobModal(null)}
+                className="p-2 text-neutral-400 hover:text-neutral-700 rounded-full hover:bg-neutral-100"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Quick Actions Bar */}
+            <div className="flex flex-wrap gap-2 my-3 shrink-0">
+              <button
+                onClick={() => {
+                  setSelectedJobModal(null);
+                  setSelectedWorker(null);
+                  router.push(`/gestio/clients/${selectedJobModal.clientId}`);
+                }}
+                className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 flex items-center gap-1.5 shadow-sm"
+              >
+                <Building2 size={14} /> Anar a la Fitxa del Client ({selectedJobModal.clientName})
+              </button>
+
+              <button
+                onClick={() => alert(`📄 Descarregant el full de treball oficial i la prefactura per a la feina #${selectedJobModal.code}...`)}
+                className="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-bold hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm"
+              >
+                <Download size={14} /> Descarregar Factura PDF ({selectedJobModal.cost})
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto pr-2 space-y-4 text-xs">
+              
+              {/* Client & GPS Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-neutral-50 p-4 rounded-2xl border border-neutral-200">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase">Client i Persona de Contacte</span>
+                  <p className="font-extrabold text-neutral-900 text-sm">{selectedJobModal.clientName}</p>
+                  <p className="text-neutral-600 font-medium">{selectedJobModal.clientContact}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase">Ubicació de la Finca & Coordenades</span>
+                  <p className="font-bold text-emerald-800 flex items-center gap-1">
+                    <MapPin size={14} /> {selectedJobModal.locationName}
+                  </p>
+                  <p className="font-mono text-neutral-500 text-[11px]">{selectedJobModal.gpsCoords}</p>
+                </div>
+              </div>
+
+              {/* Worker & Vehicle Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-50/60 p-4 rounded-2xl border border-blue-200">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-blue-800 uppercase">Operari / Cap d'Equip Executant</span>
+                  <p className="font-extrabold text-blue-950 text-sm flex items-center gap-1">
+                    <User size={14} className="text-blue-700" /> {selectedJobModal.assignedWorkerName}
+                  </p>
+                  <p className="text-blue-900 font-bold">Hores totals registrades: {selectedJobModal.hours}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-blue-800 uppercase">Vehicle de Flota Utilitzat</span>
+                  <p className="font-bold text-blue-950 flex items-center gap-1">
+                    <Truck size={14} className="text-blue-700" /> {selectedJobModal.vehicleUsed}
+                  </p>
+                </div>
+              </div>
+
+              {/* Description of Execution */}
+              <div className="p-4 bg-white rounded-2xl border border-neutral-200 space-y-1 shadow-sm">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase">Memòria de Treball i Informe Tècnic</span>
+                <p className="text-neutral-800 leading-relaxed font-medium">{selectedJobModal.description}</p>
+              </div>
+
+              {/* Materials & Tools Used */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
+                  <span className="font-bold text-neutral-900 text-xs flex items-center gap-1.5">
+                    <Package size={16} className="text-emerald-600" /> Materials de Magatzem Utilitzats
+                  </span>
+                  <ul className="space-y-1">
+                    {selectedJobModal.materialsUsed.map((m, idx) => (
+                      <li key={idx} className="flex justify-between items-center p-2 bg-white rounded-xl border border-neutral-200 text-neutral-800 font-medium">
+                        <span>{m.name} ({m.qty})</span>
+                        <span className="font-bold text-emerald-800">{(m.unitPrice * (parseFloat(m.qty) || 1)).toFixed(2)} €</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-2">
+                  <span className="font-bold text-neutral-900 text-xs flex items-center gap-1.5">
+                    <PenTool size={16} className="text-blue-600" /> Eines i Maquinària Utilitzades
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedJobModal.toolsUsed.map((t, idx) => (
+                      <span key={idx} className="px-2.5 py-1 bg-white border border-neutral-300 rounded-lg font-bold text-neutral-800 text-[11px]">
+                        🛠️ {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Photographic Evidence & Client Signature */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1 text-center">
+                  <span className="text-[10px] font-bold text-neutral-500 block uppercase">Fotografia d'Execució a Camp</span>
+                  <img src={selectedJobModal.photoUrl} alt="Foto feina" className="w-full h-32 object-cover rounded-xl border border-neutral-300 shadow-sm" />
+                </div>
+
+                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-1 text-center flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-neutral-500 block uppercase">Signatura de Conformitat del Client</span>
+                  <div className="bg-white p-4 rounded-xl border border-neutral-300 flex-1 flex flex-col justify-center items-center shadow-inner">
+                    <span className="font-serif italic text-lg font-bold text-neutral-900">Miquel Riera</span>
+                    <span className="text-[9px] text-emerald-700 font-bold mt-1">✓ Validat a la PWA</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Client Review if present */}
+              {selectedJobModal.clientFeedback && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-amber-900 flex items-center gap-1">
+                      <Star size={14} className="fill-amber-400 text-amber-500" /> Valoració i Tracte Rebut del Client:
+                    </span>
+                    <span className="font-extrabold text-amber-900">{selectedJobModal.clientFeedback.rating} / 5.0 ⭐</span>
+                  </div>
+                  <p className="text-neutral-800 italic font-medium">"{selectedJobModal.clientFeedback.review}"</p>
+                </div>
+              )}
+
+              {/* Cost & Invoice Bar */}
+              <div className="p-4 bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl flex justify-between items-center shadow-lg">
+                <div>
+                  <span className="text-[10px] text-emerald-200 font-bold block uppercase">Cost Total Executat i Facturat</span>
+                  <span className="text-2xl font-extrabold text-white">{selectedJobModal.cost}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-emerald-300 font-mono font-bold block">Factura #{selectedJobModal.invoiceCode}</span>
+                  <span className="text-[10px] bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded font-bold">Cobrada</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-4 border-t border-neutral-200 flex justify-end shrink-0">
+              <button 
+                onClick={() => setSelectedJobModal(null)}
+                className="px-6 py-2.5 bg-neutral-900 text-white rounded-xl font-bold text-xs shadow hover:bg-neutral-800"
+              >
+                Tancar Targeta de la Tasca
               </button>
             </div>
 
