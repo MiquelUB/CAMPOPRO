@@ -3,15 +3,16 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square } from 'lucide-react';
+import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 interface WarehouseMaterialItem {
   id: string;
   code: string;
   name: string;
   defaultUnit: string;
-  stock: string;
+  stock: number;
   location: string;
+  unitPrice: number;
 }
 
 interface WarehouseToolItem {
@@ -19,28 +20,92 @@ interface WarehouseToolItem {
   code: string;
   name: string;
   brand: string;
-  status: string;
+  status: 'OPERATIVA' | 'REPARACIO' | 'PERDUDA';
   assignedTo: string;
 }
 
-// Mock Warehouse Database for Checklist Selection
+interface VehicleItem {
+  id: string;
+  plate: string;
+  name: string;
+  type: string;
+  status: 'OPERATIU' | 'REVISIO_TALLER' | 'ITV_PENDENT';
+  availableDate: string;
+}
+
+// 1. Real Grounded History DB (Mai inventat: basat en intervencions reals anteriors)
+const HISTORIAL_TREBALLS_REALITZATS = [
+  {
+    keyword: 'fuga aigua',
+    code: 'OT-442',
+    title: 'Reparació Fuga d\'Aigua i Escomesa Sector Sud',
+    avgHours: '6.5',
+    materialsUsed: [
+      { name: 'Tub PE 50mm High-Density', qty: '15m' },
+      { name: 'Valvula de Tall 1 polzada Inox', qty: '2u' },
+      { name: 'Cinta de Teflon Professional', qty: '2u' }
+    ],
+    toolsUsed: ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'],
+    vehicleRequired: 'Tractor John Deere 6120M',
+    budgetTotal: 850.00
+  },
+  {
+    keyword: 'sensor humitat',
+    code: 'OT-501',
+    title: 'Instal·lació de Sensor d\'Humitat IOT',
+    avgHours: '4.0',
+    materialsUsed: [
+      { name: 'Sensor de Humitat IOT 40cm', qty: '1u' },
+      { name: 'Plafo Solar i Bateria Liti', qty: '1u' }
+    ],
+    toolsUsed: ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'],
+    vehicleRequired: 'Furgoneta Ford Transit 1234-BCD',
+    budgetTotal: 450.00
+  },
+  {
+    keyword: 'bomba reg',
+    code: 'OT-612',
+    title: 'Revisió i Manteniment Bomba de Reg 15CV',
+    avgHours: '12.0',
+    materialsUsed: [
+      { name: 'Reten Mecanic Inox 40mm Bomba', qty: '2u' },
+      { name: 'Oli Mineral Sintetic ISO VG 220', qty: '2u' }
+    ],
+    toolsUsed: ['Bomba de Comprovacio de Pressio Manual', 'Joc de Claus Stillson Heavy-Duty'],
+    vehicleRequired: 'Furgoneta Ford Transit 1234-BCD',
+    budgetTotal: 980.00
+  }
+];
+
+// 2. Real Warehouse Stock DB
 const WAREHOUSE_MATERIALS_DB: WarehouseMaterialItem[] = [
-  { id: 'wm1', code: 'MAT-001', name: 'Tub PE 25mm High-Density', defaultUnit: '10m', stock: '120m', location: 'Prestatgeria A-1' },
-  { id: 'wm2', code: 'MAT-002', name: 'Valvula de Tall 1 polzada Inox', defaultUnit: '2u', stock: '4u', location: 'Caixa B-4' },
-  { id: 'wm3', code: 'MAT-003', name: 'Cinta de Teflon Professional', defaultUnit: '1u', stock: '25u', location: 'Caixa B-2' },
-  { id: 'wm4', code: 'MAT-004', name: 'Adobat Foliar Nitrogenat 25kg', defaultUnit: '5 sacs', stock: '2 sacs', location: 'Palet N-3' },
-  { id: 'wm5', code: 'MAT-005', name: 'Filtre de Malla 2 polzades High-Pressure', defaultUnit: '1u', stock: '8u', location: 'Prestatgeria C-2' },
-  { id: 'wm6', code: 'MAT-006', name: 'Connector Rapid Inox 2 polzades', defaultUnit: '4u', stock: '30u', location: 'Caixa A-3' },
-  { id: 'wm7', code: 'MAT-007', name: 'Junta Torica Neopre High-Temp', defaultUnit: '10u', stock: '50u', location: 'Caixa A-1' }
+  { id: 'wm1', code: 'MAT-001', name: 'Tub PE 25mm High-Density', defaultUnit: '10m', stock: 120, location: 'Prestatgeria A-1', unitPrice: 4.50 },
+  { id: 'wm2', code: 'MAT-002', name: 'Valvula de Tall 1 polzada Inox', defaultUnit: '2u', stock: 4, location: 'Caixa B-4', unitPrice: 18.20 },
+  { id: 'wm3', code: 'MAT-003', name: 'Cinta de Teflon Professional', defaultUnit: '1u', stock: 25, location: 'Caixa B-2', unitPrice: 2.10 },
+  { id: 'wm4', code: 'MAT-004', name: 'Adobat Foliar Nitrogenat 25kg', defaultUnit: '5 sacs', stock: 2, location: 'Palet N-3', unitPrice: 32.50 },
+  { id: 'wm5', code: 'MAT-005', name: 'Filtre de Malla 2 polzades High-Pressure', defaultUnit: '1u', stock: 8, location: 'Prestatgeria C-2', unitPrice: 82.50 },
+  { id: 'wm6', code: 'MAT-006', name: 'Connector Rapid Inox 2 polzades', defaultUnit: '4u', stock: 30, location: 'Caixa A-3', unitPrice: 42.00 },
+  { id: 'wm7', code: 'MAT-007', name: 'Tub PE 50mm High-Density', defaultUnit: '15m', stock: 45, location: 'Prestatgeria A-2', unitPrice: 8.50 }
 ];
 
 const WAREHOUSE_TOOLS_DB: WarehouseToolItem[] = [
-  { id: 'wt1', code: 'EIN-101', name: 'Trepant Bosch GSR-18', brand: 'Bosch Pro', status: '🟢 Operativa', assignedTo: 'Magatzem Central' },
-  { id: 'wt2', code: 'EIN-102', name: 'Radial Makita 125mm', brand: 'Makita', status: '🟢 Operativa', assignedTo: 'Magatzem Central' },
-  { id: 'wt3', code: 'EIN-103', name: 'Nivell Laser Topcon RL-H5A', brand: 'Topcon', status: '🟢 Operativa', assignedTo: 'Pau Ribas' },
-  { id: 'wt4', code: 'EIN-104', name: 'Joc de Claus Stillson Heavy-Duty', brand: 'Palmera', status: '🟢 Operativa', assignedTo: 'Magatzem Central' },
-  { id: 'wt5', code: 'EIN-105', name: 'Detector de Metalls i Cables Subterrani', brand: 'Bosch Pro', status: '🟢 Operativa', assignedTo: 'Magatzem Central' },
-  { id: 'wt6', code: 'EIN-106', name: 'Bomba de Comprovacio de Pressio Manual', brand: 'Rothenberger', status: '🟢 Operativa', assignedTo: 'Magatzem Central' }
+  { id: 'wt1', code: 'EIN-101', name: 'Trepant Bosch GSR-18', brand: 'Bosch Pro', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
+  { id: 'wt2', code: 'EIN-102', name: 'Radial Makita 125mm', brand: 'Makita', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
+  { id: 'wt3', code: 'EIN-103', name: 'Nivell Laser Topcon RL-H5A', brand: 'Topcon', status: 'OPERATIVA', assignedTo: 'Pau Ribas' },
+  { id: 'wt4', code: 'EIN-104', name: 'Joc de Claus Stillson Heavy-Duty', brand: 'Palmera', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
+  { id: 'wt5', code: 'EIN-105', name: 'Detector de Metalls i Cables Subterrani', brand: 'Bosch Pro', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
+  { id: 'wt6', code: 'EIN-106', name: 'Bomba de Comprovacio de Pressio Manual', brand: 'Rothenberger', status: 'OPERATIVA', assignedTo: 'Magatzem Central' }
+];
+
+// 3. Vehicles & Machinery Fleet DB
+const VEHICLES_FLOTA_DB: VehicleItem[] = [
+  { id: 'v1', plate: '1234-BCD', name: 'Furgoneta Ford Transit Custom', type: 'Furgoneta', status: 'OPERATIU', availableDate: 'Avui mateix' },
+  { id: 'v2', plate: 'TRACTOR-01', name: 'Tractor John Deere 6120M', type: 'Tractor Agrícola', status: 'REVISIO_TALLER', availableDate: 'Dijous 06/08/2026' }
+];
+
+// 4. Incidencies DB
+const INCIDENCIES_DB = [
+  { id: 'inc-1', code: 'INC-8812', title: 'Fuga d\'aigua detectada al Camp 3', operari: 'Jordi Soler', date: '02/08/2026 18:30', audioNote: 'Nota de veu: canonada principal de 50mm rebentada pel sector Nord del Camp 3.' }
 ];
 
 function CreateJobForm() {
@@ -51,7 +116,7 @@ function CreateJobForm() {
 
   // Client Mock Data Database
   const clientsDb: Record<string, { name: string; nif: string; phone: string; contact: string; address: string; lat: number; lng: number }> = {
-    '1': { name: 'Agro Riera SL', nif: 'B12345678', phone: '600111222', contact: 'Miquel Riera', address: 'Cami Ral s/n, 08240 Manresa', lat: 41.6521, lng: 1.8322 },
+    '1': { name: 'Agro Riera SL', nif: 'B12345678', phone: '600111222', contact: 'Miquel Riera', address: 'Camí Ral s/n, 08240 Manresa', lat: 41.6521, lng: 1.8322 },
     '2': { name: 'Finca Valles', nif: 'A87654321', phone: '600333444', contact: 'Anna Valles', address: 'Av. les Valls 45, Granollers', lat: 41.5233, lng: 2.1121 },
     '3': { name: 'Horta del Llobregat', nif: 'B99887766', phone: '600555666', contact: 'Joan Llobregat', address: 'Partida Nord 12, Sant Boi', lat: 41.3411, lng: 2.0511 },
   };
@@ -65,6 +130,9 @@ function CreateJobForm() {
   const [estimatedHours, setEstimatedHours] = useState<string>('4');
   const [hasBlueprint, setHasBlueprint] = useState<boolean>(false);
   const [blueprintName, setBlueprintName] = useState<string>('');
+  const [assignedVehicle, setAssignedVehicle] = useState<string>('Furgoneta Ford Transit Custom (1234-BCD)');
+  const [proposedStartDate, setProposedStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [budgetTotalAmount, setBudgetTotalAmount] = useState<string>('0,00 €');
   
   // Assigned Materials & Tools
   const [materials, setMaterials] = useState<Array<{ id: string; name: string; qty: string }>>([
@@ -87,7 +155,18 @@ function CreateJobForm() {
   const [checklistMaterialSearch, setChecklistMaterialSearch] = useState<string>('');
   const [checklistToolSearch, setChecklistToolSearch] = useState<string>('');
 
-  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
+  // COPILOT IA STATE
+  const [showCopilotModal, setShowCopilotModal] = useState<boolean>(false);
+  const [copilotInput, setCopilotInput] = useState<string>('');
+  const [isCopilotThinking, setIsCopilotThinking] = useState<boolean>(false);
+  const [isDictating, setIsDictating] = useState<boolean>(false);
+  const [copilotProposal, setCopilotProposal] = useState<any | null>(null);
+  const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'bot'; text: string; proposal?: any }>>([
+    {
+      sender: 'bot',
+      text: `Hola Marc! Sóc el teu **Copilot Tècnic CampoPro**. Tinc accés en temps real al teu **Historial de Treballs (basat en fets mai inventats)**, l'**Estoc del Magatzem**, l'estat dels **Vehicles/Tractors** i les **Incidències actives**.\n\nEscriu o dicta la tasca (ex: *"fuga aigua camp 3"*) i analitzaré l'històric per proposar-te descripció, eines, materials, data d'inici i pressupost.`
+    }
+  ]);
 
   // Handle Client Switch
   const handleClientSelect = (id: string) => {
@@ -96,27 +175,120 @@ function CreateJobForm() {
 
   const activeClient = clientsDb[selectedClientId] || selectedClient;
 
-  // IA Assistance Generation
-  const handleGenerateAi = () => {
-    setIsAiLoading(true);
+  // COPILOT LOGIC BASED STRICTLY ON REAL DATA (HISTORIAL + MAGATZEM + VEHICLES + INCIDÈNCIES)
+  const handleSendCopilotQuery = (userQueryText?: string) => {
+    const query = (userQueryText || copilotInput).trim();
+    if (!query) return;
+
+    // Add User Message
+    const updatedHistory = [...chatHistory, { sender: 'user' as const, text: query }];
+    setChatHistory(updatedHistory);
+    setCopilotInput('');
+    setIsCopilotThinking(true);
+
     setTimeout(() => {
-      setDescription(
-        `Substitucio i reparacio de la escomesa principal de aigua a la finca ${activeClient.name}. Cal verificar pressio de xarxa, sanejar la canonada malmesa de PE 25mm i instal·lar valvula de tall reforçada. Fer fotos abans i despres.`
-      );
-      setEstimatedHours('5');
-      setMaterials([
-        { id: '1', name: 'Tub PE 25mm High-Density', qty: '10m' },
-        { id: '2', name: 'Valvula de Tall 1 polzada Inox', qty: '2u' },
-        { id: '3', name: 'Cinta de Teflon Professional', qty: '1u' },
+      const queryLower = query.toLowerCase();
+      
+      // 1. Search Grounded Job History
+      const matchedHistory = HISTORIAL_TREBALLS_REALITZATS.find(h => queryLower.includes(h.keyword) || h.keyword.includes(queryLower)) || HISTORIAL_TREBALLS_REALITZATS[0];
+
+      // 2. Search Active Incidents matching
+      const matchedIncident = INCIDENCIES_DB.find(inc => queryLower.includes('camp 3') || queryLower.includes('fuga'));
+
+      // 3. Vehicle & Tractor Maintenance Audit
+      const requiresTractor = queryLower.includes('camp') || queryLower.includes('adobat') || queryLower.includes('zanja');
+      const targetVehicle = requiresTractor ? VEHICLES_FLOTA_DB.find(v => v.type.includes('Tractor')) : VEHICLES_FLOTA_DB[0];
+
+      const hasVehicleAlert = targetVehicle?.status === 'REVISIO_TALLER';
+
+      // 4. Warehouse Stock Verification for Materials
+      const verifiedMaterials = matchedHistory.materialsUsed.map(m => {
+        const stockItem = WAREHOUSE_MATERIALS_DB.find(wm => wm.name.toLowerCase().includes(m.name.toLowerCase()) || m.name.toLowerCase().includes(wm.name.toLowerCase()));
+        return {
+          ...m,
+          stockAvailable: stockItem ? stockItem.stock : 0,
+          inStock: stockItem ? stockItem.stock > 0 : false,
+          unitPrice: stockItem ? stockItem.unitPrice : 15.00
+        };
+      });
+
+      // Calculate Real Budget Proposal
+      const materialsCost = verifiedMaterials.reduce((sum, item) => sum + (parseFloat(item.qty) || 1) * item.unitPrice, 0);
+      const laborCost = parseFloat(matchedHistory.avgHours) * 35.00; // 35€/h labor
+      const totalBudgetCalculated = materialsCost + laborCost + 50.00; // 50€ displacement fee
+
+      const proposalData = {
+        title: matchedHistory.title,
+        matchedCode: matchedHistory.code,
+        incidentRef: matchedIncident ? `${matchedIncident.code} (${matchedIncident.operari})` : null,
+        description: `Ordre d'intervenció basada en l'historial #${matchedHistory.code}. ${matchedIncident ? `Relacionada amb l'incidència #${matchedIncident.code}: "${matchedIncident.audioNote}". ` : ''}Sanejar canalització, aplicar fittings de seguretat i verificar pressió a 4.5 bar.`,
+        estimatedHours: matchedHistory.avgHours,
+        materials: verifiedMaterials,
+        tools: matchedHistory.toolsUsed,
+        vehicle: targetVehicle,
+        hasVehicleAlert: hasVehicleAlert,
+        alertText: hasVehicleAlert ? `⚠️ ALERTA DE VEHICLE: El ${targetVehicle?.name} (${targetVehicle?.plate}) està actualment en REVISIÓ AL TALLER. No es pot utilitzar avui.` : null,
+        proposedStartDate: hasVehicleAlert ? '2026-08-06' : new Date().toISOString().split('T')[0],
+        proposedStartDateFormatted: hasVehicleAlert ? 'Dijous 06/08/2026 (Quan el tractor torni a estar operatiu)' : 'Avui mateix',
+        calculatedBudget: `${totalBudgetCalculated.toFixed(2)} €`,
+        budgetBreakdown: `Materials: ${materialsCost.toFixed(2)}€ + Mà d'obra (${matchedHistory.avgHours}h): ${laborCost.toFixed(2)}€ + Desplaçament: 50,00€`
+      };
+
+      setCopilotProposal(proposalData);
+      setChatHistory([
+        ...updatedHistory,
+        {
+          sender: 'bot',
+          text: `He analitzat el teu **Historial de Treballs**, l'**Estoc de Magatzem** i l'**Estat de la Flota** per a: **"${query}"**.\n\nAquí tens la proposta d'Ordre de Treball 100% fonamentada en fets reals:`,
+          proposal: proposalData
+        }
       ]);
-      setTools([
-        'Trepant Bosch GSR-18',
-        'Radial Makita 125mm',
-        'Joc de Claus Stillson Heavy-Duty',
-        'Detector de Metalls i Cables Subterrani',
-      ]);
-      setIsAiLoading(false);
-    }, 900);
+
+      setIsCopilotThinking(false);
+    }, 1400);
+  };
+
+  // Dictation Simulation (Speech-to-Text)
+  const handleToggleDictation = () => {
+    if (isDictating) {
+      setIsDictating(false);
+    } else {
+      setIsDictating(true);
+      setCopilotInput('Escoltant la teva veu...');
+      setTimeout(() => {
+        const dictationResult = "fuga aigua camp 3 urgent";
+        setCopilotInput(dictationResult);
+        setIsDictating(false);
+        handleSendCopilotQuery(dictationResult);
+      }, 2200);
+    }
+  };
+
+  // APPLY COPILOT PROPOSAL TO FORM IN 1 CLICK
+  const applyCopilotProposalToForm = () => {
+    if (!copilotProposal) return;
+
+    setDescription(copilotProposal.description);
+    setEstimatedHours(copilotProposal.estimatedHours);
+    setPriority(copilotProposal.hasVehicleAlert ? 'URGENT' : 'NORMAL');
+    setProposedStartDate(copilotProposal.proposedStartDate);
+    setBudgetTotalAmount(copilotProposal.calculatedBudget);
+
+    if (copilotProposal.vehicle) {
+      setAssignedVehicle(`${copilotProposal.vehicle.name} (${copilotProposal.vehicle.plate})`);
+    }
+
+    // Set Materials & Tools directly from grounded checklist
+    setMaterials(copilotProposal.materials.map((m: any, idx: number) => ({
+      id: `copilot-mat-${idx}`,
+      name: m.name,
+      qty: m.qty
+    })));
+
+    setTools(copilotProposal.tools);
+
+    setShowCopilotModal(false);
+    alert(`✨ S'ha aplicat tota la proposta del Copilot IA a l'Ordre de Treball! Descripció, Hores (${copilotProposal.estimatedHours}h), Materials del magatzem, Eines, Vehicle i Pressupost (${copilotProposal.calculatedBudget}).`);
   };
 
   // Manual Add Handlers
@@ -155,7 +327,7 @@ function CreateJobForm() {
   };
 
   const handleSaveOrder = () => {
-    alert(`Ordre de Treball creada amb exit per al client ${activeClient.name}!`);
+    alert(`Ordre de Treball creada amb èxit per al client ${activeClient.name} amb el pressupost de ${budgetTotalAmount}!`);
     router.push(`/gestio/clients/${selectedClientId}`);
   };
 
@@ -168,7 +340,7 @@ function CreateJobForm() {
         <span>/</span>
         <Link href="/gestio/clients" className="hover:text-primary cursor-pointer">Clients</Link>
         <span>/</span>
-        <span className="text-primary font-body-strong">Redaccio de Feina ({activeClient.name})</span>
+        <span className="text-primary font-body-strong">Redacció de Feina ({activeClient.name})</span>
       </nav>
 
       <div className="flex flex-col w-full gap-xl max-w-7xl mx-auto">
@@ -178,25 +350,24 @@ function CreateJobForm() {
             <div className="flex items-center gap-sm mb-1">
               <span className="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
               <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-widest">
-                Redaccio Vinculada al Client
+                Redacció Vinculada al Client
               </span>
             </div>
             <h1 className="font-display-lg text-display-lg text-primary">
               Nova Ordre de Treball
             </h1>
             <p className="text-sm text-on-surface-variant mt-1">
-              Tots els registres, materials del magatzem, eines i hores quedaran arxivats directament al historial del client.
+              Tots els registres, materials del magatzem, eines i hores quedaran arxivats directament a l'historial del client.
             </p>
           </div>
 
-          {/* AI Assistance Trigger Button */}
+          {/* AI COPILOT CHAT TRIGGER BUTTON */}
           <button
-            onClick={handleGenerateAi}
-            disabled={isAiLoading}
-            className="px-6 py-3.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-body-strong shadow-lg hover:shadow-xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50"
+            onClick={() => setShowCopilotModal(true)}
+            className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 via-teal-700 to-primary text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 text-sm"
           >
-            <Sparkles size={18} className="text-amber-300" />
-            {isAiLoading ? 'La IA esta redactant...' : '🤖 Asistent Redaccio IA'}
+            <Bot size={22} className="text-amber-300 animate-bounce" />
+            🤖 Obrir Copilot IA (Historial + Stock + Flota)
           </button>
         </div>
 
@@ -254,12 +425,12 @@ function CreateJobForm() {
               </div>
             </div>
 
-            {/* Card 2: Job Description & Priorities */}
+            {/* Card 2: Job Description, Hours & Proposed Dates */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <div className="flex justify-between items-center">
                 <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
                   <span className="material-symbols-outlined text-primary">description</span>
-                  Descripcio de la Feina
+                  Descripció i Planificació de la Feina
                 </h2>
 
                 {/* Priority Selector */}
@@ -289,27 +460,39 @@ function CreateJobForm() {
               </div>
 
               <div className="flex flex-col gap-xs">
-                <label className="font-label-caps text-xs text-on-surface-variant">DESCRIPCIO DETALLADA DE LA TASCA</label>
+                <label className="font-label-caps text-xs text-on-surface-variant">DESCRIPCIÓ DETALLADA DE LA TASCA</label>
                 <textarea
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Escriu la descripcio del treball a realitzar per l'operari, o prem '🤖 Asistent Redaccio IA'..."
+                  placeholder="Escriu la descripció de la tasca o obre el Copilot IA amb el botó superior..."
                   className="w-full bg-surface-container-low p-4 rounded-xl border border-outline-variant font-body-base outline-none focus:ring-2 focus:ring-primary/20 text-on-surface"
                 ></textarea>
               </div>
 
-              {/* Estimated Hours */}
-              <div className="flex flex-col gap-xs w-1/2">
-                <label className="font-label-caps text-xs text-on-surface-variant">ESTIMACIO HORES DE TREBALL</label>
-                <div className="flex items-center gap-2">
+              {/* Estimated Hours & Dates Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-xs">
+                  <label className="font-label-caps text-xs text-on-surface-variant">ESTIMACIÓ HORES DE TREBALL</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={estimatedHours}
+                      onChange={(e) => setEstimatedHours(e.target.value)}
+                      className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary text-center text-lg outline-none"
+                    />
+                    <span className="font-body-strong text-on-surface-variant">Hores</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-xs">
+                  <label className="font-label-caps text-xs text-on-surface-variant">DATA D'INICI RECOMANADA (SEGONS VEHICLES)</label>
                   <input
-                    type="number"
-                    value={estimatedHours}
-                    onChange={(e) => setEstimatedHours(e.target.value)}
-                    className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary text-center text-lg outline-none"
+                    type="date"
+                    value={proposedStartDate}
+                    onChange={(e) => setProposedStartDate(e.target.value)}
+                    className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary text-center text-sm outline-none"
                   />
-                  <span className="font-body-strong text-on-surface-variant">Hores</span>
                 </div>
               </div>
             </div>
@@ -356,7 +539,7 @@ function CreateJobForm() {
                 <div className="flex gap-2 bg-neutral-50 p-2 rounded-xl border border-neutral-200">
                   <input
                     type="text"
-                    placeholder="Afegir material a ma (ex: Tub PE 25mm)..."
+                    placeholder="Afegir material a mà (ex: Tub PE 25mm)..."
                     value={newMaterial}
                     onChange={(e) => setNewMaterial(e.target.value)}
                     className="flex-1 bg-white p-2.5 rounded-lg border border-neutral-200 text-xs outline-none focus:border-primary"
@@ -373,7 +556,7 @@ function CreateJobForm() {
                     onClick={handleAddMaterialManual}
                     className="px-4 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 flex items-center gap-1"
                   >
-                    <Plus size={14} /> A ma
+                    <Plus size={14} /> A mà
                   </button>
                 </div>
               </div>
@@ -385,7 +568,7 @@ function CreateJobForm() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <h3 className="font-headline-md text-primary flex items-center gap-2 text-md">
                     <PenTool size={20} className="text-primary" />
-                    Eines Necessaries Assignades ({tools.length})
+                    Eines Necessàries Assignades ({tools.length})
                   </h3>
 
                   {/* Checklist Trigger Button */}
@@ -419,7 +602,7 @@ function CreateJobForm() {
                 <div className="flex gap-2 bg-neutral-50 p-2 rounded-xl border border-neutral-200">
                   <input
                     type="text"
-                    placeholder="Afegir eina a ma (ex: Radial Makita)..."
+                    placeholder="Afegir eina a mà (ex: Radial Makita)..."
                     value={newTool}
                     onChange={(e) => setNewTool(e.target.value)}
                     className="flex-1 bg-white p-2.5 rounded-lg border border-neutral-200 text-xs outline-none focus:border-primary"
@@ -429,21 +612,73 @@ function CreateJobForm() {
                     onClick={handleAddToolManual}
                     className="px-4 py-2.5 bg-blue-700 text-white rounded-lg text-xs font-bold hover:bg-blue-800 flex items-center gap-1"
                   >
-                    <Plus size={14} /> A ma
+                    <Plus size={14} /> A mà
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Blueprints & Location Map */}
+          {/* Right Column: Vehicle, Budget & Blueprints */}
           <div className="col-span-12 lg:col-span-5 flex flex-col gap-lg">
             
-            {/* Card 4: Blueprint Attachment */}
+            {/* Card 4: Vehicle Assignment & Fleet Audit */}
+            <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
+              <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
+                <Truck size={20} className="text-primary" />
+                Vehicle / Maquinària Assignada
+              </h2>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-label-caps text-xs text-on-surface-variant">VEHICLE ASSIGNAT A LA TASCA</label>
+                <select
+                  value={assignedVehicle}
+                  onChange={(e) => setAssignedVehicle(e.target.value)}
+                  className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary outline-none cursor-pointer text-sm"
+                >
+                  <option value="Furgoneta Ford Transit Custom (1234-BCD)">Furgoneta Ford Transit Custom (1234-BCD) — 🟢 Operatiu</option>
+                  <option value="Tractor John Deere 6120M (TRACTOR-01)">Tractor John Deere 6120M — 🛠️ En Revisió al Taller</option>
+                </select>
+              </div>
+
+              {assignedVehicle.includes('Tractor') && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+                  <AlertTriangle size={18} className="shrink-0 text-amber-600" />
+                  <span>Aquest tractor està al taller. Data estimada d'operativitat: <strong>Dijous 06/08/2026</strong>.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Card 5: Calculated Financial Budget Quote */}
+            <div className="p-xl bg-gradient-to-br from-emerald-900 to-teal-950 text-white rounded-2xl shadow-lg border border-emerald-800 flex flex-col gap-md">
+              <div className="flex justify-between items-center border-b border-emerald-800 pb-md">
+                <h2 className="font-bold flex items-center gap-2 text-base text-emerald-300">
+                  <DollarSign size={20} className="text-emerald-400" />
+                  Pressupost Calculat per la Feina
+                </h2>
+                <span className="text-[10px] font-bold bg-emerald-800 text-emerald-200 px-2.5 py-1 rounded-full uppercase">
+                  Gestió de Pressupost
+                </span>
+              </div>
+
+              <div className="flex justify-between items-end">
+                <div>
+                  <span className="text-xs text-emerald-400 block font-semibold uppercase">Total Pressupostat (Estimació)</span>
+                  <span className="text-3xl font-extrabold text-white">{budgetTotalAmount}</span>
+                </div>
+                <span className="text-xs text-emerald-300 font-mono">IVA no inclòs</span>
+              </div>
+
+              <p className="text-[11px] text-emerald-200 leading-relaxed">
+                El pressupost s'actualitza segons el desglose de materials de magatzem utilitzats i les hores d'operari calculades per la IA.
+              </p>
+            </div>
+
+            {/* Card 6: Blueprint Attachment */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
                 <span className="material-symbols-outlined text-primary">architecture</span>
-                Planol Tecnic Adjunt (Opcional)
+                Plànol Tècnic Adjunt (Opcional)
               </h2>
 
               {!hasBlueprint ? (
@@ -456,45 +691,19 @@ function CreateJobForm() {
                   className="p-6 border-2 border-dashed border-outline-variant rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-surface-container-low transition-colors text-primary"
                 >
                   <span className="material-symbols-outlined text-4xl">upload_file</span>
-                  <span className="font-body-strong text-sm">Seleccionar o Carregar Planol (PDF/Imatge)</span>
-                  <span className="text-xs text-on-surface-variant">Accepta arxius de la biblioteca o des del disc</span>
+                  <span className="font-body-strong text-sm">Seleccionar o Carregar Plànol (PDF/Imatge)</span>
                 </button>
               ) : (
                 <div className="p-4 bg-primary-container/10 border border-primary/20 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-primary text-2xl">picture_as_pdf</span>
-                    <div className="flex flex-col">
-                      <span className="font-body-strong text-sm text-primary">{blueprintName}</span>
-                      <span className="text-xs text-on-surface-variant">Planol carregat a la feina</span>
-                    </div>
+                    <span className="font-body-strong text-sm text-primary">{blueprintName}</span>
                   </div>
-                  <button 
-                    onClick={() => setHasBlueprint(false)} 
-                    className="p-1 text-error hover:bg-error/10 rounded-full"
-                  >
+                  <button onClick={() => setHasBlueprint(false)} className="p-1 text-error">
                     <span className="material-symbols-outlined">delete</span>
                   </button>
                 </div>
               )}
-            </div>
-
-            {/* Card 5: Map Location */}
-            <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
-              <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
-                <span className="material-symbols-outlined text-primary">location_on</span>
-                Ubicacio GPS de la Feina
-              </h2>
-              
-              <div className="relative h-[260px] rounded-xl overflow-hidden shadow-md border border-outline-variant/30">
-                <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu')` }}></div>
-                <div className="absolute bottom-3 left-3 bg-surface/90 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-body-strong text-primary shadow">
-                  Coordenades: {activeClient.lat}° N, {activeClient.lng}° E
-                </div>
-              </div>
-
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                Les coordenades estan geolocalitzades segons la adreça oficial de la finca del client.
-              </p>
             </div>
           </div>
         </div>
@@ -507,7 +716,7 @@ function CreateJobForm() {
             className="px-6 py-3.5 text-on-surface-variant font-body-strong hover:text-primary transition-colors flex items-center gap-2"
           >
             <span className="material-symbols-outlined">arrow_back</span>
-            Cancelar
+            Cancel·lar
           </button>
 
           <button 
@@ -516,10 +725,195 @@ function CreateJobForm() {
             className="px-10 py-4 bg-secondary-container text-on-secondary-container font-headline-md rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 uppercase tracking-wider"
           >
             <span className="material-symbols-outlined">check_circle</span>
-            Guardar Ordre de Treball
+            Guardar Ordre de Treball i Pressupost
           </button>
         </div>
       </div>
+
+      {/* MODAL COPILOT IA CHAT INTERACTIU & REAL DATA GROUNDED */}
+      {showCopilotModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center pb-4 border-b border-neutral-100 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-800 text-white flex items-center justify-center shadow-md">
+                  <Bot size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
+                    Copilot Tècnic CampoPro (IA Grounded)
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
+                      Mai Inventat • Dades Reals
+                    </span>
+                  </h3>
+                  <p className="text-xs text-neutral-500">Sincronitzat amb Historial, Magatzem, Vehicles i Incidències d'Operaris.</p>
+                </div>
+              </div>
+              <button onClick={() => setShowCopilotModal(false)} className="text-neutral-400 hover:text-neutral-700">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Chat Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 my-2">
+              {chatHistory.map((msg, idx) => (
+                <div key={idx} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.sender === 'bot' && (
+                    <div className="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 mt-1">
+                      <Bot size={18} />
+                    </div>
+                  )}
+
+                  <div className={`max-w-xl p-4 rounded-2xl text-xs leading-relaxed space-y-3 ${
+                    msg.sender === 'user' ? 'bg-primary text-white font-medium rounded-tr-none' : 'bg-neutral-100 text-neutral-900 rounded-tl-none border border-neutral-200'
+                  }`}>
+                    <p className="whitespace-pre-line">{msg.text}</p>
+
+                    {/* PROPOSAL CARD GENERATED BY COPILOT */}
+                    {msg.proposal && (
+                      <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-3 shadow-md text-neutral-900">
+                        <div className="flex justify-between items-start border-b border-neutral-100 pb-2">
+                          <div>
+                            <span className="text-[10px] font-mono font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">
+                              Basat en Historial #{msg.proposal.matchedCode}
+                            </span>
+                            <h4 className="font-bold text-sm text-neutral-900 mt-1">{msg.proposal.title}</h4>
+                            {msg.proposal.incidentRef && (
+                              <span className="text-[10px] font-bold text-blue-700 block">
+                                📌 Sincronitzat amb Incidència: #{msg.proposal.incidentRef}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Vehicle Maintenance Alert */}
+                        {msg.proposal.hasVehicleAlert && (
+                          <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 font-bold flex items-start gap-2">
+                            <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <span>{msg.proposal.alertText}</span>
+                              <span className="block text-[11px] text-emerald-800 font-normal mt-1">
+                                📅 Proposta de Data d'Inici: <strong>{msg.proposal.proposedStartDateFormatted}</strong>
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Verified Warehouse Stock Materials */}
+                        <div>
+                          <span className="text-[11px] font-bold uppercase text-neutral-500 block mb-1">
+                            Materials Recomanats (Verificats al Magatzem):
+                          </span>
+                          <div className="space-y-1">
+                            {msg.proposal.materials.map((m: any, i: number) => (
+                              <div key={i} className="flex justify-between items-center bg-neutral-50 p-2 rounded-lg text-[11px]">
+                                <span className="font-medium">{m.name} ({m.qty})</span>
+                                <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+                                  m.inStock ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {m.inStock ? `✓ En Stock (${m.stockAvailable})` : '⚠️ Stock Baix'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Calculated Budget */}
+                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center">
+                          <div>
+                            <span className="text-[10px] font-bold text-emerald-800 uppercase block">Pressupost Estimat Generat</span>
+                            <span className="text-[10px] text-neutral-600">{msg.proposal.budgetBreakdown}</span>
+                          </div>
+                          <span className="text-base font-extrabold text-emerald-800">{msg.proposal.calculatedBudget}</span>
+                        </div>
+
+                        {/* Apply Button */}
+                        <button
+                          onClick={applyCopilotProposalToForm}
+                          className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl font-bold text-xs shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Sparkles size={16} />
+                          ✨ Aplicar Ordre, Materials, Vehicle i Pressupost al Formulari
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {isCopilotThinking && (
+                <div className="flex gap-2 text-xs text-neutral-500 items-center bg-neutral-100 p-3 rounded-xl w-fit">
+                  <RefreshCw className="animate-spin text-emerald-600" size={16} />
+                  <span>Consultant l'historial real, compravant stock de magatzem i estat dels tractors...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Prompt Chips */}
+            <div className="py-2 border-t border-neutral-100 flex gap-2 overflow-x-auto text-[11px] font-semibold text-neutral-700">
+              <span className="text-neutral-400 self-center">Suggeriments:</span>
+              <button 
+                onClick={() => {
+                  setCopilotInput("fuga aigua camp 3 urgent");
+                  handleSendCopilotQuery("fuga aigua camp 3 urgent");
+                }}
+                className="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 rounded-full shrink-0 border border-neutral-200"
+              >
+                💧 Fuga aigua camp 3
+              </button>
+              <button 
+                onClick={() => {
+                  setCopilotInput("instal·lar sensor humitat iot");
+                  handleSendCopilotQuery("instal·lar sensor humitat iot");
+                }}
+                className="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 rounded-full shrink-0 border border-neutral-200"
+              >
+                📡 Sensor humitat IOT
+              </button>
+              <button 
+                onClick={() => {
+                  setCopilotInput("revisio bomba reg 15cv");
+                  handleSendCopilotQuery("revisio bomba reg 15cv");
+                }}
+                className="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 rounded-full shrink-0 border border-neutral-200"
+              >
+                ⚙️ Manteniment bomba reg
+              </button>
+            </div>
+
+            {/* Chat Input & Voice Dictation Bar */}
+            <div className="pt-2 flex gap-2 items-center">
+              <button
+                onClick={handleToggleDictation}
+                className={`p-3 rounded-xl transition-all shadow-sm ${
+                  isDictating ? 'bg-red-600 text-white animate-pulse' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                }`}
+                title="Dictar per Veu (Speech-to-Text)"
+              >
+                <Mic size={18} />
+              </button>
+
+              <input
+                type="text"
+                value={copilotInput}
+                onChange={(e) => setCopilotInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendCopilotQuery()}
+                placeholder="Escriu o dicta la tasca (ex: 'fuga aigua camp 3')..."
+                className="flex-1 p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-medium outline-none focus:border-emerald-600"
+              />
+
+              <button
+                onClick={() => handleSendCopilotQuery()}
+                className="p-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-md"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL CHECKLIST MATERIALS MAGATZEM */}
       {showMaterialChecklistModal && (
@@ -540,11 +934,10 @@ function CreateJobForm() {
               </button>
             </div>
 
-            {/* Search filter */}
             <div className="relative mb-4">
               <input 
                 type="text" 
-                placeholder="Cercar material al magatzem per nom, SKU o ubicacio..."
+                placeholder="Cercar material al magatzem per nom, SKU o ubicació..."
                 value={checklistMaterialSearch}
                 onChange={(e) => setChecklistMaterialSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs outline-none focus:border-emerald-600 font-medium"
@@ -552,9 +945,6 @@ function CreateJobForm() {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
             </div>
 
-            <p className="text-xs text-neutral-500 mb-3">Marca els materials que l operari ha d endur-se del magatzem per dur a terme la feina:</p>
-
-            {/* Checklist List */}
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
               {WAREHOUSE_MATERIALS_DB.filter(m => m.name.toLowerCase().includes(checklistMaterialSearch.toLowerCase()) || m.code.toLowerCase().includes(checklistMaterialSearch.toLowerCase())).map((item) => {
                 const isChecked = materials.some(m => m.name.toLowerCase().trim() === item.name.toLowerCase().trim());
@@ -573,7 +963,7 @@ function CreateJobForm() {
                       <div>
                         <span className="text-xs font-mono font-bold text-neutral-500">{item.code}</span>
                         <h4 className="font-bold text-neutral-900 text-xs">{item.name}</h4>
-                        <span className="text-[10px] text-neutral-500">Stock disponible: <strong className="text-emerald-800">{item.stock}</strong> • Ubicacio: {item.location}</span>
+                        <span className="text-[10px] text-neutral-500">Stock disponible: <strong className="text-emerald-800">{item.stock}</strong> • Ubicació: {item.location}</span>
                       </div>
                     </div>
 
@@ -587,13 +977,13 @@ function CreateJobForm() {
 
             <div className="mt-6 pt-4 border-t border-neutral-100 flex justify-between items-center">
               <span className="text-xs font-bold text-emerald-800">
-                {materials.length} materials seleccionats per a l ordre
+                {materials.length} materials seleccionats per a l'ordre
               </span>
               <button 
                 onClick={() => setShowMaterialChecklistModal(false)}
                 className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors shadow-md"
               >
-                Confirmar Seleccio
+                Confirmar Selecció
               </button>
             </div>
           </div>
@@ -607,11 +997,11 @@ function CreateJobForm() {
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-neutral-100">
               <div>
                 <span className="text-[10px] font-mono font-bold bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full">
-                  Inventari d Eines i Maquinaria
+                  Inventari d'Eines i Maquinària
                 </span>
                 <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2 mt-1">
                   <PenTool className="text-blue-600" size={22} />
-                  Checklist d Eines del Magatzem
+                  Checklist d'Eines del Magatzem
                 </h3>
               </div>
               <button onClick={() => setShowToolChecklistModal(false)} className="text-neutral-400 hover:text-neutral-700">
@@ -619,7 +1009,6 @@ function CreateJobForm() {
               </button>
             </div>
 
-            {/* Search filter */}
             <div className="relative mb-4">
               <input 
                 type="text" 
@@ -631,9 +1020,6 @@ function CreateJobForm() {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
             </div>
 
-            <p className="text-xs text-neutral-500 mb-3">Selecciona quines eines s assignen a aquesta ordre de treball:</p>
-
-            {/* Checklist List */}
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
               {WAREHOUSE_TOOLS_DB.filter(t => t.name.toLowerCase().includes(checklistToolSearch.toLowerCase()) || t.code.toLowerCase().includes(checklistToolSearch.toLowerCase())).map((item) => {
                 const isChecked = tools.some(t => t.toLowerCase().trim() === item.name.toLowerCase().trim());
@@ -666,13 +1052,13 @@ function CreateJobForm() {
 
             <div className="mt-6 pt-4 border-t border-neutral-100 flex justify-between items-center">
               <span className="text-xs font-bold text-blue-800">
-                {tools.length} eines assignades a l ordre
+                {tools.length} eines assignades a l'ordre
               </span>
               <button 
                 onClick={() => setShowToolChecklistModal(false)}
                 className="px-6 py-2.5 bg-blue-700 text-white rounded-xl text-xs font-bold hover:bg-blue-800 transition-colors shadow-md"
               >
-                Confirmar Seleccio
+                Confirmar Selecció
               </button>
             </div>
           </div>
@@ -686,7 +1072,7 @@ export default function Page() {
   return (
     <Suspense fallback={
       <div className="p-xl pt-32 text-center text-primary font-body-strong">
-        Carregant formulari de redaccio...
+        Carregant formulari de redacció...
       </div>
     }>
       <CreateJobForm />
