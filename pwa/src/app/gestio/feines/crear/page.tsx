@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2, Edit3, Tag, MapPin, Navigation, Crosshair, Compass, UserCheck, Users, Phone, User } from 'lucide-react';
+import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2, Edit3, Tag, MapPin, Navigation, Crosshair, Compass, UserCheck, Users, Phone, User, FileCheck, Receipt } from 'lucide-react';
 
 interface WarehouseMaterialItem {
   id: string;
@@ -34,10 +34,11 @@ interface VehicleItem {
   availableDate: string;
 }
 
-interface BudgetItem {
+interface BudgetItemLine {
   id: string;
   code: string;
   name: string;
+  category: 'MATERIAL' | 'MA_OBRA' | 'VEHICLE' | 'DESPLAÇAMENT' | 'EINA';
   qty: number;
   unit: string;
   unitPrice: number;
@@ -60,18 +61,18 @@ const FIELD_WORKERS_DB: WorkerItem[] = [
   { id: 'op4', name: 'Joan Martí', role: 'Operari de Manteniment General', phone: '600 11 22 33', status: 'DISPONIBLE', avatar: '🛠️' }
 ];
 
-// 1. Real Grounded History DB
+// Real Grounded History DB
 const HISTORIAL_TREBALLS_REALITZATS = [
   {
     keyword: 'fuga aigua',
     code: 'OT-442',
     title: 'Reparació Fuga d\'Aigua i Escomesa Sector Sud',
     avgHours: 6.5,
-    recommendedWorker: 'op1', // Jordi Soler
+    recommendedWorker: 'op1',
     materialsUsed: [
-      { name: 'Tub PE 50mm High-Density', qty: '15m' },
-      { name: 'Valvula de Tall 1 polzada Inox', qty: '2u' },
-      { name: 'Cinta de Teflon Professional', qty: '2u' }
+      { name: 'Tub PE 50mm High-Density', qty: '15', unitPrice: 8.50 },
+      { name: 'Valvula de Tall 1 polzada Inox', qty: '2', unitPrice: 18.20 },
+      { name: 'Cinta de Teflon Professional', qty: '2', unitPrice: 2.10 }
     ],
     toolsUsed: ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'],
     vehicleRequired: 'Tractor John Deere 6120M',
@@ -84,50 +85,28 @@ const HISTORIAL_TREBALLS_REALITZATS = [
     code: 'OT-501',
     title: 'Instal·lació de Sensor d\'Humitat IOT',
     avgHours: 4.0,
-    recommendedWorker: 'op3', // Marc Andreu
+    recommendedWorker: 'op3',
     materialsUsed: [
-      { name: 'Sensor de Humitat IOT 40cm', qty: '1u' },
-      { name: 'Plafo Solar i Bateria Liti', qty: '1u' }
+      { name: 'Sensor de Humitat IOT 40cm', qty: '1', unitPrice: 180.00 },
+      { name: 'Plafo Solar i Bateria Liti', qty: '1', unitPrice: 95.00 }
     ],
     toolsUsed: ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'],
     vehicleRequired: 'Furgoneta Ford Transit 1234-BCD',
     lat: 41.6510,
     lng: 1.8310,
     locationPresetName: 'Sector Sud (Estació de Reg)'
-  },
-  {
-    keyword: 'bomba reg',
-    code: 'OT-612',
-    title: 'Revisió i Manteniment Bomba de Reg 15CV',
-    avgHours: 12.0,
-    recommendedWorker: 'op1', // Jordi Soler
-    materialsUsed: [
-      { name: 'Reten Mecanic Inox 40mm Bomba', qty: '2u' },
-      { name: 'Oli Mineral Sintetic ISO VG 220', qty: '2u' }
-    ],
-    toolsUsed: ['Bomba de Comprovacio de Pressio Manual', 'Joc de Claus Stillson Heavy-Duty'],
-    vehicleRequired: 'Furgoneta Ford Transit 1234-BCD',
-    lat: 41.6540,
-    lng: 1.8350,
-    locationPresetName: 'Caseta de Bombes Central'
   }
 ];
 
-// 2. Real Warehouse Stock DB
+// Real Warehouse Stock DB
 const WAREHOUSE_MATERIALS_DB: WarehouseMaterialItem[] = [
-  { id: 'wm1', code: 'MAT-001', name: 'Tub PE 25mm High-Density', defaultUnit: '10m', stock: 120, location: 'Prestatgeria A-1', unitPrice: 4.50 },
-  { id: 'wm2', code: 'MAT-002', name: 'Valvula de Tall 1 polzada Inox', defaultUnit: '2u', stock: 4, location: 'Caixa B-4', unitPrice: 18.20 },
-  { id: 'wm3', code: 'MAT-003', name: 'Cinta de Teflon Professional', defaultUnit: '1u', stock: 25, location: 'Caixa B-2', unitPrice: 2.10 },
-  { id: 'wm4', code: 'MAT-004', name: 'Adobat Foliar Nitrogenat 25kg', defaultUnit: '5 sacs', stock: 2, location: 'Palet N-3', unitPrice: 32.50 },
-  { id: 'wm5', code: 'MAT-005', name: 'Filtre de Malla 2 polzades High-Pressure', defaultUnit: '1u', stock: 8, location: 'Prestatgeria C-2', unitPrice: 82.50 },
-  { id: 'wm6', code: 'MAT-006', name: 'Connector Rapid Inox 2 polzades', defaultUnit: '4u', stock: 30, location: 'Caixa A-3', unitPrice: 42.00 },
-  { id: 'wm7', code: 'MAT-007', name: 'Tub PE 50mm High-Density', defaultUnit: '15m', stock: 45, location: 'Prestatgeria A-2', unitPrice: 8.50 },
-  
-  { id: 's1', code: 'SERV-001', name: 'Hora Operari / Mà d\'Obra Tècnica', defaultUnit: '1h', stock: 999, location: 'Tarifa Interna', unitPrice: 35.00, isService: true },
-  { id: 's2', code: 'SERV-002', name: 'Hora Tractor / Maquinària Agrícola', defaultUnit: '1h', stock: 999, location: 'Tarifa Flota', unitPrice: 65.00, isService: true },
-  { id: 's3', code: 'SERV-003', name: 'Transport de Material / Logística', defaultUnit: '1 viatge', stock: 999, location: 'Tarifa Logística', unitPrice: 50.00, isService: true },
-  { id: 's4', code: 'SERV-004', name: 'Desplaçament Tècnic d\'Emergència', defaultUnit: '1 trajecte', stock: 999, location: 'Tarifa Logística', unitPrice: 40.00, isService: true },
-  { id: 's5', code: 'SERV-005', name: 'Recàrrec Extra / Nocturnitat / Festiu', defaultUnit: '1h', stock: 999, location: 'Tarifa Especial', unitPrice: 25.00, isService: true }
+  { id: 'wm1', code: 'MAT-001', name: 'Tub PE 25mm High-Density', defaultUnit: 'm', stock: 120, location: 'Prestatgeria A-1', unitPrice: 4.50 },
+  { id: 'wm2', code: 'MAT-002', name: 'Valvula de Tall 1 polzada Inox', defaultUnit: 'u', stock: 4, location: 'Caixa B-4', unitPrice: 18.20 },
+  { id: 'wm3', code: 'MAT-003', name: 'Cinta de Teflon Professional', defaultUnit: 'u', stock: 25, location: 'Caixa B-2', unitPrice: 2.10 },
+  { id: 'wm4', code: 'MAT-004', name: 'Adobat Foliar Nitrogenat 25kg', defaultUnit: 'sacs', stock: 2, location: 'Palet N-3', unitPrice: 32.50 },
+  { id: 'wm5', code: 'MAT-005', name: 'Filtre de Malla 2 polzades High-Pressure', defaultUnit: 'u', stock: 8, location: 'Prestatgeria C-2', unitPrice: 82.50 },
+  { id: 'wm6', code: 'MAT-006', name: 'Connector Rapid Inox 2 polzades', defaultUnit: 'u', stock: 30, location: 'Caixa A-3', unitPrice: 42.00 },
+  { id: 'wm7', code: 'MAT-007', name: 'Tub PE 50mm High-Density', defaultUnit: 'm', stock: 45, location: 'Prestatgeria A-2', unitPrice: 8.50 }
 ];
 
 const WAREHOUSE_TOOLS_DB: WarehouseToolItem[] = [
@@ -135,17 +114,14 @@ const WAREHOUSE_TOOLS_DB: WarehouseToolItem[] = [
   { id: 'wt2', code: 'EIN-102', name: 'Radial Makita 125mm', brand: 'Makita', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
   { id: 'wt3', code: 'EIN-103', name: 'Nivell Laser Topcon RL-H5A', brand: 'Topcon', status: 'OPERATIVA', assignedTo: 'Pau Ribas' },
   { id: 'wt4', code: 'EIN-104', name: 'Joc de Claus Stillson Heavy-Duty', brand: 'Palmera', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
-  { id: 'wt5', code: 'EIN-105', name: 'Detector de Metalls i Cables Subterrani', brand: 'Bosch Pro', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
-  { id: 'wt6', code: 'EIN-106', name: 'Bomba de Comprovacio de Pressio Manual', brand: 'Rothenberger', status: 'OPERATIVA', assignedTo: 'Magatzem Central' }
+  { id: 'wt5', code: 'EIN-105', name: 'Detector de Metalls i Cables Subterrani', brand: 'Bosch Pro', status: 'OPERATIVA', assignedTo: 'Magatzem Central' }
 ];
 
-// 3. Vehicles & Machinery Fleet DB
 const VEHICLES_FLOTA_DB: VehicleItem[] = [
   { id: 'v1', plate: '1234-BCD', name: 'Furgoneta Ford Transit Custom', type: 'Furgoneta', status: 'OPERATIU', availableDate: 'Avui mateix' },
   { id: 'v2', plate: 'TRACTOR-01', name: 'Tractor John Deere 6120M', type: 'Tractor Agrícola', status: 'REVISIO_TALLER', availableDate: 'Dijous 06/08/2026' }
 ];
 
-// 4. Incidencies DB
 const INCIDENCIES_DB = [
   { id: 'inc-1', code: 'INC-8812', title: 'Fuga d\'aigua detectada al Camp 3', operari: 'Jordi Soler', date: '02/08/2026 18:30', audioNote: 'Nota de veu: canonada principal de 50mm rebentada pel sector Nord del Camp 3.' }
 ];
@@ -156,7 +132,6 @@ function CreateJobForm() {
 
   const clientIdParam = searchParams.get('clientId') || searchParams.get('client') || '1';
 
-  // Client Mock Data Database
   const clientsDb: Record<string, { 
     name: string; 
     nif: string; 
@@ -213,7 +188,7 @@ function CreateJobForm() {
 
   // Form States
   const [selectedClientId, setSelectedClientId] = useState<string>(clientIdParam);
-  const [selectedWorkerId, setSelectedWorkerId] = useState<string>('op1'); // Default to Jordi Soler
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string>('op1');
   const [priority, setPriority] = useState<'URGENT' | 'NORMAL' | 'BAIXA'>('NORMAL');
   const [description, setDescription] = useState<string>('');
   const [estimatedHours, setEstimatedHours] = useState<string>('4');
@@ -222,17 +197,10 @@ function CreateJobForm() {
   const [assignedVehicle, setAssignedVehicle] = useState<string>('Furgoneta Ford Transit Custom (1234-BCD)');
   const [proposedStartDate, setProposedStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  // CONFIGURABLE GPS COORDINATES FOR OPERARI LOCATION
+  // GPS Coordinates
   const [jobLat, setJobLat] = useState<number>(selectedClient.lat);
   const [jobLng, setJobLng] = useState<number>(selectedClient.lng);
   const [jobLocationName, setJobLocationName] = useState<string>('📍 Finca Principal (Entrada)');
-  
-  // EDITABLE ITEMIZED BUDGET QUOTE LINES
-  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([
-    { id: 'b1', code: 'SERV-001', name: 'Hora Operari / Mà d\'Obra Tècnica', qty: 4, unit: 'h', unitPrice: 35.00 },
-    { id: 'b2', code: 'SERV-003', name: 'Transport de Material / Logística', qty: 1, unit: 'viatge', unitPrice: 50.00 },
-    { id: 'b3', code: 'SERV-004', name: 'Desplaçament Tècnic d\'Emergència', qty: 1, unit: 'trajecte', unitPrice: 40.00 }
-  ]);
 
   // Assigned Materials & Tools
   const [materials, setMaterials] = useState<Array<{ id: string; name: string; qty: string }>>([
@@ -249,6 +217,68 @@ function CreateJobForm() {
   ]);
   const [newTool, setNewTool] = useState<string>('');
 
+  // FULL ITEMIZED COMPREHENSIVE BUDGET TABLE (Reflecteix la TOTALITAT del pressupost: Materials + Eines + Mà d'Obra + Vehicle + Desplaçament)
+  const [fullBudgetLines, setFullBudgetLines] = useState<BudgetItemLine[]>([]);
+
+  // Automatically recalculate the TOTALITY of the budget whenever materials, hours, tools, or vehicle change
+  useEffect(() => {
+    const lines: BudgetItemLine[] = [];
+
+    // 1. Materials lines
+    materials.forEach((m, idx) => {
+      const dbMat = WAREHOUSE_MATERIALS_DB.find(wm => wm.name.toLowerCase().trim() === m.name.toLowerCase().trim());
+      const numQty = parseFloat(m.qty.replace(/[^0-9.]/g, '')) || 1;
+      const unitPrice = dbMat ? dbMat.unitPrice : 12.50;
+      
+      lines.push({
+        id: `b-mat-${idx}-${Date.now()}`,
+        code: dbMat ? dbMat.code : `MAT-00${idx + 1}`,
+        name: `Material: ${m.name}`,
+        category: 'MATERIAL',
+        qty: numQty,
+        unit: m.qty.replace(/[0-9.]/g, '').trim() || 'u',
+        unitPrice: unitPrice
+      });
+    });
+
+    // 2. Labor Hours line
+    const hrs = parseFloat(estimatedHours) || 4;
+    lines.push({
+      id: `b-labor-${Date.now()}`,
+      code: 'SERV-001',
+      name: 'Mà d\'Obra Tècnica (Hores Operari)',
+      category: 'MA_OBRA',
+      qty: hrs,
+      unit: 'h',
+      unitPrice: 35.00
+    });
+
+    // 3. Vehicle & Machinery line
+    const isTractor = assignedVehicle.includes('Tractor');
+    lines.push({
+      id: `b-veh-${Date.now()}`,
+      code: isTractor ? 'SERV-002' : 'SERV-003',
+      name: isTractor ? 'Ús de Maquinària (Hora Tractor)' : 'Transport i Vehicle Logístic',
+      category: 'VEHICLE',
+      qty: isTractor ? 3 : 1,
+      unit: isTractor ? 'h' : 'viatge',
+      unitPrice: isTractor ? 65.00 : 50.00
+    });
+
+    // 4. Emergency Displacement line
+    lines.push({
+      id: `b-desp-${Date.now()}`,
+      code: 'SERV-004',
+      name: 'Desplaçament Tècnic d\'Emergència',
+      category: 'DESPLAÇAMENT',
+      qty: 1,
+      unit: 'trajecte',
+      unitPrice: 40.00
+    });
+
+    setFullBudgetLines(lines);
+  }, [materials, estimatedHours, assignedVehicle]);
+
   // Modals for Warehouse Checklist Selection
   const [showMaterialChecklistModal, setShowMaterialChecklistModal] = useState<boolean>(false);
   const [showToolChecklistModal, setShowToolChecklistModal] = useState<boolean>(false);
@@ -264,41 +294,24 @@ function CreateJobForm() {
   const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'bot'; text: string; proposal?: any }>>([
     {
       sender: 'bot',
-      text: `Hola Marc! Sóc el teu **Copilot Tècnic CampoPro**. Tinc accés en temps real al teu **Historial de Treballs**, l'**Estoc de Magatzem**, l'**Estat de la Flota** i a la **Selecció d'Operari de Camp**.\n\nEscriu o dicta la tasca (ex: *"fuga aigua camp 3"*) i assignaré l'operari més idoni per a la feina.`
+      text: `Hola Marc! Sóc el teu **Copilot Tècnic CampoPro**. He integrat la **TOTALITAT del Pressupost (Materials + Eines + Mà d'obra + Vehicle + Desplaçament)** recuperables per a la factura final del client.\n\nEscriu o dicta la tasca (ex: *"fuga aigua camp 3"*) per generar el pressupost complet.`
     }
   ]);
 
-  // Recalculate Total Budget
-  const calculateTotalBudgetSum = (): number => {
-    return budgetItems.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
+  // Recalculate Total Comprehensive Budget
+  const calculateTotalComprehensiveBudget = (): number => {
+    return fullBudgetLines.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
   };
 
-  const handleUpdateBudgetItem = (id: string, field: 'qty' | 'unitPrice', valStr: string) => {
+  const handleUpdateBudgetLine = (id: string, field: 'qty' | 'unitPrice', valStr: string) => {
     const num = parseFloat(valStr) || 0;
-    setBudgetItems(budgetItems.map(item => item.id === id ? { ...item, [field]: num } : item));
+    setFullBudgetLines(fullBudgetLines.map(item => item.id === id ? { ...item, [field]: num } : item));
   };
 
-  const handleAddServiceToBudget = (serviceCode: string) => {
-    const serviceObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === serviceCode);
-    if (!serviceObj) return;
-
-    const newItem: BudgetItem = {
-      id: `b-${Date.now()}`,
-      code: serviceObj.code,
-      name: serviceObj.name,
-      qty: 1,
-      unit: serviceObj.defaultUnit.replace(/[0-9]/g, '').trim() || 'u',
-      unitPrice: serviceObj.unitPrice
-    };
-
-    setBudgetItems([...budgetItems, newItem]);
+  const handleRemoveBudgetLine = (id: string) => {
+    setFullBudgetLines(fullBudgetLines.filter(item => item.id !== id));
   };
 
-  const handleRemoveBudgetItem = (id: string) => {
-    setBudgetItems(budgetItems.filter(item => item.id !== id));
-  };
-
-  // Handle Client Switch & Reset GPS
   const handleClientSelect = (id: string) => {
     setSelectedClientId(id);
     const client = clientsDb[id] || clientsDb['1'];
@@ -310,14 +323,13 @@ function CreateJobForm() {
   const activeClient = clientsDb[selectedClientId] || selectedClient;
   const activeWorker = FIELD_WORKERS_DB.find(w => w.id === selectedWorkerId) || FIELD_WORKERS_DB[0];
 
-  // Set Parcel Preset
   const handleSelectParcelPreset = (preset: { name: string; lat: number; lng: number }) => {
     setJobLat(preset.lat);
     setJobLng(preset.lng);
     setJobLocationName(preset.name);
   };
 
-  // COPILOT LOGIC BASED ON REAL GROUNDED HISTORY & WORKER ASSIGNMENT
+  // COPILOT LOGIC GROUNDED IN FULL COMPREHENSIVE BUDGET
   const handleSendCopilotQuery = (userQueryText?: string) => {
     const query = (userQueryText || copilotInput).trim();
     if (!query) return;
@@ -338,19 +350,23 @@ function CreateJobForm() {
 
       const recommendedWorkerObj = FIELD_WORKERS_DB.find(w => w.id === matchedHistory.recommendedWorker) || FIELD_WORKERS_DB[0];
 
-      const horaOperariObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-001') || { unitPrice: 35.00 };
-      const horaTractorObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-002') || { unitPrice: 65.00 };
-      const transportObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-003') || { unitPrice: 50.00 };
-      const desplaçamentObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-004') || { unitPrice: 40.00 };
-
-      const proposedBudgetLines: BudgetItem[] = [
-        { id: `b-op-${Date.now()}`, code: 'SERV-001', name: 'Hora Operari / Mà d\'Obra Tècnica', qty: matchedHistory.avgHours, unit: 'h', unitPrice: horaOperariObj.unitPrice },
-        ...(requiresTractor ? [{ id: `b-tr-${Date.now()}`, code: 'SERV-002', name: 'Hora Tractor / Maquinària Agrícola', qty: 3, unit: 'h', unitPrice: horaTractorObj.unitPrice }] : []),
-        { id: `b-log-${Date.now()}`, code: 'SERV-003', name: 'Transport de Material / Logística', qty: 1, unit: 'viatge', unitPrice: transportObj.unitPrice },
-        { id: `b-desp-${Date.now()}`, code: 'SERV-004', name: 'Desplaçament Tècnic d\'Emergència', qty: 1, unit: 'trajecte', unitPrice: desplaçamentObj.unitPrice }
+      // Build comprehensive budget proposal
+      const copilotBudgetLines: BudgetItemLine[] = [
+        ...matchedHistory.materialsUsed.map((m, i) => ({
+          id: `c-mat-${i}-${Date.now()}`,
+          code: `MAT-00${i+1}`,
+          name: `Material: ${m.name}`,
+          category: 'MATERIAL' as const,
+          qty: parseFloat(m.qty) || 1,
+          unit: 'u',
+          unitPrice: m.unitPrice
+        })),
+        { id: `c-labor-${Date.now()}`, code: 'SERV-001', name: 'Mà d\'Obra Tècnica (Hores Operari)', category: 'MA_OBRA' as const, qty: matchedHistory.avgHours, unit: 'h', unitPrice: 35.00 },
+        { id: `c-veh-${Date.now()}`, code: requiresTractor ? 'SERV-002' : 'SERV-003', name: requiresTractor ? 'Ús de Maquinària (Tractor)' : 'Transport i Logística', category: 'VEHICLE' as const, qty: requiresTractor ? 3 : 1, unit: requiresTractor ? 'h' : 'viatge', unitPrice: requiresTractor ? 65.00 : 50.00 },
+        { id: `c-desp-${Date.now()}`, code: 'SERV-004', name: 'Desplaçament Tècnic d\'Emergència', category: 'DESPLAÇAMENT' as const, qty: 1, unit: 'trajecte', unitPrice: 40.00 }
       ];
 
-      const totalCalc = proposedBudgetLines.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
+      const totalCalc = copilotBudgetLines.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
 
       const proposalData = {
         title: matchedHistory.title,
@@ -359,14 +375,14 @@ function CreateJobForm() {
         description: `Ordre d'intervenció basada en l'historial #${matchedHistory.code}. ${matchedIncident ? `Relacionada amb l'incidència #${matchedIncident.code}: "${matchedIncident.audioNote}". ` : ''}Sanejar canalització, aplicar fittings de seguretat i verificar pressió a 4.5 bar.`,
         estimatedHours: String(matchedHistory.avgHours),
         recommendedWorker: recommendedWorkerObj,
-        materials: matchedHistory.materialsUsed.map((m, idx) => ({ ...m, stockAvailable: 45, inStock: true })),
+        materials: matchedHistory.materialsUsed.map((m, idx) => ({ id: `${idx}`, name: m.name, qty: m.qty })),
         tools: matchedHistory.toolsUsed,
         vehicle: targetVehicle,
         hasVehicleAlert: hasVehicleAlert,
         alertText: hasVehicleAlert ? `⚠️ ALERTA DE VEHICLE: El ${targetVehicle?.name} (${targetVehicle?.plate}) està en REVISIÓ AL TALLER.` : null,
         proposedStartDate: hasVehicleAlert ? '2026-08-06' : new Date().toISOString().split('T')[0],
         proposedStartDateFormatted: hasVehicleAlert ? 'Dijous 06/08/2026 (Quan el tractor torni a estar operatiu)' : 'Avui mateix',
-        budgetLines: proposedBudgetLines,
+        fullBudgetLines: copilotBudgetLines,
         calculatedBudget: `${totalCalc.toFixed(2)} €`,
         lat: matchedHistory.lat,
         lng: matchedHistory.lng,
@@ -378,7 +394,7 @@ function CreateJobForm() {
         ...updatedHistory,
         {
           sender: 'bot',
-          text: `He assignat la feina a l'operari especialista **${recommendedWorkerObj.name} (${recommendedWorkerObj.role})** i he configurat la ubicació GPS a **${matchedHistory.locationPresetName}**.`,
+          text: `He calculat la **TOTALITAT del Pressupost** (Materials + Mà d'obra + Vehicle + Desplaçament) per un total de **${totalCalc.toFixed(2)} €**. El pressupost quedarà guardat per poder convertir-se directament en factura quan el client l'accepti.`,
           proposal: proposalData
         }
       ]);
@@ -387,7 +403,6 @@ function CreateJobForm() {
     }, 1200);
   };
 
-  // Dictation Simulation (Speech-to-Text)
   const handleToggleDictation = () => {
     if (isDictating) {
       setIsDictating(false);
@@ -403,7 +418,6 @@ function CreateJobForm() {
     }
   };
 
-  // APPLY COPILOT PROPOSAL TO FORM IN 1 CLICK
   const applyCopilotProposalToForm = () => {
     if (!copilotProposal) return;
 
@@ -411,7 +425,7 @@ function CreateJobForm() {
     setEstimatedHours(copilotProposal.estimatedHours);
     setPriority(copilotProposal.hasVehicleAlert ? 'URGENT' : 'NORMAL');
     setProposedStartDate(copilotProposal.proposedStartDate);
-    setBudgetItems(copilotProposal.budgetLines);
+    setFullBudgetLines(copilotProposal.fullBudgetLines);
 
     if (copilotProposal.recommendedWorker) {
       setSelectedWorkerId(copilotProposal.recommendedWorker.id);
@@ -427,19 +441,13 @@ function CreateJobForm() {
       setAssignedVehicle(`${copilotProposal.vehicle.name} (${copilotProposal.vehicle.plate})`);
     }
 
-    setMaterials(copilotProposal.materials.map((m: any, idx: number) => ({
-      id: `copilot-mat-${idx}`,
-      name: m.name,
-      qty: m.qty
-    })));
-
+    setMaterials(copilotProposal.materials);
     setTools(copilotProposal.tools);
 
     setShowCopilotModal(false);
-    alert(`✨ S'ha aplicat tota la proposta del Copilot IA a l'Ordre de Treball! Assignada a l'operari ${copilotProposal.recommendedWorker?.name || 'Jordi Soler'} amb coordenades GPS (${copilotProposal.lat}° N, ${copilotProposal.lng}° E).`);
+    alert(`✨ S'ha aplicat tota la proposta del Copilot IA a l'Ordre de Treball! Incloent el pressupost total de ${copilotProposal.calculatedBudget} recuperable per a la factura final.`);
   };
 
-  // Manual Add Handlers
   const handleAddMaterialManual = () => {
     if (newMaterial.trim()) {
       setMaterials([...materials, { id: `${Date.now()}`, name: newMaterial.trim(), qty: newMaterialQty.trim() || '1u' }]);
@@ -455,7 +463,6 @@ function CreateJobForm() {
     }
   };
 
-  // Checklist Selection Handlers
   const toggleMaterialChecklist = (item: WarehouseMaterialItem) => {
     const exists = materials.some(m => m.name.toLowerCase().trim() === item.name.toLowerCase().trim());
     if (exists) {
@@ -475,7 +482,8 @@ function CreateJobForm() {
   };
 
   const handleSaveOrder = () => {
-    alert(`Ordre de Treball creada amb èxit per al client ${activeClient.name}! Assignada a l'operari: ${activeWorker.name} (${activeWorker.phone}). Ubicació GPS: Lat ${jobLat}, Lng ${jobLng}.`);
+    const totalSum = calculateTotalComprehensiveBudget().toFixed(2);
+    alert(`Ordre de Treball i Pressupost #${Date.now().toString().slice(-5)} creats amb èxit per a ${activeClient.name}! Total Pressupost: ${totalSum} €. Aquest pressupost queda arxivat a la fitxa del client i serà 100% recuperable per generar la factura oficial un cop acceptat.`);
     router.push(`/gestio/clients/${selectedClientId}`);
   };
 
@@ -502,10 +510,10 @@ function CreateJobForm() {
               </span>
             </div>
             <h1 className="font-display-lg text-display-lg text-primary">
-              Nova Ordre de Treball
+              Nova Ordre de Treball i Pressupost
             </h1>
             <p className="text-sm text-on-surface-variant mt-1">
-              Amb assignació d'operari de camp, coordenades GPS configurables i tarifes editables de magatzem.
+              La taula reflecteix la TOTALITAT del pressupost (Materials + Eines + Mà d'Obra + Vehicle + Desplaçament) i queda registrada per convertir-se en factura oficial.
             </p>
           </div>
 
@@ -515,7 +523,7 @@ function CreateJobForm() {
             className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 via-teal-700 to-primary text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 text-sm"
           >
             <Bot size={22} className="text-amber-300 animate-bounce" />
-            🤖 Obrir Copilot IA (Amb Assignació d'Operari)
+            🤖 Obrir Copilot IA (Calculador de Pressupost)
           </button>
         </div>
 
@@ -536,7 +544,6 @@ function CreateJobForm() {
                 </span>
               </div>
 
-              {/* Client Selector Dropdown */}
               <div className="flex flex-col gap-1">
                 <label className="font-label-caps text-xs text-on-surface-variant">SELECCIONAR CLIENT</label>
                 <select
@@ -552,7 +559,6 @@ function CreateJobForm() {
                 </select>
               </div>
 
-              {/* Client Details Summary Grid */}
               <div className="grid grid-cols-2 gap-md bg-surface-container-low p-md rounded-xl border border-outline-variant/20 text-sm">
                 <div>
                   <span className="text-xs text-on-surface-variant block font-label-caps">NOM FISCAL</span>
@@ -600,7 +606,6 @@ function CreateJobForm() {
                 </select>
               </div>
 
-              {/* Selected Worker Info Badge */}
               <div className="flex items-center justify-between bg-emerald-50 p-4 rounded-2xl border border-emerald-200">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-700 text-white flex items-center justify-center text-2xl shadow">
@@ -635,7 +640,6 @@ function CreateJobForm() {
                 </span>
               </div>
 
-              {/* Parcel Preset Buttons */}
               <div>
                 <label className="font-label-caps text-xs text-on-surface-variant block mb-2">PUNTS I SECTORS DESTACATS DE LA FINCA (SELECCIÓ RÀPIDA):</label>
                 <div className="flex flex-wrap gap-2">
@@ -654,7 +658,6 @@ function CreateJobForm() {
                 </div>
               </div>
 
-              {/* Editable Lat/Lng Inputs Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-neutral-50 p-4 rounded-2xl border border-neutral-200">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-neutral-600 uppercase flex items-center gap-1">
@@ -689,14 +692,12 @@ function CreateJobForm() {
                 </div>
               </div>
 
-              {/* Visual Satellite Preview Map */}
               <div className="relative h-[220px] rounded-2xl overflow-hidden shadow-md border border-neutral-300">
                 <div 
                   className="w-full h-full bg-cover bg-center transition-all" 
                   style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu')` }}
                 ></div>
 
-                {/* Animated Map Pin Marker */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="bg-red-600 text-white p-3 rounded-full shadow-2xl animate-bounce border-2 border-white flex items-center gap-1">
                     <MapPin size={22} className="fill-white text-red-600" />
@@ -718,7 +719,6 @@ function CreateJobForm() {
                   Descripció i Planificació de la Feina
                 </h2>
 
-                {/* Priority Selector */}
                 <div className="flex gap-xs">
                   <button 
                     type="button"
@@ -755,7 +755,6 @@ function CreateJobForm() {
                 ></textarea>
               </div>
 
-              {/* Estimated Hours & Dates Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-xs">
                   <label className="font-label-caps text-xs text-on-surface-variant">ESTIMACIÓ HORES DE TREBALL</label>
@@ -784,8 +783,6 @@ function CreateJobForm() {
 
             {/* Card 5: Materials & Tools Assignment WITH CHECKLIST & MANUAL OPTION */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-lg">
-              
-              {/* 1. Materials Section */}
               <div className="flex flex-col gap-md">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <h3 className="font-headline-md text-primary flex items-center gap-2 text-md">
@@ -793,7 +790,6 @@ function CreateJobForm() {
                     Materials Necessaris Assignats ({materials.length})
                   </h3>
 
-                  {/* Checklist Trigger Button */}
                   <button
                     type="button"
                     onClick={() => setShowMaterialChecklistModal(true)}
@@ -804,7 +800,6 @@ function CreateJobForm() {
                   </button>
                 </div>
                 
-                {/* Active Materials Pills */}
                 <div className="flex flex-wrap gap-2">
                   {materials.map((mat) => (
                     <span key={mat.id} className="bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm">
@@ -820,7 +815,6 @@ function CreateJobForm() {
                   ))}
                 </div>
 
-                {/* Manual Add Input */}
                 <div className="flex gap-2 bg-neutral-50 p-2 rounded-xl border border-neutral-200">
                   <input
                     type="text"
@@ -848,7 +842,6 @@ function CreateJobForm() {
 
               <div className="h-px bg-outline-variant/30"></div>
 
-              {/* 2. Tools Section */}
               <div className="flex flex-col gap-md">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <h3 className="font-headline-md text-primary flex items-center gap-2 text-md">
@@ -856,7 +849,6 @@ function CreateJobForm() {
                     Eines Necessàries Assignades ({tools.length})
                   </h3>
 
-                  {/* Checklist Trigger Button */}
                   <button
                     type="button"
                     onClick={() => setShowToolChecklistModal(true)}
@@ -867,7 +859,6 @@ function CreateJobForm() {
                   </button>
                 </div>
 
-                {/* Active Tools Pills */}
                 <div className="flex flex-wrap gap-2">
                   {tools.map((t, idx) => (
                     <span key={idx} className="bg-blue-50 text-blue-900 border border-blue-200 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm">
@@ -883,7 +874,6 @@ function CreateJobForm() {
                   ))}
                 </div>
 
-                {/* Manual Add Input */}
                 <div className="flex gap-2 bg-neutral-50 p-2 rounded-xl border border-neutral-200">
                   <input
                     type="text"
@@ -904,31 +894,43 @@ function CreateJobForm() {
             </div>
           </div>
 
-          {/* Right Column: Vehicle, EDITABLE REAL BUDGET & Blueprints */}
+          {/* Right Column: Vehicle, TOTAL COMPREHENSIVE PRESSUPOST & Blueprints */}
           <div className="col-span-12 lg:col-span-5 flex flex-col gap-lg">
             
-            {/* Card 6: EDITABLE REAL BUDGET QUOTE CARD WITH SERVICE TARIFF ARTICLES */}
+            {/* Card 6: PRESSUPOST (Reflecteix la TOTALITAT del Pressupost: Materials, Eines, Mà d'obra, Vehicle i Desplaçament) */}
             <div className="p-xl bg-gradient-to-br from-emerald-950 via-teal-900 to-primary text-white rounded-3xl shadow-xl border border-emerald-700 flex flex-col gap-md">
               <div className="flex justify-between items-center border-b border-emerald-800 pb-md">
-                <h2 className="font-bold flex items-center gap-2 text-lg text-emerald-300">
-                  <DollarSign size={22} className="text-emerald-400" />
-                  Pressupost Real (Articles de Magatzem Editables)
+                <h2 className="font-bold flex items-center gap-2 text-xl text-emerald-300">
+                  <DollarSign size={24} className="text-emerald-400" />
+                  Pressupost
                 </h2>
-                <span className="text-[10px] font-bold bg-emerald-800 text-emerald-200 px-3 py-1 rounded-full uppercase tracking-wider">
-                  Tarifes Editables
+                <span className="text-[10px] font-bold bg-emerald-800 text-emerald-200 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                  <Receipt size={12} /> Recuperable per a Factura
                 </span>
               </div>
 
-              {/* Service Line Items Table */}
+              <p className="text-xs text-emerald-200 leading-relaxed">
+                Aquesta taula calcula la <strong>TOTALITAT del Pressupost</strong> combinant materials de magatzem, eines, hores d'operari, vehicle i desplaçament. Queda registrat per convertir-se directament en la factura oficial del client.
+              </p>
+
+              {/* Itemized Budget Table */}
               <div className="space-y-2 text-xs">
-                <span className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider block mb-1">Desglose de Tarifes de Servei (Hora Operari, Hora Tractor, Transport, Desplaçament, Extra):</span>
+                <span className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider block mb-1">Desglose Detallat de la Totalitat dels Conceptes:</span>
                 
-                <div className="space-y-2 bg-emerald-950/60 p-3 rounded-2xl border border-emerald-800/80">
-                  {budgetItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between gap-2 bg-emerald-900/50 p-2 rounded-xl border border-emerald-700/50">
+                <div className="space-y-2 bg-emerald-950/70 p-3 rounded-2xl border border-emerald-800/80">
+                  {fullBudgetLines.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-2 bg-emerald-900/60 p-2.5 rounded-xl border border-emerald-700/50">
                       <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-mono text-emerald-400 font-bold block">{item.code}</span>
-                        <span className="font-semibold text-white text-xs truncate block">{item.name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white ${
+                            item.category === 'MATERIAL' ? 'bg-emerald-700' :
+                            item.category === 'MA_OBRA' ? 'bg-blue-700' :
+                            item.category === 'VEHICLE' ? 'bg-amber-700' : 'bg-purple-700'
+                          }`}>
+                            {item.category}
+                          </span>
+                          <span className="font-semibold text-white text-xs truncate block">{item.name}</span>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-1.5">
@@ -938,7 +940,7 @@ function CreateJobForm() {
                             type="number" 
                             step="0.5" 
                             value={item.qty} 
-                            onChange={(e) => handleUpdateBudgetItem(item.id, 'qty', e.target.value)} 
+                            onChange={(e) => handleUpdateBudgetLine(item.id, 'qty', e.target.value)} 
                             className="w-10 bg-transparent text-center font-bold text-white text-xs outline-none"
                           />
                           <span className="text-[10px] text-emerald-400">{item.unit}</span>
@@ -952,41 +954,34 @@ function CreateJobForm() {
                             type="number" 
                             step="1" 
                             value={item.unitPrice} 
-                            onChange={(e) => handleUpdateBudgetItem(item.id, 'unitPrice', e.target.value)} 
+                            onChange={(e) => handleUpdateBudgetLine(item.id, 'unitPrice', e.target.value)} 
                             className="w-14 bg-transparent text-center font-bold text-emerald-300 text-xs outline-none"
                           />
                           <span className="text-[10px] text-emerald-400">€</span>
                         </div>
 
-                        {/* Total per line */}
-                        <span className="font-bold text-white w-14 text-right text-xs">{(item.qty * item.unitPrice).toFixed(2)}€</span>
+                        <span className="font-bold text-white w-16 text-right text-xs">{(item.qty * item.unitPrice).toFixed(2)}€</span>
 
-                        <button onClick={() => handleRemoveBudgetItem(item.id)} className="text-emerald-400 hover:text-red-400 p-0.5">
+                        <button onClick={() => handleRemoveBudgetLine(item.id)} className="text-emerald-400 hover:text-red-400 p-0.5">
                           <X size={14} />
                         </button>
                       </div>
                     </div>
                   ))}
-
-                  {/* Add Quick Tariff Service Buttons */}
-                  <div className="pt-2 flex flex-wrap gap-1.5 border-t border-emerald-800">
-                    <span className="text-[10px] text-emerald-300 self-center font-bold">Afegir Tarifa:</span>
-                    <button onClick={() => handleAddServiceToBudget('SERV-001')} className="px-2 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-[10px] font-bold">+ Hora Operari (35€)</button>
-                    <button onClick={() => handleAddServiceToBudget('SERV-002')} className="px-2 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-[10px] font-bold">+ Hora Tractor (65€)</button>
-                    <button onClick={() => handleAddServiceToBudget('SERV-003')} className="px-2 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-[10px] font-bold">+ Transport (50€)</button>
-                    <button onClick={() => handleAddServiceToBudget('SERV-004')} className="px-2 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-[10px] font-bold">+ Desplaçament (40€)</button>
-                    <button onClick={() => handleAddServiceToBudget('SERV-005')} className="px-2 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-[10px] font-bold">+ Extra Sanció/Festiu (25€)</button>
-                  </div>
                 </div>
               </div>
 
-              {/* Total Budget Display */}
-              <div className="flex justify-between items-end pt-2 border-t border-emerald-800">
+              {/* Total Budget Summary & Invoice Recovery Badge */}
+              <div className="flex justify-between items-end pt-3 border-t border-emerald-800">
                 <div>
-                  <span className="text-xs text-emerald-300 block font-semibold uppercase">TOTAL PRESSUPOSTAT REAL</span>
-                  <span className="text-3xl font-extrabold text-white">{calculateTotalBudgetSum().toFixed(2)} €</span>
+                  <span className="text-xs text-emerald-300 block font-semibold uppercase">TOTAL PRESSUPOSTAT (IVA no inclòs)</span>
+                  <span className="text-3xl font-extrabold text-white">{calculateTotalComprehensiveBudget().toFixed(2)} €</span>
                 </div>
-                <span className="text-xs text-emerald-300 font-mono">IVA no inclòs (Editable en temps real)</span>
+                <div className="text-right">
+                  <span className="text-[11px] font-bold text-emerald-300 bg-emerald-900 border border-emerald-700 px-3 py-1.5 rounded-xl flex items-center gap-1 shadow">
+                    <FileCheck size={14} className="text-emerald-400" /> Generar Factura en 1-Clic
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1068,7 +1063,7 @@ function CreateJobForm() {
             className="px-10 py-4 bg-secondary-container text-on-secondary-container font-headline-md rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 uppercase tracking-wider"
           >
             <span className="material-symbols-outlined">check_circle</span>
-            Guardar Ordre per a {activeWorker.name} ({calculateTotalBudgetSum().toFixed(2)} €)
+            Guardar Ordre i Pressupost ({calculateTotalComprehensiveBudget().toFixed(2)} €)
           </button>
         </div>
       </div>
@@ -1077,8 +1072,6 @@ function CreateJobForm() {
       {showCopilotModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
           <div className="bg-white rounded-3xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
-            
-            {/* Header */}
             <div className="flex justify-between items-center pb-4 border-b border-neutral-100 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-800 text-white flex items-center justify-center shadow-md">
@@ -1088,10 +1081,10 @@ function CreateJobForm() {
                   <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
                     Copilot Tècnic CampoPro (IA Grounded)
                     <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
-                      Assignació d'Operaris
+                      Calculador de Pressupost Total
                     </span>
                   </h3>
-                  <p className="text-xs text-neutral-500">Integrat amb Operaris, GPS, Magatzem, Vehicles i Historial.</p>
+                  <p className="text-xs text-neutral-500">Calcula la totalitat (Materials + Eines + Mà d'obra + Vehicle + Desplaçament).</p>
                 </div>
               </div>
               <button onClick={() => setShowCopilotModal(false)} className="text-neutral-400 hover:text-neutral-700">
@@ -1099,7 +1092,6 @@ function CreateJobForm() {
               </button>
             </div>
 
-            {/* Chat Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 my-2">
               {chatHistory.map((msg, idx) => (
                 <div key={idx} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -1114,7 +1106,6 @@ function CreateJobForm() {
                   }`}>
                     <p className="whitespace-pre-line">{msg.text}</p>
 
-                    {/* PROPOSAL CARD GENERATED BY COPILOT */}
                     {msg.proposal && (
                       <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-3 shadow-md text-neutral-900">
                         <div className="flex justify-between items-start border-b border-neutral-100 pb-2">
@@ -1123,40 +1114,20 @@ function CreateJobForm() {
                               Basat en Historial #{msg.proposal.matchedCode}
                             </span>
                             <h4 className="font-bold text-sm text-neutral-900 mt-1">{msg.proposal.title}</h4>
-                            {msg.proposal.recommendedWorker && (
-                              <span className="text-[11px] font-bold text-emerald-800 block mt-1">
-                                👨‍🌾 Operari Recomanat: {msg.proposal.recommendedWorker.name} ({msg.proposal.recommendedWorker.role})
-                              </span>
-                            )}
                           </div>
                         </div>
 
-                        {/* Vehicle Alert */}
-                        {msg.proposal.hasVehicleAlert && (
-                          <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 font-bold flex items-start gap-2">
-                            <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                              <span>{msg.proposal.alertText}</span>
-                              <span className="block text-[11px] text-emerald-800 font-normal mt-1">
-                                📅 Data d'Inici Recomanada: <strong>{msg.proposal.proposedStartDateFormatted}</strong>
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Calculated Budget */}
                         <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center font-bold text-emerald-900 text-xs">
-                          <span>TOTAL ESTIMAT:</span>
+                          <span>TOTAL PRESSUPOSTAT:</span>
                           <span className="text-sm font-extrabold text-emerald-800">{msg.proposal.calculatedBudget}</span>
                         </div>
 
-                        {/* Apply Button */}
                         <button
                           onClick={applyCopilotProposalToForm}
                           className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl font-bold text-xs shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2"
                         >
                           <Sparkles size={16} />
-                          ✨ Aplicar Ordre per a {msg.proposal.recommendedWorker?.name || 'Operari'} al Formulari
+                          ✨ Aplicar Ordre i Pressupost Total al Formulari
                         </button>
                       </div>
                     )}
@@ -1167,12 +1138,11 @@ function CreateJobForm() {
               {isCopilotThinking && (
                 <div className="flex gap-2 text-xs text-neutral-500 items-center bg-neutral-100 p-3 rounded-xl w-fit">
                   <RefreshCw className="animate-spin text-emerald-600" size={16} />
-                  <span>Seleccionant l'operari especialista, coordenades GPS i magatzem...</span>
+                  <span>Calculant la totalitat del pressupost...</span>
                 </div>
               )}
             </div>
 
-            {/* Chat Input Bar */}
             <div className="pt-2 flex gap-2 items-center">
               <button
                 onClick={handleToggleDictation}
@@ -1257,7 +1227,7 @@ function CreateJobForm() {
                     </div>
 
                     <span className="text-xs font-bold text-emerald-800 bg-white border border-emerald-200 px-2.5 py-1 rounded-lg">
-                      Qty: {item.defaultUnit}
+                      Preu: {item.unitPrice.toFixed(2)} € / {item.defaultUnit}
                     </span>
                   </div>
                 );
