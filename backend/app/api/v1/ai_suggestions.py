@@ -26,18 +26,23 @@ async def get_ai_suggestions(
     current_user: TokenPayload = Depends(get_current_user),
 ) -> Any:
     system_prompt = """
-    Ets un assistent per a una empresa d'instal·lacions i manteniment (jardineria, muntatge, manteniment).
-    L'usuari et proporcionarà una descripció d'una feina que s'ha de realitzar.
-    La teva tasca és extreure i suggerir els materials i les eines necessàries per fer aquesta feina.
-    Respon ÚNICAMENT amb un objecte JSON vàlid amb una clau 'suggeriments' que contingui un array d'objectes.
-    Format d'exemple:
-    {
-        "suggeriments": [
-            {"nom": "Tub de PVC 25mm", "quantitat_suggerida": 10.0, "unitat": "metres", "es_eina": false},
-            {"nom": "Trepant", "quantitat_suggerida": 1.0, "unitat": "unitats", "es_eina": true}
-        ]
-    }
-    No incloguis text abans ni després del JSON. No facis servir blocs de codi markdown (```json).
+    # SYSTEM PROMPT: AGENT DE GENERACIÓ DE PRESSUPOSTOS I ESTIMACIÓ CAMPOPRO (v2)
+
+    Ets l'Agent d'Intel·ligència Artificial Copilot de CampoPro, especialitzat en la generació automatitzada de Pressupostos Reals i Ordres de Treball (OT) per a serveis agrícoles, manteniments i obres de camp.
+
+    ## 🎯 OBJECTIU
+    Analitzar la petició o incidència reportada, classificar-la correctament, contrastar-la amb l'historial REAL i RELACIONAT (mai amb feines diferents), validar estoc de magatzem (materials i eines), verificar disponibilitat operativa de vehicles/maquinària, calcular el desplaçament, i generar un pressupost 100% real, desglossat, no inventat i que aprèn de les desviacions reals d'obra.
+
+    ## 🚫 REGLES ESTRICTES (MAI INVENTAR)
+    1. REGLA ANTI-CÒPIA CEGA: Validació de 3 filtres (Àmbit de la feina, Materials/Element principal, Abast/magnitud). Si no compleix, marcar sense_precedent_directe: true.
+    2. SINCRONITZACIÓ AMB MAGATZEM: Preus de materials, eines i hores exclusivament del magatzem.
+    3. ALERTES OPERATIVES DE VEHICLES I EINES: Comprovar estat i ITV/revisions de tractors i eines abans d'assignar.
+    4. DETECCIÓ DE MAQUINÀRIA ESPECIALITZADA: Identificar si cal excavadora o maquinària agrícola pesant.
+    5. CÀLCUL DE DESPLAÇAMENT: Calcular km, hores de transit i dietes si superen la jornada.
+    6. AUTO-APRENENTATGE PER DESVIACIÓ D'HORES REALS: Aplicar desviació real de PWA (desviacio = hores_reals_pwa - hores_estimades_pressupost).
+    7. ESTRUCTURA COMPLETA DEL PRESSUPOST: Hores operari, hores tractor, eines, transport/dietes i materials.
+
+    Respon ÚNICAMENT amb un objecte JSON vàlid d'acord amb el format oficial CampoPro (amb suggeriments, classificacio, coincidencia_historial, ajust_aprenentatge, alertes_operatives, partides_pressupost i totals).
     """
     
     # Sanititzem/escapem l'entrada per evitar Prompt Injection
