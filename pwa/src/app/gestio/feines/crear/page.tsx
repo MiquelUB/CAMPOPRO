@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2, Edit3, Tag, MapPin, Navigation, Crosshair, Compass } from 'lucide-react';
+import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2, Edit3, Tag, MapPin, Navigation, Crosshair, Compass, UserCheck, Users, Phone, User } from 'lucide-react';
 
 interface WarehouseMaterialItem {
   id: string;
@@ -43,6 +43,23 @@ interface BudgetItem {
   unitPrice: number;
 }
 
+interface WorkerItem {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  status: 'DISPONIBLE' | 'EN_FEINA' | 'VACANCES';
+  avatar: string;
+}
+
+// Active Field Workers Database
+const FIELD_WORKERS_DB: WorkerItem[] = [
+  { id: 'op1', name: 'Jordi Soler', role: 'Cap d\'Equip & Especialista en Reg', phone: '600 12 34 56', status: 'DISPONIBLE', avatar: '👨‍🌾' },
+  { id: 'op2', name: 'Pau Ribas', role: 'Operari Agrícola & Maquinista', phone: '600 98 76 54', status: 'DISPONIBLE', avatar: '🚜' },
+  { id: 'op3', name: 'Marc Andreu', role: 'Tècnic Electricista & IOT', phone: '600 55 44 33', status: 'DISPONIBLE', avatar: '⚡' },
+  { id: 'op4', name: 'Joan Martí', role: 'Operari de Manteniment General', phone: '600 11 22 33', status: 'DISPONIBLE', avatar: '🛠️' }
+];
+
 // 1. Real Grounded History DB
 const HISTORIAL_TREBALLS_REALITZATS = [
   {
@@ -50,6 +67,7 @@ const HISTORIAL_TREBALLS_REALITZATS = [
     code: 'OT-442',
     title: 'Reparació Fuga d\'Aigua i Escomesa Sector Sud',
     avgHours: 6.5,
+    recommendedWorker: 'op1', // Jordi Soler
     materialsUsed: [
       { name: 'Tub PE 50mm High-Density', qty: '15m' },
       { name: 'Valvula de Tall 1 polzada Inox', qty: '2u' },
@@ -66,6 +84,7 @@ const HISTORIAL_TREBALLS_REALITZATS = [
     code: 'OT-501',
     title: 'Instal·lació de Sensor d\'Humitat IOT',
     avgHours: 4.0,
+    recommendedWorker: 'op3', // Marc Andreu
     materialsUsed: [
       { name: 'Sensor de Humitat IOT 40cm', qty: '1u' },
       { name: 'Plafo Solar i Bateria Liti', qty: '1u' }
@@ -81,6 +100,7 @@ const HISTORIAL_TREBALLS_REALITZATS = [
     code: 'OT-612',
     title: 'Revisió i Manteniment Bomba de Reg 15CV',
     avgHours: 12.0,
+    recommendedWorker: 'op1', // Jordi Soler
     materialsUsed: [
       { name: 'Reten Mecanic Inox 40mm Bomba', qty: '2u' },
       { name: 'Oli Mineral Sintetic ISO VG 220', qty: '2u' }
@@ -193,6 +213,7 @@ function CreateJobForm() {
 
   // Form States
   const [selectedClientId, setSelectedClientId] = useState<string>(clientIdParam);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string>('op1'); // Default to Jordi Soler
   const [priority, setPriority] = useState<'URGENT' | 'NORMAL' | 'BAIXA'>('NORMAL');
   const [description, setDescription] = useState<string>('');
   const [estimatedHours, setEstimatedHours] = useState<string>('4');
@@ -205,7 +226,6 @@ function CreateJobForm() {
   const [jobLat, setJobLat] = useState<number>(selectedClient.lat);
   const [jobLng, setJobLng] = useState<number>(selectedClient.lng);
   const [jobLocationName, setJobLocationName] = useState<string>('📍 Finca Principal (Entrada)');
-  const [isManualGpsEditing, setIsManualGpsEditing] = useState<boolean>(false);
   
   // EDITABLE ITEMIZED BUDGET QUOTE LINES
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([
@@ -244,7 +264,7 @@ function CreateJobForm() {
   const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'bot'; text: string; proposal?: any }>>([
     {
       sender: 'bot',
-      text: `Hola Marc! Sóc el teu **Copilot Tècnic CampoPro**. Tinc accés en temps real al teu **Historial de Treballs**, l'**Estoc de Magatzem**, l'**Estat de la Flota** i les **Coordenades GPS configurables per a l'operari**.\n\nEscriu o dicta la tasca (ex: *"fuga aigua camp 3"*) i configuraré la ubicació exacta de la feina.`
+      text: `Hola Marc! Sóc el teu **Copilot Tècnic CampoPro**. Tinc accés en temps real al teu **Historial de Treballs**, l'**Estoc de Magatzem**, l'**Estat de la Flota** i a la **Selecció d'Operari de Camp**.\n\nEscriu o dicta la tasca (ex: *"fuga aigua camp 3"*) i assignaré l'operari més idoni per a la feina.`
     }
   ]);
 
@@ -288,6 +308,7 @@ function CreateJobForm() {
   };
 
   const activeClient = clientsDb[selectedClientId] || selectedClient;
+  const activeWorker = FIELD_WORKERS_DB.find(w => w.id === selectedWorkerId) || FIELD_WORKERS_DB[0];
 
   // Set Parcel Preset
   const handleSelectParcelPreset = (preset: { name: string; lat: number; lng: number }) => {
@@ -296,7 +317,7 @@ function CreateJobForm() {
     setJobLocationName(preset.name);
   };
 
-  // COPILOT LOGIC BASED ON REAL GROUNDED HISTORY & CONFIGURABLE GPS LOCATION
+  // COPILOT LOGIC BASED ON REAL GROUNDED HISTORY & WORKER ASSIGNMENT
   const handleSendCopilotQuery = (userQueryText?: string) => {
     const query = (userQueryText || copilotInput).trim();
     if (!query) return;
@@ -314,6 +335,8 @@ function CreateJobForm() {
       const requiresTractor = queryLower.includes('camp') || queryLower.includes('adobat') || queryLower.includes('zanja');
       const targetVehicle = requiresTractor ? VEHICLES_FLOTA_DB.find(v => v.type.includes('Tractor')) : VEHICLES_FLOTA_DB[0];
       const hasVehicleAlert = targetVehicle?.status === 'REVISIO_TALLER';
+
+      const recommendedWorkerObj = FIELD_WORKERS_DB.find(w => w.id === matchedHistory.recommendedWorker) || FIELD_WORKERS_DB[0];
 
       const horaOperariObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-001') || { unitPrice: 35.00 };
       const horaTractorObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-002') || { unitPrice: 65.00 };
@@ -335,6 +358,7 @@ function CreateJobForm() {
         incidentRef: matchedIncident ? `${matchedIncident.code} (${matchedIncident.operari})` : null,
         description: `Ordre d'intervenció basada en l'historial #${matchedHistory.code}. ${matchedIncident ? `Relacionada amb l'incidència #${matchedIncident.code}: "${matchedIncident.audioNote}". ` : ''}Sanejar canalització, aplicar fittings de seguretat i verificar pressió a 4.5 bar.`,
         estimatedHours: String(matchedHistory.avgHours),
+        recommendedWorker: recommendedWorkerObj,
         materials: matchedHistory.materialsUsed.map((m, idx) => ({ ...m, stockAvailable: 45, inStock: true })),
         tools: matchedHistory.toolsUsed,
         vehicle: targetVehicle,
@@ -354,7 +378,7 @@ function CreateJobForm() {
         ...updatedHistory,
         {
           sender: 'bot',
-          text: `He localitzat la feina a l'historial i he fixat les coordenades GPS exactes per a l'operari a: **${matchedHistory.locationPresetName} (${matchedHistory.lat}° N, ${matchedHistory.lng}° E)**.`,
+          text: `He assignat la feina a l'operari especialista **${recommendedWorkerObj.name} (${recommendedWorkerObj.role})** i he configurat la ubicació GPS a **${matchedHistory.locationPresetName}**.`,
           proposal: proposalData
         }
       ]);
@@ -389,6 +413,10 @@ function CreateJobForm() {
     setProposedStartDate(copilotProposal.proposedStartDate);
     setBudgetItems(copilotProposal.budgetLines);
 
+    if (copilotProposal.recommendedWorker) {
+      setSelectedWorkerId(copilotProposal.recommendedWorker.id);
+    }
+
     if (copilotProposal.lat && copilotProposal.lng) {
       setJobLat(copilotProposal.lat);
       setJobLng(copilotProposal.lng);
@@ -408,7 +436,7 @@ function CreateJobForm() {
     setTools(copilotProposal.tools);
 
     setShowCopilotModal(false);
-    alert(`✨ S'ha aplicat tota la proposta del Copilot IA a l'Ordre de Treball! Incloent la Ubicació GPS exacte per a l'operari (${copilotProposal.lat}° N, ${copilotProposal.lng}° E).`);
+    alert(`✨ S'ha aplicat tota la proposta del Copilot IA a l'Ordre de Treball! Assignada a l'operari ${copilotProposal.recommendedWorker?.name || 'Jordi Soler'} amb coordenades GPS (${copilotProposal.lat}° N, ${copilotProposal.lng}° E).`);
   };
 
   // Manual Add Handlers
@@ -447,7 +475,7 @@ function CreateJobForm() {
   };
 
   const handleSaveOrder = () => {
-    alert(`Ordre de Treball creada amb èxit per al client ${activeClient.name}! Ubicació GPS assignada a l'operari: Lat ${jobLat}, Lng ${jobLng} (${jobLocationName}).`);
+    alert(`Ordre de Treball creada amb èxit per al client ${activeClient.name}! Assignada a l'operari: ${activeWorker.name} (${activeWorker.phone}). Ubicació GPS: Lat ${jobLat}, Lng ${jobLng}.`);
     router.push(`/gestio/clients/${selectedClientId}`);
   };
 
@@ -477,7 +505,7 @@ function CreateJobForm() {
               Nova Ordre de Treball
             </h1>
             <p className="text-sm text-on-surface-variant mt-1">
-              Amb coordenades GPS configurables per a la navegació directa de l'operari al punt exacte de la finca.
+              Amb assignació d'operari de camp, coordenades GPS configurables i tarifes editables de magatzem.
             </p>
           </div>
 
@@ -487,7 +515,7 @@ function CreateJobForm() {
             className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 via-teal-700 to-primary text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 text-sm"
           >
             <Bot size={22} className="text-amber-300 animate-bounce" />
-            🤖 Obrir Copilot IA (Amb Ubicació GPS)
+            🤖 Obrir Copilot IA (Amb Assignació d'Operari)
           </button>
         </div>
 
@@ -545,7 +573,57 @@ function CreateJobForm() {
               </div>
             </div>
 
-            {/* Card 2: CONFIGURABLE GPS LOCATION FOR WORKER NAVIGATION */}
+            {/* Card 2: FIELD WORKER ASSIGNMENT SELECTOR */}
+            <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
+              <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
+                <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
+                  <UserCheck size={20} className="text-emerald-700" />
+                  Assignació d'Operari de Camp i Cap d'Equip
+                </h2>
+                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                  <Users size={14} /> PWA Operari Sincronitzada
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-label-caps text-xs text-on-surface-variant">OPERARI PRINCIPAL ASSIGNAT</label>
+                <select
+                  value={selectedWorkerId}
+                  onChange={(e) => setSelectedWorkerId(e.target.value)}
+                  className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary outline-none cursor-pointer text-sm"
+                >
+                  {FIELD_WORKERS_DB.map((worker) => (
+                    <option key={worker.id} value={worker.id}>
+                      {worker.avatar} {worker.name} — {worker.role} ({worker.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Selected Worker Info Badge */}
+              <div className="flex items-center justify-between bg-emerald-50 p-4 rounded-2xl border border-emerald-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-700 text-white flex items-center justify-center text-2xl shadow">
+                    {activeWorker.avatar}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-emerald-900 block">{activeWorker.name}</span>
+                    <span className="text-[11px] text-neutral-600 block">{activeWorker.role}</span>
+                    <span className="text-[10px] text-emerald-800 font-mono flex items-center gap-1 mt-0.5">
+                      <Phone size={10} /> Telèfon directe: {activeWorker.phone}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    🟢 Rebrà l'Ordre a la PWA Mòbil
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: CONFIGURABLE GPS LOCATION FOR WORKER NAVIGATION */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
                 <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
@@ -630,13 +708,9 @@ function CreateJobForm() {
                   📍 Coordenades Ordre: {jobLat}° N, {jobLng}° E
                 </div>
               </div>
-
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                📍 L'operari rebrà aquests coordenades a l'App PWA mòbil amb un botó directe de navegació per GPS fins a aquest punt exacte de la finca.
-              </p>
             </div>
 
-            {/* Card 3: Job Description, Hours & Proposed Dates */}
+            {/* Card 4: Job Description, Hours & Proposed Dates */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <div className="flex justify-between items-center">
                 <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
@@ -708,7 +782,7 @@ function CreateJobForm() {
               </div>
             </div>
 
-            {/* Card 4: Materials & Tools Assignment WITH CHECKLIST & MANUAL OPTION */}
+            {/* Card 5: Materials & Tools Assignment WITH CHECKLIST & MANUAL OPTION */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-lg">
               
               {/* 1. Materials Section */}
@@ -833,7 +907,7 @@ function CreateJobForm() {
           {/* Right Column: Vehicle, EDITABLE REAL BUDGET & Blueprints */}
           <div className="col-span-12 lg:col-span-5 flex flex-col gap-lg">
             
-            {/* Card 5: EDITABLE REAL BUDGET QUOTE CARD WITH SERVICE TARIFF ARTICLES */}
+            {/* Card 6: EDITABLE REAL BUDGET QUOTE CARD WITH SERVICE TARIFF ARTICLES */}
             <div className="p-xl bg-gradient-to-br from-emerald-950 via-teal-900 to-primary text-white rounded-3xl shadow-xl border border-emerald-700 flex flex-col gap-md">
               <div className="flex justify-between items-center border-b border-emerald-800 pb-md">
                 <h2 className="font-bold flex items-center gap-2 text-lg text-emerald-300">
@@ -916,7 +990,7 @@ function CreateJobForm() {
               </div>
             </div>
 
-            {/* Card 6: Vehicle Assignment & Fleet Audit */}
+            {/* Card 7: Vehicle Assignment & Fleet Audit */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
                 <Truck size={20} className="text-primary" />
@@ -943,7 +1017,7 @@ function CreateJobForm() {
               )}
             </div>
 
-            {/* Card 7: Blueprint Attachment */}
+            {/* Card 8: Blueprint Attachment */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
                 <span className="material-symbols-outlined text-primary">architecture</span>
@@ -994,7 +1068,7 @@ function CreateJobForm() {
             className="px-10 py-4 bg-secondary-container text-on-secondary-container font-headline-md rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 uppercase tracking-wider"
           >
             <span className="material-symbols-outlined">check_circle</span>
-            Guardar Ordre de Treball i Pressupost ({calculateTotalBudgetSum().toFixed(2)} €)
+            Guardar Ordre per a {activeWorker.name} ({calculateTotalBudgetSum().toFixed(2)} €)
           </button>
         </div>
       </div>
@@ -1014,10 +1088,10 @@ function CreateJobForm() {
                   <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
                     Copilot Tècnic CampoPro (IA Grounded)
                     <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
-                      Ubicació GPS Automàtica
+                      Assignació d'Operaris
                     </span>
                   </h3>
-                  <p className="text-xs text-neutral-500">Integrat amb GPS, Magatzem, Vehicles i Historial.</p>
+                  <p className="text-xs text-neutral-500">Integrat amb Operaris, GPS, Magatzem, Vehicles i Historial.</p>
                 </div>
               </div>
               <button onClick={() => setShowCopilotModal(false)} className="text-neutral-400 hover:text-neutral-700">
@@ -1049,9 +1123,11 @@ function CreateJobForm() {
                               Basat en Historial #{msg.proposal.matchedCode}
                             </span>
                             <h4 className="font-bold text-sm text-neutral-900 mt-1">{msg.proposal.title}</h4>
-                            <span className="text-[10px] font-bold text-emerald-800 block mt-1">
-                              📍 Ubicació GPS Assignada: {msg.proposal.locationName} ({msg.proposal.lat}° N, {msg.proposal.lng}° E)
-                            </span>
+                            {msg.proposal.recommendedWorker && (
+                              <span className="text-[11px] font-bold text-emerald-800 block mt-1">
+                                👨‍🌾 Operari Recomanat: {msg.proposal.recommendedWorker.name} ({msg.proposal.recommendedWorker.role})
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -1080,7 +1156,7 @@ function CreateJobForm() {
                           className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl font-bold text-xs shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2"
                         >
                           <Sparkles size={16} />
-                          ✨ Aplicar Ordre, Ubicació GPS, Materials i Pressupost al Formulari
+                          ✨ Aplicar Ordre per a {msg.proposal.recommendedWorker?.name || 'Operari'} al Formulari
                         </button>
                       </div>
                     )}
@@ -1091,7 +1167,7 @@ function CreateJobForm() {
               {isCopilotThinking && (
                 <div className="flex gap-2 text-xs text-neutral-500 items-center bg-neutral-100 p-3 rounded-xl w-fit">
                   <RefreshCw className="animate-spin text-emerald-600" size={16} />
-                  <span>Consultant coordenades GPS de la finca, historial i magatzem...</span>
+                  <span>Seleccionant l'operari especialista, coordenades GPS i magatzem...</span>
                 </div>
               )}
             </div>
