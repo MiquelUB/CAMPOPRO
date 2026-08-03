@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2, Edit3, Tag } from 'lucide-react';
+import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2, Edit3, Tag, MapPin, Navigation, Crosshair, Compass } from 'lucide-react';
 
 interface WarehouseMaterialItem {
   id: string;
@@ -43,7 +43,7 @@ interface BudgetItem {
   unitPrice: number;
 }
 
-// 1. Real Grounded History DB (Mai inventat)
+// 1. Real Grounded History DB
 const HISTORIAL_TREBALLS_REALITZATS = [
   {
     keyword: 'fuga aigua',
@@ -57,7 +57,9 @@ const HISTORIAL_TREBALLS_REALITZATS = [
     ],
     toolsUsed: ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'],
     vehicleRequired: 'Tractor John Deere 6120M',
-    budgetTotal: 850.00
+    lat: 41.6580,
+    lng: 1.8390,
+    locationPresetName: 'Camp 3 (Parcel·la Nord-Est)'
   },
   {
     keyword: 'sensor humitat',
@@ -70,7 +72,9 @@ const HISTORIAL_TREBALLS_REALITZATS = [
     ],
     toolsUsed: ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'],
     vehicleRequired: 'Furgoneta Ford Transit 1234-BCD',
-    budgetTotal: 450.00
+    lat: 41.6510,
+    lng: 1.8310,
+    locationPresetName: 'Sector Sud (Estació de Reg)'
   },
   {
     keyword: 'bomba reg',
@@ -83,11 +87,13 @@ const HISTORIAL_TREBALLS_REALITZATS = [
     ],
     toolsUsed: ['Bomba de Comprovacio de Pressio Manual', 'Joc de Claus Stillson Heavy-Duty'],
     vehicleRequired: 'Furgoneta Ford Transit 1234-BCD',
-    budgetTotal: 980.00
+    lat: 41.6540,
+    lng: 1.8350,
+    locationPresetName: 'Caseta de Bombes Central'
   }
 ];
 
-// 2. Real Warehouse Stock DB (Inclou Productes de Serveis Editables: Hora Operari, Hora Tractor, Transport, Desplaçament, Extra)
+// 2. Real Warehouse Stock DB
 const WAREHOUSE_MATERIALS_DB: WarehouseMaterialItem[] = [
   { id: 'wm1', code: 'MAT-001', name: 'Tub PE 25mm High-Density', defaultUnit: '10m', stock: 120, location: 'Prestatgeria A-1', unitPrice: 4.50 },
   { id: 'wm2', code: 'MAT-002', name: 'Valvula de Tall 1 polzada Inox', defaultUnit: '2u', stock: 4, location: 'Caixa B-4', unitPrice: 18.20 },
@@ -97,7 +103,6 @@ const WAREHOUSE_MATERIALS_DB: WarehouseMaterialItem[] = [
   { id: 'wm6', code: 'MAT-006', name: 'Connector Rapid Inox 2 polzades', defaultUnit: '4u', stock: 30, location: 'Caixa A-3', unitPrice: 42.00 },
   { id: 'wm7', code: 'MAT-007', name: 'Tub PE 50mm High-Density', defaultUnit: '15m', stock: 45, location: 'Prestatgeria A-2', unitPrice: 8.50 },
   
-  // EDITABLE WAREHOUSE SERVICE TARIFF PRODUCTS FOR BUDGETING
   { id: 's1', code: 'SERV-001', name: 'Hora Operari / Mà d\'Obra Tècnica', defaultUnit: '1h', stock: 999, location: 'Tarifa Interna', unitPrice: 35.00, isService: true },
   { id: 's2', code: 'SERV-002', name: 'Hora Tractor / Maquinària Agrícola', defaultUnit: '1h', stock: 999, location: 'Tarifa Flota', unitPrice: 65.00, isService: true },
   { id: 's3', code: 'SERV-003', name: 'Transport de Material / Logística', defaultUnit: '1 viatge', stock: 999, location: 'Tarifa Logística', unitPrice: 50.00, isService: true },
@@ -132,10 +137,56 @@ function CreateJobForm() {
   const clientIdParam = searchParams.get('clientId') || searchParams.get('client') || '1';
 
   // Client Mock Data Database
-  const clientsDb: Record<string, { name: string; nif: string; phone: string; contact: string; address: string; lat: number; lng: number }> = {
-    '1': { name: 'Agro Riera SL', nif: 'B12345678', phone: '600111222', contact: 'Miquel Riera', address: 'Camí Ral s/n, 08240 Manresa', lat: 41.6521, lng: 1.8322 },
-    '2': { name: 'Finca Valles', nif: 'A87654321', phone: '600333444', contact: 'Anna Valles', address: 'Av. les Valls 45, Granollers', lat: 41.5233, lng: 2.1121 },
-    '3': { name: 'Horta del Llobregat', nif: 'B99887766', phone: '600555666', contact: 'Joan Llobregat', address: 'Partida Nord 12, Sant Boi', lat: 41.3411, lng: 2.0511 },
+  const clientsDb: Record<string, { 
+    name: string; 
+    nif: string; 
+    phone: string; 
+    contact: string; 
+    address: string; 
+    lat: number; 
+    lng: number;
+    parcelPresets: Array<{ name: string; lat: number; lng: number }>
+  }> = {
+    '1': { 
+      name: 'Agro Riera SL', 
+      nif: 'B12345678', 
+      phone: '600111222', 
+      contact: 'Miquel Riera', 
+      address: 'Camí Ral s/n, 08240 Manresa', 
+      lat: 41.6521, 
+      lng: 1.8322,
+      parcelPresets: [
+        { name: '📍 Oficina / Finca Principal (Entrada)', lat: 41.6521, lng: 1.8322 },
+        { name: '📍 Camp 3 (Sector Nord - Fuga Aigua)', lat: 41.6580, lng: 1.8390 },
+        { name: '📍 Caseta de Bombes & Reg', lat: 41.6540, lng: 1.8350 },
+        { name: '📍 Camp 12 (Sector Sud - Vinyes)', lat: 41.6490, lng: 1.8280 }
+      ]
+    },
+    '2': { 
+      name: 'Finca Valles', 
+      nif: 'A87654321', 
+      phone: '600333444', 
+      contact: 'Anna Valles', 
+      address: 'Av. les Valls 45, Granollers', 
+      lat: 41.5233, 
+      lng: 2.1121,
+      parcelPresets: [
+        { name: '📍 Masia Principal', lat: 41.5233, lng: 2.1121 },
+        { name: '📍 Invernacle Sector A', lat: 41.5260, lng: 2.1150 }
+      ]
+    },
+    '3': { 
+      name: 'Horta del Llobregat', 
+      nif: 'B99887766', 
+      phone: '600555666', 
+      contact: 'Joan Llobregat', 
+      address: 'Partida Nord 12, Sant Boi', 
+      lat: 41.3411, 
+      lng: 2.0511,
+      parcelPresets: [
+        { name: '📍 Horta Central', lat: 41.3411, lng: 2.0511 }
+      ]
+    },
   };
 
   const selectedClient = clientsDb[clientIdParam] || clientsDb['1'];
@@ -149,8 +200,14 @@ function CreateJobForm() {
   const [blueprintName, setBlueprintName] = useState<string>('');
   const [assignedVehicle, setAssignedVehicle] = useState<string>('Furgoneta Ford Transit Custom (1234-BCD)');
   const [proposedStartDate, setProposedStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  // CONFIGURABLE GPS COORDINATES FOR OPERARI LOCATION
+  const [jobLat, setJobLat] = useState<number>(selectedClient.lat);
+  const [jobLng, setJobLng] = useState<number>(selectedClient.lng);
+  const [jobLocationName, setJobLocationName] = useState<string>('📍 Finca Principal (Entrada)');
+  const [isManualGpsEditing, setIsManualGpsEditing] = useState<boolean>(false);
   
-  // EDITABLE ITEMIZED BUDGET QUOTE LINES (Hora Operari, Hora Tractor, Transport, Desplaçament, Extra)
+  // EDITABLE ITEMIZED BUDGET QUOTE LINES
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([
     { id: 'b1', code: 'SERV-001', name: 'Hora Operari / Mà d\'Obra Tècnica', qty: 4, unit: 'h', unitPrice: 35.00 },
     { id: 'b2', code: 'SERV-003', name: 'Transport de Material / Logística', qty: 1, unit: 'viatge', unitPrice: 50.00 },
@@ -187,11 +244,11 @@ function CreateJobForm() {
   const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'bot'; text: string; proposal?: any }>>([
     {
       sender: 'bot',
-      text: `Hola Marc! Sóc el teu **Copilot Tècnic CampoPro**. He integrat els **Productes de Serveis del Magatzem (Hora Operari, Hora Tractor, Transport, Desplaçament, Extra)** per calcular pressupostos editables 100% reals.\n\nEscriu o dicta la tasca (ex: *"fuga aigua camp 3"*) i analitzaré l'historial real.`
+      text: `Hola Marc! Sóc el teu **Copilot Tècnic CampoPro**. Tinc accés en temps real al teu **Historial de Treballs**, l'**Estoc de Magatzem**, l'**Estat de la Flota** i les **Coordenades GPS configurables per a l'operari**.\n\nEscriu o dicta la tasca (ex: *"fuga aigua camp 3"*) i configuraré la ubicació exacta de la feina.`
     }
   ]);
 
-  // Recalculate Total Budget from Editable Service Items & Materials
+  // Recalculate Total Budget
   const calculateTotalBudgetSum = (): number => {
     return budgetItems.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
   };
@@ -221,14 +278,25 @@ function CreateJobForm() {
     setBudgetItems(budgetItems.filter(item => item.id !== id));
   };
 
-  // Handle Client Switch
+  // Handle Client Switch & Reset GPS
   const handleClientSelect = (id: string) => {
     setSelectedClientId(id);
+    const client = clientsDb[id] || clientsDb['1'];
+    setJobLat(client.lat);
+    setJobLng(client.lng);
+    setJobLocationName(client.parcelPresets[0]?.name || '📍 Finca Principal');
   };
 
   const activeClient = clientsDb[selectedClientId] || selectedClient;
 
-  // COPILOT LOGIC BASED ON REAL MAGATZEM TARIFF ARTICLES
+  // Set Parcel Preset
+  const handleSelectParcelPreset = (preset: { name: string; lat: number; lng: number }) => {
+    setJobLat(preset.lat);
+    setJobLng(preset.lng);
+    setJobLocationName(preset.name);
+  };
+
+  // COPILOT LOGIC BASED ON REAL GROUNDED HISTORY & CONFIGURABLE GPS LOCATION
   const handleSendCopilotQuery = (userQueryText?: string) => {
     const query = (userQueryText || copilotInput).trim();
     if (!query) return;
@@ -247,7 +315,6 @@ function CreateJobForm() {
       const targetVehicle = requiresTractor ? VEHICLES_FLOTA_DB.find(v => v.type.includes('Tractor')) : VEHICLES_FLOTA_DB[0];
       const hasVehicleAlert = targetVehicle?.status === 'REVISIO_TALLER';
 
-      // Load editable service tariff items from Warehouse
       const horaOperariObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-001') || { unitPrice: 35.00 };
       const horaTractorObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-002') || { unitPrice: 65.00 };
       const transportObj = WAREHOUSE_MATERIALS_DB.find(s => s.code === 'SERV-003') || { unitPrice: 50.00 };
@@ -276,7 +343,10 @@ function CreateJobForm() {
         proposedStartDate: hasVehicleAlert ? '2026-08-06' : new Date().toISOString().split('T')[0],
         proposedStartDateFormatted: hasVehicleAlert ? 'Dijous 06/08/2026 (Quan el tractor torni a estar operatiu)' : 'Avui mateix',
         budgetLines: proposedBudgetLines,
-        calculatedBudget: `${totalCalc.toFixed(2)} €`
+        calculatedBudget: `${totalCalc.toFixed(2)} €`,
+        lat: matchedHistory.lat,
+        lng: matchedHistory.lng,
+        locationName: matchedHistory.locationPresetName
       };
 
       setCopilotProposal(proposalData);
@@ -284,7 +354,7 @@ function CreateJobForm() {
         ...updatedHistory,
         {
           sender: 'bot',
-          text: `He estructurat el pressupost amb els **Articles de Tarifes de Magatzem Editables** (Hora Operari, Hora Tractor, Transport, Desplaçament):`,
+          text: `He localitzat la feina a l'historial i he fixat les coordenades GPS exactes per a l'operari a: **${matchedHistory.locationPresetName} (${matchedHistory.lat}° N, ${matchedHistory.lng}° E)**.`,
           proposal: proposalData
         }
       ]);
@@ -319,6 +389,12 @@ function CreateJobForm() {
     setProposedStartDate(copilotProposal.proposedStartDate);
     setBudgetItems(copilotProposal.budgetLines);
 
+    if (copilotProposal.lat && copilotProposal.lng) {
+      setJobLat(copilotProposal.lat);
+      setJobLng(copilotProposal.lng);
+      setJobLocationName(copilotProposal.locationName || '📍 Ubicació Assignada');
+    }
+
     if (copilotProposal.vehicle) {
       setAssignedVehicle(`${copilotProposal.vehicle.name} (${copilotProposal.vehicle.plate})`);
     }
@@ -332,7 +408,7 @@ function CreateJobForm() {
     setTools(copilotProposal.tools);
 
     setShowCopilotModal(false);
-    alert(`✨ S'ha aplicat tota la proposta del Copilot IA a l'Ordre de Treball! Descripció, Hores (${copilotProposal.estimatedHours}h), Materials de magatzem, Eines, Vehicle i Pressupost Editable de ${copilotProposal.calculatedBudget}.`);
+    alert(`✨ S'ha aplicat tota la proposta del Copilot IA a l'Ordre de Treball! Incloent la Ubicació GPS exacte per a l'operari (${copilotProposal.lat}° N, ${copilotProposal.lng}° E).`);
   };
 
   // Manual Add Handlers
@@ -371,7 +447,7 @@ function CreateJobForm() {
   };
 
   const handleSaveOrder = () => {
-    alert(`Ordre de Treball creada amb èxit per al client ${activeClient.name} amb el pressupost editable de ${calculateTotalBudgetSum().toFixed(2)} €!`);
+    alert(`Ordre de Treball creada amb èxit per al client ${activeClient.name}! Ubicació GPS assignada a l'operari: Lat ${jobLat}, Lng ${jobLng} (${jobLocationName}).`);
     router.push(`/gestio/clients/${selectedClientId}`);
   };
 
@@ -398,10 +474,10 @@ function CreateJobForm() {
               </span>
             </div>
             <h1 className="font-display-lg text-display-lg text-primary">
-              Nova Ordre de Treball i Pressupost
+              Nova Ordre de Treball
             </h1>
             <p className="text-sm text-on-surface-variant mt-1">
-              Tots els registres, materials de magatzem, tarifes de servei editables (Hora Operari, Hora Tractor, Transport, Desplaçament, Extra) quedaran arxivats directament a l'historial del client.
+              Amb coordenades GPS configurables per a la navegació directa de l'operari al punt exacte de la finca.
             </p>
           </div>
 
@@ -411,7 +487,7 @@ function CreateJobForm() {
             className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 via-teal-700 to-primary text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 text-sm"
           >
             <Bot size={22} className="text-amber-300 animate-bounce" />
-            🤖 Obrir Copilot IA (Historial + Pressupost Real)
+            🤖 Obrir Copilot IA (Amb Ubicació GPS)
           </button>
         </div>
 
@@ -469,7 +545,98 @@ function CreateJobForm() {
               </div>
             </div>
 
-            {/* Card 2: Job Description, Hours & Proposed Dates */}
+            {/* Card 2: CONFIGURABLE GPS LOCATION FOR WORKER NAVIGATION */}
+            <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
+              <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
+                <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
+                  <MapPin size={20} className="text-emerald-600" />
+                  Ubicació GPS Configurable (Assignada a l'Operari)
+                </h2>
+                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                  <Navigation size={12} /> Google Maps / Waze
+                </span>
+              </div>
+
+              {/* Parcel Preset Buttons */}
+              <div>
+                <label className="font-label-caps text-xs text-on-surface-variant block mb-2">PUNTS I SECTORS DESTACATS DE LA FINCA (SELECCIÓ RÀPIDA):</label>
+                <div className="flex flex-wrap gap-2">
+                  {activeClient.parcelPresets.map((preset, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleSelectParcelPreset(preset)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                        jobLocationName === preset.name ? 'bg-emerald-700 text-white border-emerald-800 shadow-md scale-105' : 'bg-neutral-50 text-neutral-800 border-neutral-200 hover:bg-neutral-100'
+                      }`}
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Editable Lat/Lng Inputs Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-neutral-50 p-4 rounded-2xl border border-neutral-200">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-neutral-600 uppercase flex items-center gap-1">
+                    <Compass size={14} className="text-emerald-600" /> Latitud GPS (Lat)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={jobLat}
+                    onChange={(e) => {
+                      setJobLat(parseFloat(e.target.value) || 0);
+                      setJobLocationName('📍 Punt Personalitzat (Manual)');
+                    }}
+                    className="p-3 bg-white border border-neutral-300 rounded-xl text-sm font-bold text-neutral-900 outline-none focus:border-emerald-600"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-neutral-600 uppercase flex items-center gap-1">
+                    <Compass size={14} className="text-emerald-600" /> Longitud GPS (Lng)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={jobLng}
+                    onChange={(e) => {
+                      setJobLng(parseFloat(e.target.value) || 0);
+                      setJobLocationName('📍 Punt Personalitzat (Manual)');
+                    }}
+                    className="p-3 bg-white border border-neutral-300 rounded-xl text-sm font-bold text-neutral-900 outline-none focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+
+              {/* Visual Satellite Preview Map */}
+              <div className="relative h-[220px] rounded-2xl overflow-hidden shadow-md border border-neutral-300">
+                <div 
+                  className="w-full h-full bg-cover bg-center transition-all" 
+                  style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu')` }}
+                ></div>
+
+                {/* Animated Map Pin Marker */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-red-600 text-white p-3 rounded-full shadow-2xl animate-bounce border-2 border-white flex items-center gap-1">
+                    <MapPin size={22} className="fill-white text-red-600" />
+                    <span className="text-xs font-bold font-mono px-1">{jobLocationName}</span>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-white shadow">
+                  📍 Coordenades Ordre: {jobLat}° N, {jobLng}° E
+                </div>
+              </div>
+
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                📍 L'operari rebrà aquests coordenades a l'App PWA mòbil amb un botó directe de navegació per GPS fins a aquest punt exacte de la finca.
+              </p>
+            </div>
+
+            {/* Card 3: Job Description, Hours & Proposed Dates */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <div className="flex justify-between items-center">
                 <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
@@ -541,7 +708,7 @@ function CreateJobForm() {
               </div>
             </div>
 
-            {/* Card 3: Materials & Tools Assignment WITH CHECKLIST & MANUAL OPTION */}
+            {/* Card 4: Materials & Tools Assignment WITH CHECKLIST & MANUAL OPTION */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-lg">
               
               {/* 1. Materials Section */}
@@ -666,7 +833,7 @@ function CreateJobForm() {
           {/* Right Column: Vehicle, EDITABLE REAL BUDGET & Blueprints */}
           <div className="col-span-12 lg:col-span-5 flex flex-col gap-lg">
             
-            {/* Card 4: EDITABLE REAL BUDGET QUOTE CARD WITH SERVICE TARIFF ARTICLES */}
+            {/* Card 5: EDITABLE REAL BUDGET QUOTE CARD WITH SERVICE TARIFF ARTICLES */}
             <div className="p-xl bg-gradient-to-br from-emerald-950 via-teal-900 to-primary text-white rounded-3xl shadow-xl border border-emerald-700 flex flex-col gap-md">
               <div className="flex justify-between items-center border-b border-emerald-800 pb-md">
                 <h2 className="font-bold flex items-center gap-2 text-lg text-emerald-300">
@@ -678,7 +845,7 @@ function CreateJobForm() {
                 </span>
               </div>
 
-              {/* Service Line Items Table with Inline Price & Qty Edit Inputs */}
+              {/* Service Line Items Table */}
               <div className="space-y-2 text-xs">
                 <span className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider block mb-1">Desglose de Tarifes de Servei (Hora Operari, Hora Tractor, Transport, Desplaçament, Extra):</span>
                 
@@ -749,7 +916,7 @@ function CreateJobForm() {
               </div>
             </div>
 
-            {/* Card 5: Vehicle Assignment & Fleet Audit */}
+            {/* Card 6: Vehicle Assignment & Fleet Audit */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
                 <Truck size={20} className="text-primary" />
@@ -776,7 +943,7 @@ function CreateJobForm() {
               )}
             </div>
 
-            {/* Card 6: Blueprint Attachment */}
+            {/* Card 7: Blueprint Attachment */}
             <div className="p-xl bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
               <h2 className="font-section-title text-primary flex items-center gap-2 text-lg">
                 <span className="material-symbols-outlined text-primary">architecture</span>
@@ -832,7 +999,7 @@ function CreateJobForm() {
         </div>
       </div>
 
-      {/* MODAL COPILOT IA CHAT INTERACTIU & REAL DATA GROUNDED WITH EDITABLE TARIFF BUDGET LINES */}
+      {/* MODAL COPILOT IA CHAT INTERACTIU */}
       {showCopilotModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
           <div className="bg-white rounded-3xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
@@ -847,10 +1014,10 @@ function CreateJobForm() {
                   <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
                     Copilot Tècnic CampoPro (IA Grounded)
                     <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
-                      Articles de Tarifes Editables
+                      Ubicació GPS Automàtica
                     </span>
                   </h3>
-                  <p className="text-xs text-neutral-500">Integrat amb Hora Operari, Hora Tractor, Transport, Desplaçament i Extra de magatzem.</p>
+                  <p className="text-xs text-neutral-500">Integrat amb GPS, Magatzem, Vehicles i Historial.</p>
                 </div>
               </div>
               <button onClick={() => setShowCopilotModal(false)} className="text-neutral-400 hover:text-neutral-700">
@@ -882,6 +1049,9 @@ function CreateJobForm() {
                               Basat en Historial #{msg.proposal.matchedCode}
                             </span>
                             <h4 className="font-bold text-sm text-neutral-900 mt-1">{msg.proposal.title}</h4>
+                            <span className="text-[10px] font-bold text-emerald-800 block mt-1">
+                              📍 Ubicació GPS Assignada: {msg.proposal.locationName} ({msg.proposal.lat}° N, {msg.proposal.lng}° E)
+                            </span>
                           </div>
                         </div>
 
@@ -898,21 +1068,10 @@ function CreateJobForm() {
                           </div>
                         )}
 
-                        {/* Calculated Budget Breakdown from Tariff Articles */}
-                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
-                          <span className="text-[10px] font-bold text-emerald-800 uppercase block">Desglose de Tarifes de Servei (Editables al Magatzem):</span>
-                          <div className="space-y-1">
-                            {msg.proposal.budgetLines.map((b: BudgetItem, i: number) => (
-                              <div key={i} className="flex justify-between text-[11px] bg-white p-1.5 rounded border border-emerald-100 font-medium">
-                                <span>{b.name} ({b.qty} {b.unit})</span>
-                                <span className="font-bold text-emerald-800">{(b.qty * b.unitPrice).toFixed(2)} €</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="flex justify-between items-center pt-2 border-t border-emerald-200 font-bold text-emerald-900 text-xs">
-                            <span>TOTAL ESTIMAT:</span>
-                            <span className="text-sm font-extrabold text-emerald-800">{msg.proposal.calculatedBudget}</span>
-                          </div>
+                        {/* Calculated Budget */}
+                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center font-bold text-emerald-900 text-xs">
+                          <span>TOTAL ESTIMAT:</span>
+                          <span className="text-sm font-extrabold text-emerald-800">{msg.proposal.calculatedBudget}</span>
                         </div>
 
                         {/* Apply Button */}
@@ -921,7 +1080,7 @@ function CreateJobForm() {
                           className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl font-bold text-xs shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2"
                         >
                           <Sparkles size={16} />
-                          ✨ Aplicar Ordre, Materials, Vehicle i Pressupost al Formulari
+                          ✨ Aplicar Ordre, Ubicació GPS, Materials i Pressupost al Formulari
                         </button>
                       </div>
                     )}
@@ -932,12 +1091,12 @@ function CreateJobForm() {
               {isCopilotThinking && (
                 <div className="flex gap-2 text-xs text-neutral-500 items-center bg-neutral-100 p-3 rounded-xl w-fit">
                   <RefreshCw className="animate-spin text-emerald-600" size={16} />
-                  <span>Consultant tarifes de serveis del magatzem, historial i estat de la flota...</span>
+                  <span>Consultant coordenades GPS de la finca, historial i magatzem...</span>
                 </div>
               )}
             </div>
 
-            {/* Chat Input & Voice Dictation Bar */}
+            {/* Chat Input Bar */}
             <div className="pt-2 flex gap-2 items-center">
               <button
                 onClick={handleToggleDictation}
