@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -10,6 +10,61 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
   
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Notification state
+  const [notifications, setNotifications] = useState([
+    { id: 'n1', title: "Nova Incidència: Finca Sud", desc: "L'operari Jordi S. ha enviat una nota de veu.", link: "/gestio/incidencies", muted: false, resolved: false, type: "error" },
+    { id: 'n2', title: "Alerta Flota: ITV John Deere 6R", desc: "Caduca en 2 dies — 6 d'Agost.", link: "/gestio/flota", muted: false, resolved: false, type: "warning" },
+    { id: 'n3', title: "Estoc Baix: Fertilitzant N-12", desc: "Queden 0 unitats al magatzem central.", link: "/gestio/magatzem", muted: false, resolved: false, type: "info" }
+  ]);
+
+  const searchableItems = [
+    { id: 's1', title: "Adobat de finques 'La Vall'", category: "Feina", link: "/gestio/feines/mapa", details: "Pendent • Sector 4" },
+    { id: 's2', title: "Revisió sistemes de reg", category: "Feina", link: "/gestio/feines/mapa", details: "Programat • Zona Nord" },
+    { id: 's3', title: "Tractament fitosanitari", category: "Feina", link: "/gestio/feines/completades", details: "En espera • Masia Vella" },
+    { id: 's4', title: "Jordi S. (Operari)", category: "Operari", link: "/gestio/operaris", details: "En camp • Tractor 04" },
+    { id: 's5', title: "Carles T. (Operari)", category: "Operari", link: "/gestio/operaris", details: "En camp • Manteniment" },
+    { id: 's6', title: "AgroServei Ponent", category: "Client", link: "/gestio/clients", details: "3 finques meves" },
+    { id: 's7', title: "Cooperativa d'Ivars", category: "Client", link: "/gestio/clients", details: "Contracte de manteniment" },
+    { id: 's8', title: "Fertilitzant N-12", category: "Magatzem", link: "/gestio/magatzem", details: "Estoc baix" },
+    { id: 's9', title: "Tractor John Deere 6R", category: "Flota", link: "/gestio/flota", details: "ITV pendent" },
+  ];
+
+  const filteredResults = searchQuery.trim() === '' 
+    ? [] 
+    : searchableItems.filter(item => 
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.details.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const activeBadgeCount = notifications.filter(n => !n.resolved && !n.muted).length;
+
+  const handleMuteNotification = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, muted: !n.muted } : n));
+  };
+
+  const handleResolveNotification = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, resolved: true } : n));
+  };
 
   if (pathname === '/gestio/login') {
     return <>{children}</>;
@@ -66,9 +121,67 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
       <div className="pl-16 md:pl-[240px] flex flex-col min-h-screen">
         <header className="sticky top-0 h-32 bg-surface/80 backdrop-blur-md z-40 flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
           <div className="h-16 px-4 md:px-xl flex items-center justify-between border-b border-surface-container-highest">
-            <div className="flex items-center bg-surface-container-low px-md py-xs rounded-lg w-full max-w-sm border border-outline-variant">
-              <span className="material-symbols-outlined text-outline">search</span>
-              <input className="bg-transparent border-none outline-none ml-sm w-full text-sm" placeholder="Cerca feines, operaris, clients o eines..." type="text"/>
+            {/* Header Search Bar (Interactive & Functional) */}
+            <div ref={searchContainerRef} className="relative w-full max-w-sm">
+              <div className="flex items-center bg-surface-container-low px-md py-xs rounded-lg border border-outline-variant focus-within:border-primary transition-all shadow-sm">
+                <span className="material-symbols-outlined text-outline">search</span>
+                <input 
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchResults(true);
+                  }}
+                  onFocus={() => setShowSearchResults(true)}
+                  className="bg-transparent border-none outline-none ml-sm w-full text-sm placeholder:text-on-surface-variant/70" 
+                  placeholder="Cerca feines, operaris, clients o eines..." 
+                  type="text"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => { setSearchQuery(''); setShowSearchResults(false); }}
+                    className="text-on-surface-variant hover:text-primary p-0.5 rounded-full"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchQuery.trim().length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-surface rounded-xl shadow-2xl border border-outline-variant/40 overflow-hidden z-50 animate-in fade-in duration-150">
+                  <div className="p-xs bg-surface-container-low border-b border-outline-variant/20 flex justify-between items-center text-xs text-on-surface-variant px-md">
+                    <span>Resultats per &quot;{searchQuery}&quot;</span>
+                    <span>{filteredResults.length} trobats</span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto divide-y divide-outline-variant/10">
+                    {filteredResults.length > 0 ? (
+                      filteredResults.map((item) => (
+                        <div 
+                          key={item.id}
+                          onClick={() => {
+                            router.push(item.link);
+                            setShowSearchResults(false);
+                            setSearchQuery('');
+                          }}
+                          className="p-md hover:bg-primary/5 cursor-pointer transition-colors flex items-center justify-between group"
+                        >
+                          <div>
+                            <p className="font-body-strong text-sm text-primary group-hover:underline">{item.title}</p>
+                            <p className="text-xs text-on-surface-variant">{item.details}</p>
+                          </div>
+                          <span className="text-[10px] font-label-caps font-bold px-2 py-0.5 bg-surface-container-high text-on-surface-variant rounded">
+                            {item.category}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-lg text-center text-xs text-on-surface-variant">
+                        No s'han trobat coincidències
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Header Right Action Icons */}
@@ -89,7 +202,11 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
                 title="Alertes de Notificació"
               >
                 <span className="material-symbols-outlined text-[22px]">notifications</span>
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full animate-ping"></span>
+                {activeBadgeCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 bg-error text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {activeBadgeCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -147,21 +264,77 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
           </div>
         )}
 
-        {/* Popover: Notifications Bell (🔔) */}
+        {/* Popover: Notifications Bell (🔔) with Mute & Resolved Actions */}
         {showNotificationsModal && (
-          <div className="fixed top-16 right-6 z-[100] w-80 bg-surface rounded-2xl p-4 shadow-2xl border border-outline-variant animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex justify-between items-center mb-3">
+          <div className="fixed top-16 right-6 z-[100] w-96 bg-surface rounded-2xl p-4 shadow-2xl border border-outline-variant animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-outline-variant/20">
               <h4 className="font-headline-md text-sm text-primary flex items-center gap-2">
-                <span className="material-symbols-outlined text-error">notifications</span>
-                Notificacions Actives
+                <span className="material-symbols-outlined text-error text-[20px]">notifications</span>
+                Alertes Actives ({notifications.filter(n => !n.resolved).length})
               </h4>
-              <button onClick={() => setShowNotificationsModal(false)} className="text-xs text-on-surface-variant">Tancar</button>
+              <button onClick={() => setShowNotificationsModal(false)} className="text-xs text-on-surface-variant hover:text-primary">Tancar</button>
             </div>
-            <div className="space-y-2 text-xs">
-              <div onClick={() => { setShowNotificationsModal(false); router.push('/gestio/incidencies'); }} className="p-3 bg-error-container/10 border border-error/20 rounded-xl cursor-pointer hover:bg-error-container/20">
-                <p className="font-bold text-error">Nova Incidència: Finca Sud</p>
-                <p className="text-on-surface-variant">L'operari Jordi S. ha enviat una nota de veu.</p>
-              </div>
+            
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {notifications.filter(n => !n.resolved).length > 0 ? (
+                notifications.filter(n => !n.resolved).map((item) => (
+                  <div 
+                    key={item.id}
+                    className={`p-3 rounded-xl border transition-all ${
+                      item.muted 
+                        ? 'bg-surface-container-low border-outline-variant/30 opacity-70' 
+                        : item.type === 'error' 
+                          ? 'bg-error-container/10 border-error/20' 
+                          : 'bg-orange-50/50 border-orange-200'
+                    }`}
+                  >
+                    <div 
+                      onClick={() => { setShowNotificationsModal(false); router.push(item.link); }}
+                      className="cursor-pointer mb-2"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <p className={`font-bold text-xs ${item.muted ? 'text-on-surface-variant' : item.type === 'error' ? 'text-error' : 'text-secondary'}`}>
+                          {item.title}
+                        </p>
+                        {item.muted && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 bg-surface-container-high rounded text-on-surface-variant flex items-center gap-0.5">
+                            <span className="material-symbols-outlined text-[12px]">volume_off</span> Silenciat
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-on-surface-variant">{item.desc}</p>
+                    </div>
+
+                    {/* Action buttons: Silenciar & Tasca resolta */}
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/20">
+                      <button
+                        onClick={(e) => handleMuteNotification(item.id, e)}
+                        className="px-2.5 py-1 text-[11px] font-body-strong rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant flex items-center gap-1 transition-colors"
+                        title={item.muted ? "Activar so/alertes" : "Silenciar aquesta alerta"}
+                      >
+                        <span className="material-symbols-outlined text-[14px]">
+                          {item.muted ? 'volume_up' : 'volume_off'}
+                        </span>
+                        {item.muted ? 'Activar' : 'Silenciar'}
+                      </button>
+
+                      <button
+                        onClick={(e) => handleResolveNotification(item.id, e)}
+                        className="px-2.5 py-1 text-[11px] font-body-strong rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 transition-colors shadow-xs"
+                        title="Marcar tasca com a resolta"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                        Tasca resolta
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-xs text-on-surface-variant flex flex-col items-center gap-2">
+                  <span className="material-symbols-outlined text-green-600 text-3xl">task_alt</span>
+                  <span>🎉 Totes les notificacions estan resoltes!</span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -173,3 +346,4 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
     </div>
   );
 }
+
