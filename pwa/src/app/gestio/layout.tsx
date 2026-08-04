@@ -121,7 +121,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
       
       {/* Header Container */}
       <div className="pl-16 md:pl-[240px] flex flex-col min-h-screen">
-        <header className="sticky top-0 h-32 bg-surface/80 backdrop-blur-md z-40 flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+        <header className="sticky top-0 h-16 bg-surface/80 backdrop-blur-md z-40 flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
           <div className="h-16 px-4 md:px-xl flex items-center justify-between border-b border-surface-container-highest">
             {/* Header Search Bar (Interactive & Functional) */}
             <div ref={searchContainerRef} className="relative w-full max-w-sm">
@@ -211,38 +211,6 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
                 )}
               </button>
             </div>
-          </div>
-
-          <div className="h-16 px-4 md:px-xl flex items-center justify-start gap-xl overflow-x-auto">
-            <nav className="flex h-full gap-lg">
-              <Link href="/gestio" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-                FEINA (DASHBOARD)
-              </Link>
-
-              <Link href="/gestio/operaris" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/operaris' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-                OPERARIS
-              </Link>
-
-              <Link href="/gestio/feines/crear" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/feines/crear' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-                REDACTAR FEINA
-              </Link>
-
-              <Link href="/gestio/feines/mapa" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/feines/mapa' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-                SEGUIMENT MAPA
-              </Link>
-
-              <Link href="/gestio/comptabilitat" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/comptabilitat' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-                COMPTABILITAT
-              </Link>
-
-              <Link href="/gestio/proveidors" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname.startsWith('/gestio/proveidors') ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-                PROVEÏDORS
-              </Link>
-
-              <Link href="/gestio/configuracio" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/configuracio' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-                CONFIGURACIÓ
-              </Link>
-            </nav>
           </div>
         </header>
 
