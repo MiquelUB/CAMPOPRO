@@ -78,6 +78,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
     { name: 'Seguiment Feines', path: '/gestio/feines/mapa', icon: 'map' },
     { name: 'Vehicles / Flota', path: '/gestio/flota', icon: 'local_shipping' },
     { name: 'Incidències', path: '/gestio/incidencies', icon: 'report_problem' },
+    { name: 'Comptabilitat & Facturació', path: '/gestio/comptabilitat', icon: 'payments' },
     { name: 'Notificacions Telegram', path: '/gestio/notificacions', icon: 'send' },
     { name: 'Plànols', path: '/gestio/planols', icon: 'architecture' },
     { name: 'Configuració & Auth', path: '/gestio/configuracio', icon: 'settings' },
@@ -227,6 +228,10 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
 
               <Link href="/gestio/feines/mapa" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/feines/mapa' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
                 SEGUIMENT MAPA
+              </Link>
+
+              <Link href="/gestio/comptabilitat" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/comptabilitat' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
+                COMPTABILITAT
               </Link>
 
               <Link href="/gestio/configuracio" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/configuracio' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>

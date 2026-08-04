@@ -180,7 +180,8 @@ function CreateJobForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const clientIdParam = searchParams.get('clientId') || searchParams.get('client') || '1';
+  // Only pre-fill if explicitly passed via query parameter (e.g. from client detail page: /gestio/feines/crear?clientId=1)
+  const rawClientIdParam = searchParams.get('clientId') || searchParams.get('client') || '';
 
   const clientsDb: Record<string, { 
     name: string; 
@@ -234,10 +235,12 @@ function CreateJobForm() {
     },
   };
 
-  const selectedClient = clientsDb[clientIdParam] || clientsDb['1'];
+  const isFromClientFile = Boolean(rawClientIdParam && clientsDb[rawClientIdParam]);
+  const initialClientId = isFromClientFile ? rawClientIdParam : '';
+  const selectedClient = isFromClientFile ? clientsDb[rawClientIdParam] : null;
 
   // Form States
-  const [selectedClientId, setSelectedClientId] = useState<string>(clientIdParam);
+  const [selectedClientId, setSelectedClientId] = useState<string>(initialClientId);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('op1');
   const [priority, setPriority] = useState<'URGENT' | 'NORMAL' | 'BAIXA'>('NORMAL');
   const [description, setDescription] = useState<string>('');
@@ -248,15 +251,17 @@ function CreateJobForm() {
   const [proposedStartDate, setProposedStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   // GPS Coordinates
-  const [jobLat, setJobLat] = useState<number>(selectedClient.lat);
-  const [jobLng, setJobLng] = useState<number>(selectedClient.lng);
-  const [jobLocationName, setJobLocationName] = useState<string>('📍 Finca Principal (Entrada)');
+  const [jobLat, setJobLat] = useState<number>(selectedClient ? selectedClient.lat : 41.6521);
+  const [jobLng, setJobLng] = useState<number>(selectedClient ? selectedClient.lng : 1.8322);
+  const [jobLocationName, setJobLocationName] = useState<string>(selectedClient ? '📍 Finca Principal (Entrada)' : '');
 
-  // Assigned Materials & Tools
-  const [materials, setMaterials] = useState<Array<{ id: string; name: string; qty: string }>>([
-    { id: '1', name: 'Tub PE 25mm High-Density', qty: '6m' },
-    { id: '2', name: 'Valvula de Tall 1 polzada Inox', qty: '1u' },
-  ]);
+  // Assigned Materials & Tools (Clean if no client parameter)
+  const [materials, setMaterials] = useState<Array<{ id: string; name: string; qty: string }>>(
+    isFromClientFile ? [
+      { id: '1', name: 'Tub PE 25mm High-Density', qty: '6m' },
+      { id: '2', name: 'Valvula de Tall 1 polzada Inox', qty: '1u' },
+    ] : []
+  );
   const [newMaterial, setNewMaterial] = useState<string>('');
   const [newMaterialQty, setNewMaterialQty] = useState<string>('');
 
@@ -364,13 +369,19 @@ function CreateJobForm() {
 
   const handleClientSelect = (id: string) => {
     setSelectedClientId(id);
-    const client = clientsDb[id] || clientsDb['1'];
-    setJobLat(client.lat);
-    setJobLng(client.lng);
-    setJobLocationName(client.parcelPresets[0]?.name || '📍 Finca Principal');
+    if (id && clientsDb[id]) {
+      const client = clientsDb[id];
+      setJobLat(client.lat);
+      setJobLng(client.lng);
+      setJobLocationName(client.parcelPresets[0]?.name || '📍 Finca Principal');
+    } else {
+      setJobLat(41.6521);
+      setJobLng(1.8322);
+      setJobLocationName('');
+    }
   };
 
-  const activeClient = clientsDb[selectedClientId] || selectedClient;
+  const activeClient = selectedClientId ? clientsDb[selectedClientId] : null;
   const activeWorker = FIELD_WORKERS_DB.find(w => w.id === selectedWorkerId) || FIELD_WORKERS_DB[0];
 
   const handleSelectParcelPreset = (preset: { name: string; lat: number; lng: number }) => {
@@ -657,8 +668,13 @@ function CreateJobForm() {
 
   const handleSaveOrder = () => {
     const totalSum = calculateTotalComprehensiveBudget().toFixed(2);
-    alert(`Ordre de Treball i Pressupost #${Date.now().toString().slice(-5)} creats amb èxit per a ${activeClient.name}! Total Pressupost: ${totalSum} €. Aquest pressupost queda arxivat a la fitxa del client i serà 100% recuperable per generar la factura oficial un cop acceptat.`);
-    router.push(`/gestio/clients/${selectedClientId}`);
+    const clientName = activeClient ? activeClient.name : 'el client seleccionat';
+    alert(`Ordre de Treball i Pressupost #${Date.now().toString().slice(-5)} creats amb èxit per a ${clientName}! Total Pressupost: ${totalSum} €. Aquest pressupost queda arxivat i serà 100% recuperable per generar la factura oficial.`);
+    if (selectedClientId) {
+      router.push(`/gestio/clients/${selectedClientId}`);
+    } else {
+      router.push(`/gestio`);
+    }
   };
 
   return (
@@ -670,7 +686,7 @@ function CreateJobForm() {
         <span>/</span>
         <Link href="/gestio/clients" className="hover:text-primary cursor-pointer">Clients</Link>
         <span>/</span>
-        <span className="text-primary font-body-strong">Redacció de Feina ({activeClient.name})</span>
+        <span className="text-primary font-body-strong">Redacció de Feina {activeClient ? `(${activeClient.name})` : ''}</span>
       </nav>
 
       <div className="flex flex-col w-full gap-xl max-w-7xl mx-auto">
@@ -714,7 +730,7 @@ function CreateJobForm() {
                   Dades del Client (Pre-emplenades)
                 </h2>
                 <span className="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">
-                  ID #{selectedClientId}
+                  {selectedClientId ? `ID #${selectedClientId}` : 'Cap client seleccionat'}
                 </span>
               </div>
 
@@ -725,6 +741,7 @@ function CreateJobForm() {
                   onChange={(e) => handleClientSelect(e.target.value)}
                   className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                 >
+                  <option value="">-- Selecciona un client --</option>
                   {Object.entries(clientsDb).map(([id, c]) => (
                     <option key={id} value={id}>
                       {c.name} — {c.nif} ({c.contact})
@@ -733,24 +750,30 @@ function CreateJobForm() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-md bg-surface-container-low p-md rounded-xl border border-outline-variant/20 text-sm">
-                <div>
-                  <span className="text-xs text-on-surface-variant block font-label-caps">NOM FISCAL</span>
-                  <span className="font-body-strong text-primary">{activeClient.name}</span>
+              {activeClient ? (
+                <div className="grid grid-cols-2 gap-md bg-surface-container-low p-md rounded-xl border border-outline-variant/20 text-sm">
+                  <div>
+                    <span className="text-xs text-on-surface-variant block font-label-caps">NOM FISCAL</span>
+                    <span className="font-body-strong text-primary">{activeClient.name}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-on-surface-variant block font-label-caps">NIF / CIF</span>
+                    <span className="font-body-strong text-primary">{activeClient.nif}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-on-surface-variant block font-label-caps">CONTACTE PRINCIPAL</span>
+                    <span className="font-body-strong text-primary">{activeClient.contact} ({activeClient.phone})</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-on-surface-variant block font-label-caps">ADREÇA FINCA</span>
+                    <span className="font-body-strong text-primary">{activeClient.address}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs text-on-surface-variant block font-label-caps">NIF / CIF</span>
-                  <span className="font-body-strong text-primary">{activeClient.nif}</span>
+              ) : (
+                <div className="bg-surface-container-low p-md rounded-xl border border-dashed border-outline-variant text-sm text-center text-on-surface-variant">
+                  <p className="italic">💡 Cap client seleccionat. Selecciona un client del desplegable per carregar la seva informació fiscal i finques.</p>
                 </div>
-                <div>
-                  <span className="text-xs text-on-surface-variant block font-label-caps">CONTACTE PRINCIPAL</span>
-                  <span className="font-body-strong text-primary">{activeClient.contact} ({activeClient.phone})</span>
-                </div>
-                <div>
-                  <span className="text-xs text-on-surface-variant block font-label-caps">ADREÇA FINCA</span>
-                  <span className="font-body-strong text-primary">{activeClient.address}</span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Card 2: FIELD WORKER ASSIGNMENT SELECTOR */}

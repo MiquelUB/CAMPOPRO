@@ -239,7 +239,7 @@ export default function Page() {
 
             {/* KPI 4 */}
             <div 
-              onClick={() => router.push('/gestio/feines/completades')}
+              onClick={() => router.push('/gestio/comptabilitat')}
               className="group relative overflow-hidden bg-surface-container-lowest p-xl rounded-xl shadow-sm border-b-2 border-primary-container transition-all hover:shadow-md cursor-pointer"
             >
               <div className="flex justify-between items-start mb-md">
@@ -508,7 +508,7 @@ export default function Page() {
                                 <span>Passa a Facturació</span>
                               </div>
                               <button 
-                                onClick={() => router.push('/gestio/feines/completades')}
+                                onClick={() => router.push('/gestio/comptabilitat')}
                                 className="px-2 py-0.5 bg-purple-600 text-white rounded text-[11px] font-body-strong hover:bg-purple-700"
                               >
                                 {task.billed ? 'Facturat' : 'Facturar'}
