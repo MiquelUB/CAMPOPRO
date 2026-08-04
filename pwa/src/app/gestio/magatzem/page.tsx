@@ -528,43 +528,162 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
   const applyAIAuditToDatabase = () => {
     if (!aiAuditResult) return;
 
+    // 1. Process Supplier Profile Creation or Update
     if (aiAuditResult.isNewSupplier) {
       const newProvObj = {
         id: `p-${Date.now()}`,
         nif: aiAuditResult.supplier.nif,
         name: aiAuditResult.supplier.name,
-        contact: aiAuditResult.supplier.contact,
-        phone: aiAuditResult.supplier.phone,
-        email: aiAuditResult.supplier.email,
-        address: aiAuditResult.supplier.address,
-        products: aiAuditResult.supplier.products,
-        discountValue: aiAuditResult.supplier.discount,
-        paymentMethod: aiAuditResult.supplier.paymentMethod,
+        contact: aiAuditResult.supplier.contact || 'Departament Comercial',
+        phone: aiAuditResult.supplier.phone || '93 000 00 00',
+        email: aiAuditResult.supplier.email || 'info@proveidor.cat',
+        address: aiAuditResult.supplier.address || 'Adreça Fiscal',
+        products: aiAuditResult.supplier.products || 'Subministraments Agrícoles',
+        discountValue: cleanDiscountDisplay(aiAuditResult.supplier.discount),
+        paymentMethod: aiAuditResult.supplier.paymentMethod || 'Transferència a 30 dies',
+        iban: aiAuditResult.supplier.iban || 'ES91 2100 0412 88 1234567890',
         totalSpentNumeric: aiAuditResult.totalAmount,
         totalSpent: `${aiAuditResult.totalAmount.toFixed(2)} €`,
-        documentsFolder: `/documents/magatzem/proveidors/${aiAuditResult.supplier.nif}/`,
+        documentsFolder: aiAuditResult.folderId || `/documents/magatzem/proveidors/${aiAuditResult.supplier.nif}/`,
         digitizedDocs: [
-          { id: `doc-${Date.now()}`, docNumber: aiAuditResult.docNumber, type: 'FACTURA', date: aiAuditResult.date, title: `Factura Alta ${aiAuditResult.supplier.name}`, fileSize: '1.1 MB', url: `/documents/${aiAuditResult.docNumber}.pdf` }
+          { id: `doc-${Date.now()}`, docNumber: aiAuditResult.docNumber, type: aiAuditResult.docType, date: aiAuditResult.date, title: `${aiAuditResult.docType} #${aiAuditResult.docNumber}`, fileSize: '1.2 MB', url: `/documents/${aiAuditResult.docNumber}.pdf` }
         ],
         supplierHistory: [
           {
             id: `sp-${Date.now()}`,
             date: aiAuditResult.date,
             docNumber: aiAuditResult.docNumber,
-            docType: 'FACTURA',
-            concept: `Alta de Proveïdor via Ticket/Factura #${aiAuditResult.docNumber}`,
-            qty: 'Varis',
+            docType: aiAuditResult.docType.includes('FACTURA') ? 'FACTURA' : 'ALBARÀ',
+            concept: `Alta de Proveïdor via ${aiAuditResult.docType} #${aiAuditResult.docNumber}`,
+            qty: `${aiAuditResult.items?.length || 1} articles`,
             amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
-            buyer: 'IA Auto-Reader'
+            buyer: 'IA Auto-Scan'
           }
         ]
       };
-      setProveidors([newProvObj, ...proveidors]);
+      setProveidors((prev) => [newProvObj, ...prev]);
+    } else {
+      // Existing Supplier Update
+      setProveidors((prev) =>
+        prev.map((p) => {
+          if (
+            p.nif.replace(/[^A-Z0-9]/gi, '') === aiAuditResult.supplier.nif.replace(/[^A-Z0-9]/gi, '') ||
+            p.name.toLowerCase().includes(aiAuditResult.supplier.name.toLowerCase())
+          ) {
+            const newDoc = {
+              id: `doc-${Date.now()}`,
+              docNumber: aiAuditResult.docNumber,
+              type: aiAuditResult.docType,
+              date: aiAuditResult.date,
+              title: `${aiAuditResult.docType} #${aiAuditResult.docNumber}`,
+              fileSize: '1.2 MB',
+              url: `/documents/${aiAuditResult.docNumber}.pdf`
+            };
+            const newHist = {
+              id: `sp-${Date.now()}`,
+              date: aiAuditResult.date,
+              docNumber: aiAuditResult.docNumber,
+              docType: aiAuditResult.docType.includes('FACTURA') ? 'FACTURA' : 'ALBARÀ',
+              concept: `Entrada Albarà/Factura IA #${aiAuditResult.docNumber}`,
+              qty: `${aiAuditResult.items?.length || 1} articles`,
+              amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
+              buyer: 'IA Auto-Scan'
+            };
+            const updatedNumeric = (p.totalSpentNumeric || 0) + aiAuditResult.totalAmount;
+            return {
+              ...p,
+              totalSpentNumeric: updatedNumeric,
+              totalSpent: `${updatedNumeric.toFixed(2)} €`,
+              digitizedDocs: [newDoc, ...(p.digitizedDocs || [])],
+              supplierHistory: [newHist, ...(p.supplierHistory || [])]
+            };
+          }
+          return p;
+        })
+      );
     }
 
+    // 2. Process Materials Stock Increment & Insertion
+    if (aiAuditResult.items && aiAuditResult.items.length > 0) {
+      setMaterials((prevMaterials) => {
+        let updatedList = [...prevMaterials];
+
+        aiAuditResult.items.forEach((itemExtracted: any) => {
+          const existingIndex = updatedList.findIndex(
+            (m) =>
+              (itemExtracted.code && m.code.toLowerCase().trim() === itemExtracted.code.toLowerCase().trim()) ||
+              m.name.toLowerCase().trim() === itemExtracted.name.toLowerCase().trim()
+          );
+
+          if (existingIndex >= 0) {
+            // Material exists -> increment stock
+            const existingMat = updatedList[existingIndex];
+            const newStock = existingMat.stock + itemExtracted.qty;
+            const newStockTotal = existingMat.stockTotal + itemExtracted.qty;
+            const newPurchaseHist = {
+              id: `h-${Date.now()}-${Math.random()}`,
+              date: aiAuditResult.date,
+              qty: `${itemExtracted.qty} ${itemExtracted.unit}`,
+              price: `${itemExtracted.total.toFixed(2)} €`,
+              supplier: aiAuditResult.supplier.name,
+              buyer: 'IA Auto-Scan (Albarà)'
+            };
+
+            updatedList[existingIndex] = {
+              ...existingMat,
+              stock: newStock,
+              stockTotal: newStockTotal,
+              unitPrice: itemExtracted.unitPrice || existingMat.unitPrice,
+              lastPurchaseDate: aiAuditResult.date,
+              purchaseHistory: [newPurchaseHist, ...(existingMat.purchaseHistory || [])]
+            };
+          } else {
+            // Material does NOT exist -> Create new material in warehouse!
+            const newMatObj = {
+              id: `m-${Date.now()}-${Math.random()}`,
+              code: itemExtracted.code || `MAT-${Math.floor(100 + Math.random() * 900)}`,
+              name: itemExtracted.name,
+              stockTotal: itemExtracted.qty,
+              stockCheckedOut: 0,
+              stock: itemExtracted.qty,
+              minStock: 10,
+              unit: itemExtracted.unit || 'u',
+              location: 'Magatzem Central (Recepció Albarà)',
+              supplier: aiAuditResult.supplier.name,
+              unitPrice: itemExtracted.unitPrice || 0,
+              isService: false,
+              lastPurchaseDate: aiAuditResult.date,
+              workerMovementHistory: [],
+              purchaseHistory: [
+                {
+                  id: `h-${Date.now()}`,
+                  date: aiAuditResult.date,
+                  qty: `${itemExtracted.qty} ${itemExtracted.unit}`,
+                  price: `${itemExtracted.total.toFixed(2)} €`,
+                  supplier: aiAuditResult.supplier.name,
+                  buyer: 'IA Auto-Scan'
+                }
+              ]
+            };
+            updatedList.unshift(newMatObj);
+          }
+        });
+
+        return updatedList;
+      });
+    }
+
+    // 3. User Feedback Notification & Automatic Tab Switch
+    const createdSupplierName = aiAuditResult.supplier.name;
+    const createdNif = aiAuditResult.supplier.nif;
+    const itemsCount = aiAuditResult.items?.length || 0;
+
+    setActiveTab('materials');
     setShowAIModal(false);
     setAiStep(1);
     setAiAuditResult(null);
+
+    alert(`✅ PROCESSAMENT COMPLETAT AMB ÈXIT!\n\n1. S'ha creat/actualitzat la fitxa del proveïdor "${createdSupplierName}" (NIF: ${createdNif}) amb la seva carpeta /documents/magatzem/proveidors/${createdNif}/.\n2. S'han afegit ${itemsCount} materials i s'ha actualitzat l'estoc del magatzem.`);
   };
 
   // Manual Creation Handlers
