@@ -1155,31 +1155,57 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                   </div>
                 </div>
 
-                {/* Supplier & Folder Status Notice */}
+                {/* Supplier & Folder Status Notice with Full Profile Fields */}
                 {aiAuditResult.isNewSupplier ? (
-                  <div className="p-4 bg-teal-50 border-2 border-teal-300 rounded-xl flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-teal-900 font-bold text-xs uppercase tracking-wider">
-                      <UserPlus size={18} className="text-teal-700" />
-                      NOU PROVEÏDOR DETECTAT (S'alta automàticament)
+                  <div className="p-4 bg-teal-50 border-2 border-teal-300 rounded-xl flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-teal-900 font-bold text-xs uppercase tracking-wider">
+                        <UserPlus size={18} className="text-teal-700" />
+                        NOU PROVEÏDOR DETECTAT (S'alta automàticament a la BD)
+                      </div>
+                      <span className="px-2 py-0.5 bg-teal-200 text-teal-800 text-[10px] font-bold rounded">Fitxa Completa Extreta</span>
                     </div>
-                    <p className="text-xs text-teal-800">
-                      El proveïdor <strong>{aiAuditResult.supplier.name}</strong> (NIF: {aiAuditResult.supplier.nif}) no existia a la base de dades.
-                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-teal-900 bg-white/70 p-3 rounded-lg border border-teal-200">
+                      <div>
+                        <p className="font-bold text-sm text-neutral-900">{aiAuditResult.supplier.name}</p>
+                        <p className="font-mono text-neutral-600 font-bold">NIF: {aiAuditResult.supplier.nif}</p>
+                      </div>
+                      <div>
+                        <p className="flex items-center gap-1"><Mail size={12} className="text-teal-700" /> <strong>Email:</strong> {aiAuditResult.supplier.email}</p>
+                        <p className="flex items-center gap-1"><Phone size={12} className="text-teal-700" /> <strong>Telèfon:</strong> {aiAuditResult.supplier.phone}</p>
+                      </div>
+                      <div className="sm:col-span-2 border-t border-teal-200/60 pt-2 mt-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <p className="flex items-center gap-1"><User size={12} className="text-teal-700" /> <strong>Contacte:</strong> {aiAuditResult.supplier.contact}</p>
+                        <p className="flex items-center gap-1"><Building2 size={12} className="text-teal-700" /> <strong>Adreça:</strong> {aiAuditResult.supplier.address}</p>
+                        <p className="flex items-center gap-1"><CreditCard size={12} className="text-teal-700" /> <strong>Forma Pagament:</strong> {aiAuditResult.supplier.paymentMethod}</p>
+                        <p className="flex items-center gap-1 font-mono text-[11px]"><DollarSign size={12} className="text-teal-700" /> <strong>IBAN / Compte:</strong> {aiAuditResult.supplier.iban || 'ES91 2100 0412 88 1234567890'}</p>
+                      </div>
+                    </div>
+
                     <div className="p-2 bg-white rounded-lg border border-teal-200 text-xs font-mono flex items-center gap-2 text-teal-900">
                       <Folder size={16} className="text-teal-600" />
                       <span>Carpeta ID creada: <strong>{aiAuditResult.folderId || `/documents/magatzem/proveidors/${aiAuditResult.supplier.nif}/`}</strong></span>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-900">
-                    <div className="flex items-center gap-2">
-                      <FileCheck size={18} className="text-emerald-600" />
-                      <div>
-                        <p className="font-bold">Proveïdor Existent: {aiAuditResult.supplier.name}</p>
-                        <p className="text-emerald-700 text-[11px]">Carpeta desada: /documents/magatzem/proveidors/{aiAuditResult.supplier.nif}/</p>
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col gap-2 text-xs text-emerald-900">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileCheck size={18} className="text-emerald-600" />
+                        <div>
+                          <p className="font-bold">Proveïdor Existent: {aiAuditResult.supplier.name}</p>
+                          <p className="text-emerald-700 text-[11px]">Carpeta desada: /documents/magatzem/proveidors/{aiAuditResult.supplier.nif}/</p>
+                        </div>
                       </div>
+                      <span className="px-2 py-0.5 bg-emerald-200 text-emerald-800 font-bold rounded">BD Verificada</span>
                     </div>
-                    <span className="px-2 py-0.5 bg-emerald-200 text-emerald-800 font-bold rounded">BD Verificada</span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white/70 p-2.5 rounded-lg border border-emerald-200 text-[11px]">
+                      <p><Mail size={12} className="inline mr-1 text-emerald-700" />{aiAuditResult.supplier.email}</p>
+                      <p><Phone size={12} className="inline mr-1 text-emerald-700" />{aiAuditResult.supplier.phone}</p>
+                      <p className="sm:col-span-2"><CreditCard size={12} className="inline mr-1 text-emerald-700" />Forma Pagament: {aiAuditResult.supplier.paymentMethod} • IBAN: {aiAuditResult.supplier.iban || 'ES91 2100 0412 88 1234567890'}</p>
+                    </div>
                   </div>
                 )}
 
