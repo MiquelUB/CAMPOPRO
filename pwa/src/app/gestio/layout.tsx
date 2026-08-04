@@ -74,6 +74,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
     { name: 'Dashboard', path: '/gestio', icon: 'dashboard' },
     { name: 'Operaris', path: '/gestio/operaris', icon: 'engineering' },
     { name: 'Clients', path: '/gestio/clients', icon: 'group' },
+    { name: 'Proveïdors', path: '/gestio/proveidors', icon: 'storefront' },
     { name: 'Magatzem', path: '/gestio/magatzem', icon: 'inventory_2' },
     { name: 'Seguiment Feines', path: '/gestio/feines/mapa', icon: 'map' },
     { name: 'Vehicles / Flota', path: '/gestio/flota', icon: 'local_shipping' },
@@ -232,6 +233,10 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
 
               <Link href="/gestio/comptabilitat" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/comptabilitat' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
                 COMPTABILITAT
+              </Link>
+
+              <Link href="/gestio/proveidors" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname.startsWith('/gestio/proveidors') ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
+                PROVEÏDORS
               </Link>
 
               <Link href="/gestio/configuracio" className={`flex items-center h-full px-sm font-label-caps transition-all whitespace-nowrap ${pathname === '/gestio/configuracio' ? 'text-secondary-container border-b-2 border-secondary-container font-bold' : 'text-on-surface-variant hover:text-primary'}`}>

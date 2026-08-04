@@ -578,7 +578,14 @@ export default function Page() {
                         </td>
 
                         <td className="px-md py-md">
-                          <p className="font-body-strong text-on-surface">{inv.client}</p>
+                          <button 
+                            onClick={() => router.push('/gestio/clients/1')}
+                            className="font-body-strong text-on-surface hover:text-primary hover:underline cursor-pointer flex items-center gap-1 text-left"
+                            title="Haz clic per obrir la fitxa completa del client"
+                          >
+                            <span className="material-symbols-outlined text-[15px] text-primary">person</span>
+                            {inv.client}
+                          </button>
                           <p className="text-xs text-on-surface-variant font-mono">NIF: {inv.nif}</p>
                         </td>
                         <td className="px-md py-md text-xs">
@@ -656,7 +663,16 @@ export default function Page() {
                     {supplierInvoices.map((sup) => (
                       <tr key={sup.id} className="hover:bg-surface-container-low transition-colors">
                         <td className="px-md py-md font-bold text-orange-800">{sup.invoiceNo}</td>
-                        <td className="px-md py-md font-body-strong text-on-surface">{sup.supplier}</td>
+                        <td className="px-md py-md font-body-strong text-on-surface">
+                          <button 
+                            onClick={() => router.push('/gestio/proveidors')}
+                            className="font-body-strong text-on-surface hover:text-orange-700 hover:underline cursor-pointer flex items-center gap-1 text-left"
+                            title="Haz clic per obrir la fitxa del proveïdor"
+                          >
+                            <span className="material-symbols-outlined text-[15px] text-orange-600">storefront</span>
+                            {sup.supplier}
+                          </button>
+                        </td>
                         <td className="px-md py-md text-xs text-on-surface-variant">{sup.concept}</td>
                         <td className="px-md py-md text-xs font-bold">{sup.date}</td>
                         <td className="px-md py-md text-right font-bold text-orange-700 font-mono">{sup.total}</td>
