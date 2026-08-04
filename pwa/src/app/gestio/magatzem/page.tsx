@@ -963,6 +963,164 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: PROCESSADOR D'ALBARANS I FACTURES AMB IA */}
+      {/* ========================================================================= */}
+      {showAIModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center pb-3 border-b border-neutral-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl shadow-md">
+                  <Bot size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
+                    Processador d'Albarans i Factures amb IA
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Visió OCR v2.4</span>
+                  </h3>
+                  <p className="text-xs text-neutral-500">Lectura automàtica, creació de carpetes per ID de proveïdor i actualització d'estoc.</p>
+                </div>
+              </div>
+              <button onClick={() => {
+                setShowAIModal(false);
+                setAiStep(1);
+                setAiAuditResult(null);
+              }} className="text-neutral-400 hover:text-neutral-700 p-1">
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* STEP 1: Upload or Demo Buttons */}
+            {aiStep === 1 && (
+              <div className="flex flex-col gap-5">
+                <div className="p-8 border-2 border-dashed border-emerald-300 bg-emerald-50/40 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-emerald-50/80 transition-colors">
+                  <Upload className="w-12 h-12 text-emerald-600 mb-2 animate-bounce" />
+                  <p className="font-bold text-sm text-neutral-900">Arrossega o selecciona la foto / PDF de l'albarà o factura</p>
+                  <p className="text-xs text-neutral-500 mt-1">Accepta documents impresos o manuscrits de proveïdors</p>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">O prova una simulació automàtica amb la IA:</span>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => startAIAudit('EXISTING_SUPPLIER')}
+                      className="p-4 bg-white border border-neutral-200 hover:border-emerald-500 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-1 group cursor-pointer"
+                    >
+                      <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 group-hover:underline">
+                        <FileCheck size={16} /> Albarà Proveïdor Existent
+                      </span>
+                      <p className="text-xs font-semibold text-neutral-800">AgroSubministres Ponent SL</p>
+                      <p className="text-[11px] text-neutral-500">#ALB-2026-8812 • 50m Tub PE 25mm</p>
+                    </button>
+
+                    <button 
+                      onClick={() => startAIAudit('NEW_SUPPLIER')}
+                      className="p-4 bg-white border-2 border-emerald-200 hover:border-emerald-600 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-1 group cursor-pointer bg-emerald-50/30"
+                    >
+                      <span className="text-xs font-bold text-teal-700 flex items-center gap-1 group-hover:underline">
+                        <UserPlus size={16} /> Albarà/Factura NOU Proveïdor
+                      </span>
+                      <p className="text-xs font-semibold text-neutral-800">Fertilitzants i Llavor Orgànica SL</p>
+                      <p className="text-[11px] text-neutral-500">#FAC-2026-102 • Crearà carpeta ID automàtica</p>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: Processing Animation */}
+            {aiStep === 2 && isAiProcessing && (
+              <div className="p-12 flex flex-col items-center justify-center text-center gap-4">
+                <Loader2 className="w-12 h-12 text-emerald-600 animate-spin" />
+                <div>
+                  <h4 className="font-bold text-base text-neutral-900">La IA està analitzant el document...</h4>
+                  <p className="text-xs text-neutral-500 mt-1">Llegint capçalera fiscal, línies d'articles i comprovant el directori de proveïdors.</p>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Results & Action */}
+            {aiStep === 3 && aiAuditResult && (
+              <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+                
+                {/* Document Summary Box */}
+                <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Document Extret per IA</span>
+                    <h4 className="font-bold text-sm text-neutral-900">{aiAuditResult.docType} #{aiAuditResult.docNumber}</h4>
+                    <p className="text-xs text-neutral-500">Data document: {aiAuditResult.date}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Import Total Extret</span>
+                    <p className="font-bold text-lg text-emerald-700 font-mono">{aiAuditResult.totalAmount.toFixed(2)} €</p>
+                  </div>
+                </div>
+
+                {/* Supplier & Folder Status Notice */}
+                {aiAuditResult.isNewSupplier ? (
+                  <div className="p-4 bg-teal-50 border-2 border-teal-300 rounded-xl flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-teal-900 font-bold text-xs uppercase tracking-wider">
+                      <UserPlus size={18} className="text-teal-700" />
+                      NOU PROVEÏDOR DETECTAT (S'alta automàticament)
+                    </div>
+                    <p className="text-xs text-teal-800">
+                      El proveïdor <strong>{aiAuditResult.supplier.name}</strong> (NIF: {aiAuditResult.supplier.nif}) no existia a la base de dades.
+                    </p>
+                    <div className="p-2 bg-white rounded-lg border border-teal-200 text-xs font-mono flex items-center gap-2 text-teal-900">
+                      <Folder size={16} className="text-teal-600" />
+                      <span>Carpeta ID creada: <strong>{aiAuditResult.folderId || `/documents/magatzem/proveidors/${aiAuditResult.supplier.nif}/`}</strong></span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-900">
+                    <div className="flex items-center gap-2">
+                      <FileCheck size={18} className="text-emerald-600" />
+                      <div>
+                        <p className="font-bold">Proveïdor Existent: {aiAuditResult.supplier.name}</p>
+                        <p className="text-emerald-700 text-[11px]">Carpeta desada: /documents/magatzem/proveidors/{aiAuditResult.supplier.nif}/</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 bg-emerald-200 text-emerald-800 font-bold rounded">BD Verificada</span>
+                  </div>
+                )}
+
+                {/* Extracted Items to Add to Stock */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">Articles a Sumar a l'Estoc de Magatzem:</span>
+                  <div className="divide-y divide-neutral-200 border border-neutral-200 rounded-xl overflow-hidden text-xs">
+                    {aiAuditResult.items.map((item: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-white flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-neutral-900">{item.name} ({item.code})</p>
+                          <p className="text-neutral-500">Quantitat a sumar: <strong className="text-emerald-700">{item.qty} {item.unit}</strong> • Preu unitari: {item.unitPrice.toFixed(2)} €</p>
+                        </div>
+                        <span className="font-bold text-emerald-800 font-mono text-sm">+{item.total.toFixed(2)} €</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Confirm Action Button */}
+                <button 
+                  onClick={applyAIAuditToDatabase}
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-sm rounded-xl hover:from-emerald-700 hover:to-teal-800 transition-all shadow-md mt-2 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle2 size={18} />
+                  Processar Albarà, Crear Proveïdor i Sumar Estoc
+                </button>
+
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
