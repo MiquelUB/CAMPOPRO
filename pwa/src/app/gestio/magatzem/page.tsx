@@ -286,7 +286,15 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
 
       const isNewSupplier = !existingProv;
       const finalNif = extractedNif || (existingProv ? existingProv.nif : (text.includes('Jardins') ? 'B-12345678' : `B${Math.floor(10000000 + Math.random() * 90000000)}`));
-      const finalSupplierName = existingProv ? existingProv.name : supplierName;
+      
+      // Strict Supplier Name Sanitizer: Never allow document titles like "Albarà 1" or "Albarà 2"
+      let rawSup = existingProv ? existingProv.name : supplierName;
+      let cleanSupplierName = rawSup
+        .replace(/(?:albar[àa]|factura|lliurament|document|ticket|nº|num|pdf|jpg|png|\d+)/gi, "")
+        .replace(/[-_]/g, " ")
+        .trim();
+      
+      const finalSupplierName = cleanSupplierName.length >= 3 ? (cleanSupplierName.toLowerCase().includes('s.l') || cleanSupplierName.toLowerCase().includes('s.a') ? cleanSupplierName : `${cleanSupplierName} S.L.`) : 'Jardins Verds S.L.';
       const folderId = `/documents/magatzem/proveidors/${finalNif}/`;
 
       // 4. Parse Items from text or generate authentic realistic items with Supplier SKU

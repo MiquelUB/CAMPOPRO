@@ -452,7 +452,13 @@ export function getStoredProveidors(): SupplierItem[] {
       localStorage.setItem('campopro_proveidors', JSON.stringify(INITIAL_PROVEIDORS));
       return INITIAL_PROVEIDORS;
     }
-    return JSON.parse(raw);
+    const parsed: SupplierItem[] = JSON.parse(raw);
+    // Sanitize: Purge any corrupted suppliers named after document titles (Albarà 1, Albarà 2, Factura, etc.)
+    const clean = parsed.filter(p => p.name && !/(?:albar[àa]|lliurament|factura|document|pdf|jpg|png|\.pdf)/i.test(p.name));
+    if (clean.length !== parsed.length) {
+      localStorage.setItem('campopro_proveidors', JSON.stringify(clean.length > 0 ? clean : INITIAL_PROVEIDORS));
+    }
+    return clean.length > 0 ? clean : INITIAL_PROVEIDORS;
   } catch (e) {
     return INITIAL_PROVEIDORS;
   }
@@ -461,7 +467,8 @@ export function getStoredProveidors(): SupplierItem[] {
 export function saveStoredProveidors(list: SupplierItem[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem('campopro_proveidors', JSON.stringify(list));
+    const clean = list.filter(p => p.name && !/(?:albar[àa]|lliurament|factura|document|pdf|jpg|png|\.pdf)/i.test(p.name));
+    localStorage.setItem('campopro_proveidors', JSON.stringify(clean));
     window.dispatchEvent(new Event('campopro_store_updated'));
   } catch (e) {
     console.error('Error saving proveidors', e);
@@ -476,7 +483,17 @@ export function getStoredMaterials(): MaterialItem[] {
       localStorage.setItem('campopro_materials', JSON.stringify(INITIAL_MATERIALS));
       return INITIAL_MATERIALS;
     }
-    return JSON.parse(raw);
+    const parsed: MaterialItem[] = JSON.parse(raw);
+    // Sanitize: Purge any corrupted materials named after documents or containing Albarà
+    const clean = parsed.filter(m => 
+      m.name && 
+      !/(?:albar[àa]|lliurament|factura|document|material de subministrament)/i.test(m.name) && 
+      !/(?:albar[àa]|lliurament|factura|document)/i.test(m.supplier)
+    );
+    if (clean.length !== parsed.length) {
+      localStorage.setItem('campopro_materials', JSON.stringify(clean.length > 0 ? clean : INITIAL_MATERIALS));
+    }
+    return clean.length > 0 ? clean : INITIAL_MATERIALS;
   } catch (e) {
     return INITIAL_MATERIALS;
   }
@@ -485,7 +502,12 @@ export function getStoredMaterials(): MaterialItem[] {
 export function saveStoredMaterials(list: MaterialItem[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem('campopro_materials', JSON.stringify(list));
+    const clean = list.filter(m => 
+      m.name && 
+      !/(?:albar[àa]|lliurament|factura|document|material de subministrament)/i.test(m.name) && 
+      !/(?:albar[àa]|lliurament|factura|document)/i.test(m.supplier)
+    );
+    localStorage.setItem('campopro_materials', JSON.stringify(clean));
     window.dispatchEvent(new Event('campopro_store_updated'));
   } catch (e) {
     console.error('Error saving materials', e);
