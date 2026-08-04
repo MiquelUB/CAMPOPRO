@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, ShoppingCart, Send, Copy, Check, Download, Eye, Filter, Tag } from 'lucide-react';
 
@@ -9,6 +9,9 @@ export default function MagatzemDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   
+  // Ref for native file picker window
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // AI Invoice Reader & Audit Engine State
   const [showAIModal, setShowAIModal] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -390,65 +393,66 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
     }, 1500);
   };
 
+  // Native File Selector Change Handler
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAiInvoiceFile(file);
+      const isNewScenario = file.name.toLowerCase().includes('nou') || file.name.toLowerCase().includes('new') || file.name.toLowerCase().includes('balaguer') || file.name.toLowerCase().includes('llavor') || file.name.toLowerCase().includes('factura');
+      startAIAudit(isNewScenario ? 'NEW_SUPPLIER' : 'EXISTING_SUPPLIER', file.name);
+    }
+  };
+
   // AI Audit Engine Handler
-  const startAIAudit = (scenario: 'EXISTING_SUPPLIER' | 'NEW_SUPPLIER') => {
+  const startAIAudit = (scenario: 'EXISTING_SUPPLIER' | 'NEW_SUPPLIER', customFileName?: string) => {
     setIsAiProcessing(true);
     setAiStep(2);
 
     setTimeout(() => {
       if (scenario === 'NEW_SUPPLIER') {
         setAiAuditResult({
-          docType: 'TICKET / FACTURA DIRECTA',
-          docNumber: 'TIC-2026-3310',
+          docType: 'ALBARÀ / FACTURA CARREGADA',
+          docNumber: `FAC-2026-${Math.floor(100 + Math.random() * 900)}`,
+          fileName: customFileName || 'albara_nou_proveidor.pdf',
           date: new Date().toLocaleDateString('ca-ES'),
           isNewSupplier: true,
           supplier: {
-            name: 'Recanvis Agrícoles del Segre SL',
-            nif: 'B25998844',
-            contact: 'Atenció Comercial',
-            phone: '973 88 99 00',
-            email: 'comercial@recanvissegre.cat',
-            address: 'Polígon Ind. El Segre, Carrer B, Nau 4, Lleida',
-            products: 'Reg, Electrovàlvules i Connectors',
-            discount: '10%',
+            name: 'Fertilitzants i Llavor Orgànica SL',
+            nif: 'B66778899',
+            contact: 'Manel Soler (Vendes Agrícoles)',
+            phone: '973 77 88 99',
+            email: 'facturacio@fertillavor.cat',
+            address: 'Camí de les Masies 12, Balaguer',
+            products: 'Fitonutrients i Llavor',
+            discount: '12%',
             paymentMethod: 'Transferència 30 dies'
           },
-          hasDiscrepancy: false,
-          discrepancies: [],
-          totalAmount: 285.00,
+          folderId: '/documents/magatzem/proveidors/B66778899/',
+          totalAmount: 385.00,
           items: [
-            { name: 'Filtre de Malla 2" High-Pressure', code: 'MAT-015', qty: 2, unit: 'u', unitPrice: 82.50, total: 165.00 },
-            { name: 'Cinta d\'Aïllament Vulcanitzada', code: 'MAT-016', qty: 10, unit: 'u', unitPrice: 12.00, total: 120.00 }
+            { name: 'Adobat Biològic Compostat 25kg', code: 'MAT-088', qty: 10, unit: 'sacs', unitPrice: 26.50, total: 265.00 },
+            { name: 'Corrector de pH Sòl 5L', code: 'MAT-089', qty: 4, unit: 'u', unitPrice: 30.00, total: 120.00 }
           ]
         });
       } else {
         setAiAuditResult({
-          docType: 'FACTURA COMERCIAL REBUDA',
-          docNumber: 'FAC-2026-9901',
-          matchedAlbara: 'ALB-2026-8812',
+          docType: 'ALBARÀ DE LLIURAMENT CARREGAT',
+          docNumber: `ALB-2026-${Math.floor(8000 + Math.random() * 999)}`,
+          fileName: customFileName || 'albara_agrosubministres.pdf',
           date: new Date().toLocaleDateString('ca-ES'),
           isNewSupplier: false,
           supplier: { name: 'AgroSubministres Ponent SL', nif: 'B25889911', agreedDiscount: '15%' },
-          hasDiscrepancy: true,
-          totalAmount: 510.00,
-          discrepancies: [
-            {
-              field: 'Preu Unitari',
-              item: 'Tub PE 25mm High-Density',
-              albaraValue: '4,50 € / m (Segons Albarà #ALB-2026-8812)',
-              facturaValue: '4,90 € / m (Augment del +8,8%)',
-              impact: '+40,00 € extra no pactats'
-            }
-          ],
+          folderId: '/documents/magatzem/proveidors/B25889911/',
+          totalAmount: 225.00,
           items: [
-            { name: 'Tub PE 25mm High-Density', code: 'MAT-001', qty: 100, unit: 'm', unitPrice: 4.90, total: 490.00 }
+            { name: 'Tub PE 25mm High-Density', code: 'MAT-001', qty: 50, unit: 'm', unitPrice: 4.50, total: 225.00 }
           ]
         });
       }
 
       setIsAiProcessing(false);
       setAiStep(3);
-    }, 2200);
+    }, 1800);
   };
 
   const applyAIAuditToDatabase = () => {
@@ -997,10 +1001,30 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
             {/* STEP 1: Upload or Demo Buttons */}
             {aiStep === 1 && (
               <div className="flex flex-col gap-5">
-                <div className="p-8 border-2 border-dashed border-emerald-300 bg-emerald-50/40 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-emerald-50/80 transition-colors">
-                  <Upload className="w-12 h-12 text-emerald-600 mb-2 animate-bounce" />
-                  <p className="font-bold text-sm text-neutral-900">Arrossega o selecciona la foto / PDF de l'albarà o factura</p>
-                  <p className="text-xs text-neutral-500 mt-1">Accepta documents impresos o manuscrits de proveïdors</p>
+                <input 
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,.doc,.docx"
+                  onChange={handleFileSelected}
+                  className="hidden"
+                />
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-8 border-2 border-dashed border-emerald-400 bg-emerald-50/50 hover:bg-emerald-50 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:border-emerald-600 shadow-xs group"
+                >
+                  <Upload className="w-12 h-12 text-emerald-600 mb-2 animate-bounce group-hover:scale-110 transition-transform" />
+                  <p className="font-bold text-sm text-neutral-900 group-hover:text-emerald-800">Clica per obrir el cercador d'arxius del navegador o arrossega un document</p>
+                  <p className="text-xs text-neutral-500 mt-1">Accepta fitxers PDF, imatges escanejades (JPG/PNG) d'albarans o factures</p>
+                  <button 
+                    type="button" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Folder size={14} /> Seleccionar Fitxer del Dispositiu
+                  </button>
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
