@@ -1,78 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getStoredProveidors, SupplierItem } from '@/lib/sharedStore';
 
 export default function Page() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('TOTS');
   const [selectedSupplierModal, setSelectedSupplierModal] = useState<any | null>(null);
+  const [suppliersDb, setSuppliersDb] = useState<SupplierItem[]>([]);
 
-  const suppliersDb = [
-    {
-      id: 'sup-1',
-      name: 'Suministros Agrícolas del Segre SA',
-      nif: 'A25112233',
-      category: 'Fertilitzants i Fitosanitaris',
-      contactPerson: 'Joan Martorell (Director Comercial)',
-      phone: '973 400 111 / 600 555 444',
-      email: 'facturacio@segresuministros.com',
-      address: 'Polígon Industrial El Segre, Parcel·la 14, Lleida',
-      paymentTerms: 'Transferència a 30 dies',
-      totalBilledMonth: '544,50 €',
-      totalBilledYear: '8.400,00 €',
-      pendingPayment: '544,50 €',
-      status: 'ACTIU',
-      recentOrders: [
-        { id: 'ORD-991', date: '01/08/2026', concept: '10 Sacs Fertilitzant N-12 + Fitonutrients', amount: '544,50 €', status: 'PENDENT_PAGAMENT' },
-        { id: 'ORD-940', date: '15/07/2026', concept: '20 Sacs Nitrat d\'Amoni 27%', amount: '1.120,00 €', status: 'PAGAT' },
-      ]
-    },
-    {
-      id: 'sup-2',
-      name: 'Tractores i Recanvis Ponent',
-      nif: 'B25987654',
-      category: 'Maquinària & Recanvis',
-      contactPerson: 'Sergi Barberà (Cap de Recanvis)',
-      phone: '973 500 222 / 610 333 222',
-      email: 'recanvis@tractorsponent.cat',
-      address: 'Av. de les Garrigues 88, Mollerussa',
-      paymentTerms: 'Domiciliació Bancària (Dia 10)',
-      totalBilledMonth: '254,10 €',
-      totalBilledYear: '4.200,00 €',
-      pendingPayment: '0,00 €',
-      status: 'ACTIU',
-      recentOrders: [
-        { id: 'ORD-988', date: '28/07/2026', concept: 'Oli Sintètic 20L + Filtre Oli John Deere', amount: '254,10 €', status: 'PAGAT' },
-        { id: 'ORD-890', date: '10/06/2026', concept: 'Corretja d\'Alternador Tractor 6120M', amount: '85,00 €', status: 'PAGAT' },
-      ]
-    },
-    {
-      id: 'sup-3',
-      name: 'Tuberies i Regs de Ponent SL',
-      nif: 'B25443322',
-      category: 'Reg & Canonades PE',
-      contactPerson: 'Marta Solanes (Gestió Clients)',
-      phone: '973 600 333 / 620 111 999',
-      email: 'comandes@tuberiesponent.com',
-      address: 'Camí dels Frares, Nau 5, Tàrrega',
-      paymentTerms: 'Targeta / Comptat',
-      totalBilledMonth: '1.076,90 €',
-      totalBilledYear: '14.800,00 €',
-      pendingPayment: '0,00 €',
-      status: 'ACTIU',
-      recentOrders: [
-        { id: 'ORD-975', date: '25/07/2026', concept: 'Canonada PE-90 100m + Vàlvules Inox 2"', amount: '1.076,90 €', status: 'PAGAT' },
-        { id: 'ORD-912', date: '02/07/2026', concept: 'Goters Auto-compensants 500u', amount: '340,00 €', status: 'PAGAT' },
-      ]
-    }
-  ];
+  useEffect(() => {
+    const loadSuppliers = () => {
+      setSuppliersDb(getStoredProveidors());
+    };
+    loadSuppliers();
+
+    window.addEventListener('campopro_store_updated', loadSuppliers);
+    return () => window.removeEventListener('campopro_store_updated', loadSuppliers);
+  }, []);
 
   const filteredSuppliers = suppliersDb.filter(sup => {
+    const contactText = sup.contactPerson || sup.contact || '';
+    const categoryText = sup.category || sup.products || '';
     const matchesSearch = sup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           sup.nif.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          sup.contactPerson.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCat = selectedCategory === 'TOTS' || sup.category.toUpperCase().includes(selectedCategory);
+                          contactText.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCat = selectedCategory === 'TOTS' || categoryText.toUpperCase().includes(selectedCategory);
     return matchesSearch && matchesCat;
   });
 

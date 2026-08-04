@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, ShoppingCart, Send, Copy, Check, Download, Eye, Filter, Tag } from 'lucide-react';
+import { getStoredProveidors, saveStoredProveidors, getStoredMaterials, saveStoredMaterials, SupplierItem, MaterialItem } from '@/lib/sharedStore';
 
 export default function MagatzemDashboard() {
   const [activeTab, setActiveTab] = useState<'materials' | 'eines' | 'vehicles' | 'proveidors'>('materials');
@@ -18,6 +19,21 @@ export default function MagatzemDashboard() {
   const [aiStep, setAiStep] = useState<number>(1);
   const [aiInvoiceFile, setAiInvoiceFile] = useState<File | null>(null);
   const [aiAuditResult, setAiAuditResult] = useState<any | null>(null);
+
+  // Database 1: Materials & Database 4: Proveïdors (Synced via sharedStore)
+  const [materials, setMaterials] = useState<MaterialItem[]>([]);
+  const [proveidors, setProveidors] = useState<SupplierItem[]>([]);
+
+  useEffect(() => {
+    const syncData = () => {
+      setMaterials(getStoredMaterials());
+      setProveidors(getStoredProveidors());
+    };
+    syncData();
+
+    window.addEventListener('campopro_store_updated', syncData);
+    return () => window.removeEventListener('campopro_store_updated', syncData);
+  }, []);
 
   // AI Purchase Order Generator State
   const [showAIPOModal, setShowAIPOModal] = useState(false);
@@ -49,161 +65,13 @@ export default function MagatzemDashboard() {
     return `${numericOnly}%`;
   };
 
-  // Database 1: Materials (inclou Productes de Serveis/Tarifes Editables per a Pressupostos: Hora Operari, Hora Tractor, Transport, Desplaçament, Extra)
-  const [materials, setMaterials] = useState([
-    // Standard Physical Materials
-    { 
-      id: 'm1', 
-      code: 'MAT-001', 
-      name: 'Tub PE 25mm High-Density', 
-      stockTotal: 150, 
-      stockCheckedOut: 30, 
-      stock: 120, 
-      minStock: 20, 
-      unit: 'm', 
-      location: 'Prestatgeria A-1',
-      supplier: 'AgroSubministres Ponent SL',
-      unitPrice: 4.50,
-      isService: false,
-      lastPurchaseDate: '12/04/2026',
-      workerMovementHistory: [
-        { id: 'wm1', date: '02/08/2026 07:30', worker: 'Jordi Soler', action: 'SUBTRACTION', qty: '30m', status: 'EN_US_JORNADA' }
-      ],
-      purchaseHistory: [
-        { id: 'h1', date: '12/04/2026', qty: '100m', price: '450,00 €', supplier: 'AgroSubministres Ponent SL', buyer: 'Marc (Enginyer)' }
-      ]
-    },
-    { 
-      id: 'm2', 
-      code: 'MAT-002', 
-      name: 'Vàlvula d\'Esfera 1" Inox', 
-      stockTotal: 6,
-      stockCheckedOut: 2,
-      stock: 4, 
-      minStock: 10, 
-      unit: 'u', 
-      location: 'Caixa B-4',
-      supplier: 'RiegoRegen Cat',
-      unitPrice: 18.20,
-      isService: false,
-      lastPurchaseDate: '20/03/2026',
-      workerMovementHistory: [],
-      purchaseHistory: [
-        { id: 'h4', date: '20/03/2026', qty: '10u', price: '182,00 €', supplier: 'RiegoRegen Cat', buyer: 'Marc (Enginyer)' }
-      ]
-    },
-    { 
-      id: 'm4', 
-      code: 'MAT-004', 
-      name: 'Adobat Foliar Nitrogenat 25kg', 
-      stockTotal: 2,
-      stockCheckedOut: 0,
-      stock: 2, 
-      minStock: 15, 
-      unit: 'sacs', 
-      location: 'Palet N-3',
-      supplier: 'Fertilitzants del Segre SA',
-      unitPrice: 32.50,
-      isService: false,
-      lastPurchaseDate: '18/02/2026',
-      workerMovementHistory: [],
-      purchaseHistory: [
-        { id: 'h7', date: '18/02/2026', qty: '20 sacs', price: '650,00 €', supplier: 'Fertilitzants del Segre SA', buyer: 'Miquel Riera' }
-      ]
-    },
-    // Editable Service Tariff Articles for Real Budget Quote Calculation
-    {
-      id: 's1',
-      code: 'SERV-001',
-      name: 'Hora Operari / Mà d\'Obra Tècnica',
-      stockTotal: 999,
-      stockCheckedOut: 0,
-      stock: 999,
-      minStock: 0,
-      unit: 'h',
-      location: 'Tarifa Interna',
-      supplier: 'CampoPro Serveis SL',
-      unitPrice: 35.00,
-      isService: true,
-      lastPurchaseDate: 'Tarifa Activa',
-      workerMovementHistory: [],
-      purchaseHistory: []
-    },
-    {
-      id: 's2',
-      code: 'SERV-002',
-      name: 'Hora Tractor / Maquinària Agrícola',
-      stockTotal: 999,
-      stockCheckedOut: 0,
-      stock: 999,
-      minStock: 0,
-      unit: 'h',
-      location: 'Tarifa Flota',
-      supplier: 'CampoPro Serveis SL',
-      unitPrice: 65.00,
-      isService: true,
-      lastPurchaseDate: 'Tarifa Activa',
-      workerMovementHistory: [],
-      purchaseHistory: []
-    },
-    {
-      id: 's3',
-      code: 'SERV-003',
-      name: 'Transport de Material / Logística',
-      stockTotal: 999,
-      stockCheckedOut: 0,
-      stock: 999,
-      minStock: 0,
-      unit: 'viatge',
-      location: 'Tarifa Logística',
-      supplier: 'CampoPro Serveis SL',
-      unitPrice: 50.00,
-      isService: true,
-      lastPurchaseDate: 'Tarifa Activa',
-      workerMovementHistory: [],
-      purchaseHistory: []
-    },
-    {
-      id: 's4',
-      code: 'SERV-004',
-      name: 'Desplaçament Tècnic d\'Emergència',
-      stockTotal: 999,
-      stockCheckedOut: 0,
-      stock: 999,
-      minStock: 0,
-      unit: 'trajecte',
-      location: 'Tarifa Logística',
-      supplier: 'CampoPro Serveis SL',
-      unitPrice: 40.00,
-      isService: true,
-      lastPurchaseDate: 'Tarifa Activa',
-      workerMovementHistory: [],
-      purchaseHistory: []
-    },
-    {
-      id: 's5',
-      code: 'SERV-005',
-      name: 'Recàrrec Extra / Nocturnitat / Festiu',
-      stockTotal: 999,
-      stockCheckedOut: 0,
-      stock: 999,
-      minStock: 0,
-      unit: 'h',
-      location: 'Tarifa Especial',
-      supplier: 'CampoPro Serveis SL',
-      unitPrice: 25.00,
-      isService: true,
-      lastPurchaseDate: 'Tarifa Activa',
-      workerMovementHistory: [],
-      purchaseHistory: []
-    }
-  ]);
-
   // Handle direct inline price editing for warehouse & service items
   const handleUpdateUnitPrice = (id: string, newPriceStr: string) => {
     const val = parseFloat(newPriceStr);
     if (isNaN(val) || val < 0) return;
-    setMaterials(materials.map(m => m.id === id ? { ...m, unitPrice: val } : m));
+    const updated = materials.map(m => m.id === id ? { ...m, unitPrice: val } : m);
+    setMaterials(updated);
+    saveStoredMaterials(updated);
   };
 
   // Database 2: Eines
@@ -282,33 +150,6 @@ export default function MagatzemDashboard() {
       status: 'OK',
       maintenanceHistory: [
         { id: 'vh1', date: '10/03/2026', counter: '120.000 Km', service: 'Canvi d\'oli 5W30, filtre d\'oli i filtre d\'aire', mechanic: 'Taller Mecànic Pons & Fills', cost: '185,00 €' }
-      ]
-    }
-  ]);
-
-  // Database 4: Proveïdors
-  const [proveidors, setProveidors] = useState([
-    { 
-      id: 'p1', 
-      nif: 'B25889911', 
-      name: 'AgroSubministres Ponent SL', 
-      contact: 'Albert Pons', 
-      phone: '973 11 22 33', 
-      email: 'ventes@agrosubministres.cat', 
-      address: 'Polígon Industrial El Segre, Nau 14, Lleida', 
-      products: 'Tubs, Canonades, Reg',
-      discountValue: '15%',
-      paymentMethod: 'Transferència a 30 dies',
-      totalSpentNumeric: 1450.00,
-      totalSpent: '1.450,00 €',
-      documentsFolder: '/documents/magatzem/proveidors/agrosubministres/',
-      digitizedDocs: [
-        { id: 'doc1', docNumber: 'ALB-2026-8812', type: 'ALBARÀ', date: '12/04/2026', title: 'Albarà de Lliurament 100m Tub PE 25mm', fileSize: '1.2 MB', url: '/documents/ALB-2026-8812.pdf' },
-        { id: 'doc2', docNumber: 'FAC-2026-9901', type: 'FACTURA', date: '30/04/2026', title: 'Factura Comercial Abril 2026', fileSize: '2.4 MB', url: '/documents/FAC-2026-9901.pdf' }
-      ],
-      supplierHistory: [
-        { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', docType: 'ALBARÀ', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' },
-        { id: 'sp2', date: '30/04/2026', docNumber: 'FAC-2026-9901', docType: 'FACTURA', concept: 'Factura Comercial Abril 2026 (Tub PE 25mm)', qty: '100m', amount: '490,00 €', buyer: 'Marc (Enginyer)' }
       ]
     }
   ]);
@@ -550,21 +391,29 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
     if (!aiAuditResult) return;
 
     // 1. Process Supplier Profile Creation or Update
+    let updatedProveidors = [...proveidors];
     if (aiAuditResult.isNewSupplier) {
-      const newProvObj = {
+      const newProvObj: SupplierItem = {
         id: `p-${Date.now()}`,
         nif: aiAuditResult.supplier.nif,
         name: aiAuditResult.supplier.name,
+        category: aiAuditResult.supplier.products || 'Subministraments Agrícoles',
         contact: aiAuditResult.supplier.contact || 'Departament Comercial',
+        contactPerson: `${aiAuditResult.supplier.contact || 'Departament Comercial'} (${aiAuditResult.supplier.phone || ''})`,
         phone: aiAuditResult.supplier.phone || '93 000 00 00',
         email: aiAuditResult.supplier.email || 'info@proveidor.cat',
         address: aiAuditResult.supplier.address || 'Adreça Fiscal',
         products: aiAuditResult.supplier.products || 'Subministraments Agrícoles',
         discountValue: cleanDiscountDisplay(aiAuditResult.supplier.discount),
         paymentMethod: aiAuditResult.supplier.paymentMethod || 'Transferència a 30 dies',
+        paymentTerms: aiAuditResult.supplier.paymentMethod || 'Transferència a 30 dies',
         iban: aiAuditResult.supplier.iban || 'ES91 2100 0412 88 1234567890',
         totalSpentNumeric: aiAuditResult.totalAmount,
         totalSpent: `${aiAuditResult.totalAmount.toFixed(2)} €`,
+        totalBilledMonth: `${aiAuditResult.totalAmount.toFixed(2)} €`,
+        totalBilledYear: `${aiAuditResult.totalAmount.toFixed(2)} €`,
+        pendingPayment: `${aiAuditResult.totalAmount.toFixed(2)} €`,
+        status: 'ACTIU',
         documentsFolder: aiAuditResult.folderId || `/documents/magatzem/proveidors/${aiAuditResult.supplier.nif}/`,
         digitizedDocs: [
           { id: `doc-${Date.now()}`, docNumber: aiAuditResult.docNumber, type: aiAuditResult.docType, date: aiAuditResult.date, title: `${aiAuditResult.docType} #${aiAuditResult.docNumber}`, fileSize: '1.2 MB', url: `/documents/${aiAuditResult.docNumber}.pdf` }
@@ -580,119 +429,122 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
             amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
             buyer: 'IA Auto-Scan'
           }
+        ],
+        recentOrders: [
+          { id: aiAuditResult.docNumber, date: aiAuditResult.date, concept: `Entrada Albarà IA #${aiAuditResult.docNumber}`, amount: `${aiAuditResult.totalAmount.toFixed(2)} €`, status: 'PENDENT_PAGAMENT' }
         ]
       };
-      setProveidors((prev) => [newProvObj, ...prev]);
+      updatedProveidors = [newProvObj, ...updatedProveidors];
     } else {
-      // Existing Supplier Update
-      setProveidors((prev) =>
-        prev.map((p) => {
-          if (
-            p.nif.replace(/[^A-Z0-9]/gi, '') === aiAuditResult.supplier.nif.replace(/[^A-Z0-9]/gi, '') ||
-            p.name.toLowerCase().includes(aiAuditResult.supplier.name.toLowerCase())
-          ) {
-            const newDoc = {
-              id: `doc-${Date.now()}`,
-              docNumber: aiAuditResult.docNumber,
-              type: aiAuditResult.docType,
-              date: aiAuditResult.date,
-              title: `${aiAuditResult.docType} #${aiAuditResult.docNumber}`,
-              fileSize: '1.2 MB',
-              url: `/documents/${aiAuditResult.docNumber}.pdf`
-            };
-            const newHist = {
-              id: `sp-${Date.now()}`,
-              date: aiAuditResult.date,
-              docNumber: aiAuditResult.docNumber,
-              docType: aiAuditResult.docType.includes('FACTURA') ? 'FACTURA' : 'ALBARÀ',
-              concept: `Entrada Albarà/Factura IA #${aiAuditResult.docNumber}`,
-              qty: `${aiAuditResult.items?.length || 1} articles`,
-              amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
-              buyer: 'IA Auto-Scan'
-            };
-            const updatedNumeric = (p.totalSpentNumeric || 0) + aiAuditResult.totalAmount;
-            return {
-              ...p,
-              totalSpentNumeric: updatedNumeric,
-              totalSpent: `${updatedNumeric.toFixed(2)} €`,
-              digitizedDocs: [newDoc, ...(p.digitizedDocs || [])],
-              supplierHistory: [newHist, ...(p.supplierHistory || [])]
-            };
-          }
-          return p;
-        })
-      );
-    }
-
-    // 2. Process Materials Stock Increment & Insertion
-    if (aiAuditResult.items && aiAuditResult.items.length > 0) {
-      setMaterials((prevMaterials) => {
-        let updatedList = [...prevMaterials];
-
-        aiAuditResult.items.forEach((itemExtracted: any) => {
-          const existingIndex = updatedList.findIndex(
-            (m) =>
-              (itemExtracted.code && m.code.toLowerCase().trim() === itemExtracted.code.toLowerCase().trim()) ||
-              m.name.toLowerCase().trim() === itemExtracted.name.toLowerCase().trim()
-          );
-
-          if (existingIndex >= 0) {
-            // Material exists -> increment stock
-            const existingMat = updatedList[existingIndex];
-            const newStock = existingMat.stock + itemExtracted.qty;
-            const newStockTotal = existingMat.stockTotal + itemExtracted.qty;
-            const newPurchaseHist = {
-              id: `h-${Date.now()}-${Math.random()}`,
-              date: aiAuditResult.date,
-              qty: `${itemExtracted.qty} ${itemExtracted.unit}`,
-              price: `${itemExtracted.total.toFixed(2)} €`,
-              supplier: aiAuditResult.supplier.name,
-              buyer: 'IA Auto-Scan (Albarà)'
-            };
-
-            updatedList[existingIndex] = {
-              ...existingMat,
-              stock: newStock,
-              stockTotal: newStockTotal,
-              unitPrice: itemExtracted.unitPrice || existingMat.unitPrice,
-              lastPurchaseDate: aiAuditResult.date,
-              purchaseHistory: [newPurchaseHist, ...(existingMat.purchaseHistory || [])]
-            };
-          } else {
-            // Material does NOT exist -> Create new material in warehouse!
-            const newMatObj = {
-              id: `m-${Date.now()}-${Math.random()}`,
-              code: itemExtracted.code || `MAT-${Math.floor(100 + Math.random() * 900)}`,
-              name: itemExtracted.name,
-              stockTotal: itemExtracted.qty,
-              stockCheckedOut: 0,
-              stock: itemExtracted.qty,
-              minStock: 10,
-              unit: itemExtracted.unit || 'u',
-              location: 'Magatzem Central (Recepció Albarà)',
-              supplier: aiAuditResult.supplier.name,
-              unitPrice: itemExtracted.unitPrice || 0,
-              isService: false,
-              lastPurchaseDate: aiAuditResult.date,
-              workerMovementHistory: [],
-              purchaseHistory: [
-                {
-                  id: `h-${Date.now()}`,
-                  date: aiAuditResult.date,
-                  qty: `${itemExtracted.qty} ${itemExtracted.unit}`,
-                  price: `${itemExtracted.total.toFixed(2)} €`,
-                  supplier: aiAuditResult.supplier.name,
-                  buyer: 'IA Auto-Scan'
-                }
-              ]
-            };
-            updatedList.unshift(newMatObj);
-          }
-        });
-
-        return updatedList;
+      updatedProveidors = updatedProveidors.map((p) => {
+        if (
+          p.nif.replace(/[^A-Z0-9]/gi, '') === aiAuditResult.supplier.nif.replace(/[^A-Z0-9]/gi, '') ||
+          p.name.toLowerCase().includes(aiAuditResult.supplier.name.toLowerCase())
+        ) {
+          const newDoc = {
+            id: `doc-${Date.now()}`,
+            docNumber: aiAuditResult.docNumber,
+            type: aiAuditResult.docType,
+            date: aiAuditResult.date,
+            title: `${aiAuditResult.docType} #${aiAuditResult.docNumber}`,
+            fileSize: '1.2 MB',
+            url: `/documents/${aiAuditResult.docNumber}.pdf`
+          };
+          const newHist = {
+            id: `sp-${Date.now()}`,
+            date: aiAuditResult.date,
+            docNumber: aiAuditResult.docNumber,
+            docType: aiAuditResult.docType.includes('FACTURA') ? 'FACTURA' : 'ALBARÀ',
+            concept: `Entrada Albarà/Factura IA #${aiAuditResult.docNumber}`,
+            qty: `${aiAuditResult.items?.length || 1} articles`,
+            amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
+            buyer: 'IA Auto-Scan'
+          };
+          const updatedNumeric = (p.totalSpentNumeric || 0) + aiAuditResult.totalAmount;
+          return {
+            ...p,
+            totalSpentNumeric: updatedNumeric,
+            totalSpent: `${updatedNumeric.toFixed(2)} €`,
+            totalBilledMonth: `${updatedNumeric.toFixed(2)} €`,
+            digitizedDocs: [newDoc, ...(p.digitizedDocs || [])],
+            supplierHistory: [newHist, ...(p.supplierHistory || [])],
+            recentOrders: [{ id: aiAuditResult.docNumber, date: aiAuditResult.date, concept: `Entrada Albarà IA #${aiAuditResult.docNumber}`, amount: `${aiAuditResult.totalAmount.toFixed(2)} €`, status: 'PENDENT_PAGAMENT' }, ...(p.recentOrders || [])]
+          };
+        }
+        return p;
       });
     }
+
+    setProveidors(updatedProveidors);
+    saveStoredProveidors(updatedProveidors);
+
+    // 2. Process Materials Stock Increment & Insertion
+    let updatedMaterials = [...materials];
+    if (aiAuditResult.items && aiAuditResult.items.length > 0) {
+      aiAuditResult.items.forEach((itemExtracted: any) => {
+        const existingIndex = updatedMaterials.findIndex(
+          (m) =>
+            (itemExtracted.code && m.code.toLowerCase().trim() === itemExtracted.code.toLowerCase().trim()) ||
+            m.name.toLowerCase().trim() === itemExtracted.name.toLowerCase().trim()
+        );
+
+        if (existingIndex >= 0) {
+          // Material exists -> increment stock
+          const existingMat = updatedMaterials[existingIndex];
+          const newStock = existingMat.stock + itemExtracted.qty;
+          const newStockTotal = existingMat.stockTotal + itemExtracted.qty;
+          const newPurchaseHist = {
+            id: `h-${Date.now()}-${Math.random()}`,
+            date: aiAuditResult.date,
+            qty: `${itemExtracted.qty} ${itemExtracted.unit}`,
+            price: `${itemExtracted.total.toFixed(2)} €`,
+            supplier: aiAuditResult.supplier.name,
+            buyer: 'IA Auto-Scan (Albarà)'
+          };
+
+          updatedMaterials[existingIndex] = {
+            ...existingMat,
+            stock: newStock,
+            stockTotal: newStockTotal,
+            unitPrice: itemExtracted.unitPrice || existingMat.unitPrice,
+            lastPurchaseDate: aiAuditResult.date,
+            purchaseHistory: [newPurchaseHist, ...(existingMat.purchaseHistory || [])]
+          };
+        } else {
+          // Material does NOT exist -> Create new material in warehouse!
+          const newMatObj: MaterialItem = {
+            id: `m-${Date.now()}-${Math.random()}`,
+            code: itemExtracted.code || `MAT-${Math.floor(100 + Math.random() * 900)}`,
+            name: itemExtracted.name,
+            stockTotal: itemExtracted.qty,
+            stockCheckedOut: 0,
+            stock: itemExtracted.qty,
+            minStock: 10,
+            unit: itemExtracted.unit || 'u',
+            location: 'Magatzem Central (Recepció Albarà)',
+            supplier: aiAuditResult.supplier.name,
+            unitPrice: itemExtracted.unitPrice || 0,
+            isService: false,
+            lastPurchaseDate: aiAuditResult.date,
+            workerMovementHistory: [],
+            purchaseHistory: [
+              {
+                id: `h-${Date.now()}`,
+                date: aiAuditResult.date,
+                qty: `${itemExtracted.qty} ${itemExtracted.unit}`,
+                price: `${itemExtracted.total.toFixed(2)} €`,
+                supplier: aiAuditResult.supplier.name,
+                buyer: 'IA Auto-Scan'
+              }
+            ]
+          };
+          updatedMaterials.unshift(newMatObj);
+        }
+      });
+    }
+
+    setMaterials(updatedMaterials);
+    saveStoredMaterials(updatedMaterials);
 
     // 3. User Feedback Notification & Automatic Tab Switch
     const createdSupplierName = aiAuditResult.supplier.name;
@@ -713,7 +565,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
     if (!newMat.name.trim()) return;
 
     const initialStock = Number(newMat.stock) || 0;
-    const item = {
+    const item: MaterialItem = {
       id: `m${Date.now()}`,
       code: newMat.code.trim() || `MAT-00${materials.length + 1}`,
       name: newMat.name.trim(),
@@ -731,7 +583,9 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
       purchaseHistory: []
     };
 
-    setMaterials([item, ...materials]);
+    const updated = [item, ...materials];
+    setMaterials(updated);
+    saveStoredMaterials(updated);
     setNewMat({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '', supplier: '', unitPrice: '', isService: false });
     setShowAddModal(false);
   };
@@ -794,25 +648,34 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
     e.preventDefault();
     if (!newProv.name.trim()) return;
 
-    const item = {
+    const item: SupplierItem = {
       id: `p${Date.now()}`,
       nif: newProv.nif.trim().toUpperCase() || 'B00000000',
       name: newProv.name.trim(),
+      category: newProv.products.trim() || 'Materials Diversos',
       contact: newProv.contact.trim() || 'Persona de Contacte',
+      contactPerson: `${newProv.contact.trim() || 'Persona de Contacte'} (${newProv.phone.trim() || ''})`,
       phone: newProv.phone.trim() || '600000000',
       email: newProv.email.trim() || 'info@proveidor.cat',
       address: newProv.address.trim() || 'Direcció comercial',
       products: newProv.products.trim() || 'Materials Diversos',
       discountValue: cleanDiscountDisplay(newProv.discount),
       paymentMethod: newProv.paymentMethod.trim() || 'Transferència a 30 dies',
+      paymentTerms: newProv.paymentMethod.trim() || 'Transferència a 30 dies',
       totalSpentNumeric: 0,
       totalSpent: '0,00 €',
+      totalBilledMonth: '0,00 €',
+      totalBilledYear: '0,00 €',
+      pendingPayment: '0,00 €',
+      status: 'ACTIU',
       documentsFolder: `/documents/magatzem/proveidors/${newProv.nif}/`,
       digitizedDocs: [],
       supplierHistory: []
     };
 
-    setProveidors([item, ...proveidors]);
+    const updated = [item, ...proveidors];
+    setProveidors(updated);
+    saveStoredProveidors(updated);
     setNewProv({ name: '', nif: '', contact: '', phone: '', email: '', address: '', products: '', discount: '', paymentMethod: '' });
     setShowAddModal(false);
   };
@@ -820,7 +683,9 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
   // Delete Handlers
   const deleteMaterial = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setMaterials(materials.filter((m) => m.id !== id));
+    const updated = materials.filter((m) => m.id !== id);
+    setMaterials(updated);
+    saveStoredMaterials(updated);
   };
   const deleteEina = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
