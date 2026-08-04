@@ -1277,9 +1277,9 @@ export default function Page() {
 
                 <div className="text-xs space-y-1 text-on-surface-variant">
                   <p><strong>Nº Factura:</strong> {selectedInvoiceModal.invoiceNo}</p>
+                  <p><strong>Client Facturat:</strong> <span className="font-bold text-primary">{selectedInvoiceModal.client}</span></p>
                   <p><strong>Data Emissió:</strong> {selectedInvoiceModal.date}</p>
                   <p><strong>Data Venciment:</strong> {selectedInvoiceModal.dueDate}</p>
-                  <p><strong>Adreça Finca:</strong> {selectedInvoiceModal.address}</p>
                 </div>
 
                 <div className="p-sm bg-surface-container-low rounded-lg space-y-1 text-xs font-mono my-2">
@@ -1298,8 +1298,8 @@ export default function Page() {
                 </div>
 
                 <button 
-                  onClick={() => alert(`Descarregant document en PDF: ${selectedInvoiceModal.invoiceNo}`)}
-                  className="w-full py-2 bg-primary text-white text-xs font-body-strong rounded-lg flex items-center justify-center gap-1"
+                  onClick={() => alert(`Descarregant document en PDF Factura: ${selectedInvoiceModal.invoiceNo}`)}
+                  className="w-full py-2 bg-primary text-white text-xs font-body-strong rounded-lg flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span> Descarregar PDF Factura
                 </button>
@@ -1319,6 +1319,7 @@ export default function Page() {
 
                 <div className="text-xs space-y-1 text-on-surface-variant">
                   <p><strong>Nº Pressupost:</strong> {selectedInvoiceModal.budgetInfo.budgetNo}</p>
+                  <p><strong>Client Pressupostat:</strong> <span className="font-bold text-secondary">{selectedInvoiceModal.client}</span></p>
                   <p><strong>Hores Estimades:</strong> {selectedInvoiceModal.budgetInfo.estimatedHours}</p>
                   <p><strong>Desviació Realitzada:</strong> <span className="font-bold text-primary">{selectedInvoiceModal.budgetInfo.deviation}</span></p>
                   <p><strong>Conformitat Signada per:</strong> {selectedInvoiceModal.budgetInfo.signedBy} ({selectedInvoiceModal.budgetInfo.signatureDate})</p>
@@ -1335,12 +1336,21 @@ export default function Page() {
                   </div>
                 </div>
 
-                <button 
-                  onClick={() => alert(`Visualitzant la fitxa de conformitat signada del pressupost ${selectedInvoiceModal.budgetInfo.budgetNo}`)}
-                  className="w-full py-2 bg-surface-container-high hover:bg-surface-container-highest text-primary text-xs font-body-strong rounded-lg flex items-center justify-center gap-1 border border-outline-variant/30"
-                >
-                  <span className="material-symbols-outlined text-[16px]">draw</span> Veure Signatura Pressupost
-                </button>
+                <div className="flex gap-xs w-full">
+                  <button 
+                    onClick={() => alert(`Descarregant PDF Pressupost: ${selectedInvoiceModal.budgetInfo.budgetNo}`)}
+                    className="flex-1 py-2 bg-secondary text-white text-xs font-body-strong rounded-lg flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span> Descarregar PDF Pressupost
+                  </button>
+                  <button 
+                    onClick={() => alert(`Visualitzant la fitxa de conformitat signada del pressupost ${selectedInvoiceModal.budgetInfo.budgetNo}`)}
+                    className="px-3 py-2 bg-surface-container-high hover:bg-surface-container-highest text-primary text-xs font-body-strong rounded-lg flex items-center justify-center gap-1 border border-outline-variant/30 cursor-pointer"
+                    title="Veure Signatura"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">draw</span> Signatura
+                  </button>
+                </div>
               </div>
 
             </div>
