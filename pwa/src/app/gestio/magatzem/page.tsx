@@ -469,6 +469,25 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         ];
       }
 
+      // STRICT DUPLICATE CHECK: Check if doc number (#ALB-2026-001) or title is already registered in proveidors database!
+      let isDuplicateDoc = false;
+      let matchedSupplierName = '';
+
+      proveidors.forEach((p) => {
+        const hasDocNo = p.digitizedDocs?.some(
+          (d) =>
+            d.docNumber.toLowerCase().trim() === extractedDocNo.toLowerCase().trim() ||
+            (file.name && d.title?.toLowerCase().includes(file.name.toLowerCase().replace(/\.[^/.]+$/, '')))
+        );
+        const hasHistNo = p.supplierHistory?.some(
+          (h) => h.docNumber.toLowerCase().trim() === extractedDocNo.toLowerCase().trim()
+        );
+        if (hasDocNo || hasHistNo) {
+          isDuplicateDoc = true;
+          matchedSupplierName = p.name;
+        }
+      });
+
       const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
 
       setTimeout(() => {
@@ -477,7 +496,9 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           docNumber: extractedDocNo,
           fileName: file.name,
           date: new Date().toLocaleDateString('ca-ES'),
-          isNewSupplier: isNewSupplier,
+          isDuplicate: isDuplicateDoc,
+          duplicateSupplierName: matchedSupplierName,
+          isNewSupplier: isDuplicateDoc ? false : isNewSupplier,
           supplier: {
             name: finalSupplierName,
             nif: finalNif,
@@ -1274,6 +1295,22 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                   </div>
                 </div>
 
+                {/* Duplicate Document Warning Alert */}
+                {aiAuditResult.isDuplicate && (
+                  <div className="p-4 bg-amber-50 border-2 border-amber-400 rounded-xl flex flex-col gap-2 shadow-xs">
+                    <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+                      <AlertTriangle size={20} className="text-amber-600 animate-pulse" />
+                      DOCUMENT DUPLICAT DETECTAT — JA PROCESSAT A LA BASE DE DADES
+                    </div>
+                    <p className="text-xs text-amber-900 leading-relaxed">
+                      L'albarà / factura <strong>#{aiAuditResult.docNumber}</strong> ja ha estat processat anteriorment per al proveïdor <strong>{aiAuditResult.duplicateSupplierName || aiAuditResult.supplier.name}</strong> a la carpeta ID <code>{aiAuditResult.folderId}</code>.
+                    </p>
+                    <p className="text-[11px] text-amber-800 font-bold bg-amber-100/80 p-2 rounded border border-amber-300">
+                      🛑 Per seguretat, s'ha bloquejat el re-processament per evitar duplicats d'estoc i comptabilitat duplicada.
+                    </p>
+                  </div>
+                )}
+
                 {/* Supplier & Folder Status Notice with Full Profile Fields */}
                 {aiAuditResult.isNewSupplier ? (
                   <div className="p-4 bg-teal-50 border-2 border-teal-300 rounded-xl flex flex-col gap-3">
@@ -1344,14 +1381,24 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                   </div>
                 </div>
 
-                {/* Confirm Action Button */}
-                <button 
-                  onClick={applyAIAuditToDatabase}
-                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-sm rounded-xl hover:from-emerald-700 hover:to-teal-800 transition-all shadow-md mt-2 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <CheckCircle2 size={18} />
-                  Processar Albarà, Crear Proveïdor i Sumar Estoc
-                </button>
+                {/* Confirm Action Button or Duplicate Disabled Button */}
+                {aiAuditResult.isDuplicate ? (
+                  <button 
+                    disabled
+                    className="w-full py-3.5 bg-neutral-200 text-neutral-500 font-bold text-sm rounded-xl cursor-not-allowed flex items-center justify-center gap-2 border border-neutral-300 mt-2"
+                  >
+                    <ShieldAlert size={18} className="text-amber-600" />
+                    Document Duplicat (Bloquejat per Evitar Duplicació)
+                  </button>
+                ) : (
+                  <button 
+                    onClick={applyAIAuditToDatabase}
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-sm rounded-xl hover:from-emerald-700 hover:to-teal-800 transition-all shadow-md mt-2 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <CheckCircle2 size={18} />
+                    Processar Albarà, Crear Proveïdor i Sumar Estoc
+                  </button>
+                )}
 
               </div>
             )}
