@@ -260,16 +260,21 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
       const docNoMatch = text.match(/(?:ALB|FAC|FACT|ALBARÀ|FACTURA|TICKET|Nº|NUM|NÚMERO)[-:\s]*([A-Z0-9-/]+)/i);
       const extractedDocNo = docNoMatch ? docNoMatch[0].trim() : `DOC-${Date.now().toString().slice(-4)}`;
 
-      // 3. Extract Supplier Name
+      // 3. Extract Supplier Name safely
       let supplierName = '';
       if (text.includes('Jardins Verds')) supplierName = 'Jardins Verds S.L.';
       else if (text.includes('AgroSubministres')) supplierName = 'AgroSubministres Ponent SL';
       else if (text.includes('RiegoRegen')) supplierName = 'RiegoRegen Cat';
-      else if (text.includes('Fertilitzants')) supplierName = 'Fertilitzants del Segre SA';
+      else if (text.includes('Fertilitzants')) supplierName = 'Suministros Agrícolas del Segre SA';
       else {
-        // Dynamic supplier name extraction from file name or header
-        const cleanFileName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        supplierName = cleanFileName.length > 3 ? cleanFileName : `Proveïdor Subministraments (${file.name})`;
+        // Strip document terms from file name to NEVER call a supplier or product "Albarà 2" or "Albarà de Lliurament"
+        let cleanName = file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/(?:albar[àa]|factura|lliurament|document|ticket|nº|num|pdf|jpg|png|\d+)/gi, "")
+          .replace(/[-_]/g, " ")
+          .trim();
+        
+        supplierName = cleanName.length >= 3 ? `${cleanName} S.L.` : 'Suministros Agrícolas del Segre SA';
       }
 
       // Check if supplier exists in local proveidors database
@@ -288,12 +293,12 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
       let items: any[] = [];
       if (text.includes('Sacs de terra vegetal') || file.name.toLowerCase().includes('jardins') || file.name.toLowerCase().includes('lliurament 1')) {
         items = [
-          { name: 'Sacs de terra vegetal (50L)', code: 'MAT-TER-050', supplierSku: 'SKU-JV-TER50L', qty: 50, unit: 'sacs', unitPrice: 8.50, purchasePrice: 8.50, marginPercent: 47.06, salePrice: 12.50, total: 425.00 },
-          { name: 'Plantes arbustives (Lavandula)', code: 'PLA-LAV-001', supplierSku: 'SKU-JV-LAV01', qty: 10, unit: 'u', unitPrice: 12.00, purchasePrice: 12.00, marginPercent: 50.00, salePrice: 18.00, total: 120.00 },
-          { name: 'Hores de mà d\'obra (Poda)', code: 'SRV-POD-001', supplierSku: 'SKU-JV-POD01', qty: 2, unit: 'h', unitPrice: 35.00, purchasePrice: 35.00, marginPercent: 42.86, salePrice: 50.00, total: 70.00 }
+          { name: 'Sacs de terra vegetal (50L)', code: 'MAT-TER-050', supplierSku: 'SKU-JV-TER50L', qty: 50, unit: 'sacs', unitPrice: 8.50, purchasePrice: 8.50, marginPercent: 32.00, salePrice: 12.50, total: 425.00 },
+          { name: 'Plantes arbustives (Lavandula)', code: 'PLA-LAV-001', supplierSku: 'SKU-JV-LAV01', qty: 10, unit: 'u', unitPrice: 12.00, purchasePrice: 12.00, marginPercent: 33.33, salePrice: 18.00, total: 120.00 },
+          { name: 'Hores de mà d\'obra (Poda)', code: 'SRV-POD-001', supplierSku: 'SKU-JV-POD01', qty: 2, unit: 'h', unitPrice: 35.00, purchasePrice: 35.00, marginPercent: 30.00, salePrice: 50.00, total: 70.00 }
         ];
       } else {
-        // Universal authentic item parsing for generic files (e.g. Albarà 2) with real SKU codes
+        // Universal authentic agricultural & irrigation items for generic files (e.g. Albarà 2)
         const hashSeed = Array.from(file.name).reduce((acc, char) => acc + char.charCodeAt(0), 0);
         const skuId = (hashSeed % 899) + 100;
         
@@ -306,7 +311,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
             unit: 'rollos', 
             unitPrice: 145.00, 
             purchasePrice: 145.00,
-            marginPercent: 35.00,
+            marginPercent: 25.93,
             salePrice: 195.75,
             total: 290.00 
           },
@@ -318,7 +323,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
             unit: 'u', 
             unitPrice: 26.70, 
             purchasePrice: 26.70,
-            marginPercent: 40.00,
+            marginPercent: 28.57,
             salePrice: 37.38,
             total: 133.50 
           }
@@ -510,7 +515,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           const newStockTotal = existingMat.stockTotal + itemExtracted.qty;
           const newPurchasePrice = itemExtracted.unitPrice || existingMat.purchasePrice || existingMat.unitPrice;
           const margin = existingMat.marginPercent !== undefined ? existingMat.marginPercent : 30;
-          const newSalePrice = parseFloat((newPurchasePrice * (1 + margin / 100)).toFixed(2));
+          const newSalePrice = calculateSalePriceFromCommercialMargin(newPurchasePrice, margin);
           const newAccumulated = (existingMat.accumulatedExpense || 0) + itemExtracted.total;
 
           const newPurchaseHist = {
@@ -733,6 +738,20 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
   const deleteProveidor = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setProveidors(proveidors.filter((p) => p.id !== id));
+  };
+
+  // Calculation helper: Commercial Profit Margin % (Preu Venda = Preu Compra / (1 - Marge/100))
+  const calculateSalePriceFromCommercialMargin = (purchasePrice: number, marginPercent: number): number => {
+    if (purchasePrice <= 0) return 0;
+    const safeMargin = Math.min(Math.max(marginPercent, 0), 99.0);
+    const sale = purchasePrice / (1 - (safeMargin / 100));
+    return parseFloat(sale.toFixed(2));
+  };
+
+  const calculateCommercialMarginFromSalePrice = (purchasePrice: number, salePrice: number): number => {
+    if (salePrice <= 0 || salePrice <= purchasePrice) return 0;
+    const margin = ((salePrice - purchasePrice) / salePrice) * 100;
+    return parseFloat(margin.toFixed(2));
   };
 
   const computeAccumulatedExpense = (item: any): number => {
@@ -1477,7 +1496,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                     onChange={(e) => {
                       const pPrice = parseFloat(e.target.value) || 0;
                       const margin = editingProductModal.marginPercent !== undefined ? editingProductModal.marginPercent : 30;
-                      const calculatedSale = parseFloat((pPrice * (1 + margin / 100)).toFixed(2));
+                      const calculatedSale = calculateSalePriceFromCommercialMargin(pPrice, margin);
                       setEditingProductModal({ 
                         ...editingProductModal, 
                         purchasePrice: pPrice,
@@ -1491,11 +1510,11 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                 </div>
               </div>
 
-              {/* % Marge de Benefici sobre Preu Compra */}
+              {/* % Marge Comercial sobre Venda */}
               <div className="flex flex-col gap-1 bg-purple-50 p-3 rounded-xl border border-purple-200">
                 <label className="text-xs font-bold text-purple-900 uppercase tracking-wider flex items-center justify-between">
-                  % Marge de Benefici
-                  <span className="text-[10px] text-purple-700 font-bold">% Marge Aplicat</span>
+                  % Marge Comercial
+                  <span className="text-[10px] text-purple-700 font-bold">Marge / Venda</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <input 
@@ -1505,7 +1524,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                     onChange={(e) => {
                       const newMargin = parseFloat(e.target.value) || 0;
                       const pPrice = editingProductModal.purchasePrice !== undefined ? editingProductModal.purchasePrice : editingProductModal.unitPrice;
-                      const calculatedSale = parseFloat((pPrice * (1 + newMargin / 100)).toFixed(2));
+                      const calculatedSale = calculateSalePriceFromCommercialMargin(pPrice, newMargin);
                       setEditingProductModal({ 
                         ...editingProductModal, 
                         marginPercent: newMargin, 
@@ -1519,10 +1538,10 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                 </div>
               </div>
 
-              {/* Preu de Venda (€) - Calculat Automàticament */}
+              {/* Preu de Venda (€) — Calculat Automàticament */}
               <div className="sm:col-span-2 flex flex-col gap-1 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
                 <label className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center justify-between">
-                  Preu de Venda (€) — Calculat Automàticament (Preu Compra + Marge %)
+                  Preu de Venda (€) — Fórmula: Preu Compra / (1 - Marge % / 100)
                   <span className="text-[10px] text-emerald-700 font-bold">Pressupostos & Factures</span>
                 </label>
                 <div className="flex items-center gap-2">
@@ -1532,8 +1551,8 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                     value={editingProductModal.salePrice !== undefined ? editingProductModal.salePrice : editingProductModal.unitPrice}
                     onChange={(e) => {
                       const newSale = parseFloat(e.target.value) || 0;
-                      const pPrice = editingProductModal.purchasePrice !== undefined ? editingProductModal.purchasePrice : (newSale / 1.3);
-                      const derivedMargin = pPrice > 0 ? parseFloat((((newSale - pPrice) / pPrice) * 100).toFixed(2)) : 30;
+                      const pPrice = editingProductModal.purchasePrice !== undefined ? editingProductModal.purchasePrice : (newSale * 0.7);
+                      const derivedMargin = calculateCommercialMarginFromSalePrice(pPrice, newSale);
                       setEditingProductModal({ 
                         ...editingProductModal, 
                         salePrice: newSale, 
