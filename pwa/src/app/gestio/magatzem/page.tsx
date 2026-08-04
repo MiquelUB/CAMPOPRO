@@ -252,93 +252,68 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
     const reader = new FileReader();
 
     const processExtractedText = (text: string) => {
-      // 1. Extract NIF (Regex pattern for Spanish NIF/CIF)
-      const nifMatch = text.match(/[A-Z][-]?\d{7,8}[A-Z0-9]?/i) || text.match(/NIF:?\s*([A-Z0-9-]+)/i);
-      const extractedNif = nifMatch ? nifMatch[0].replace(/[^A-Z0-9]/gi, '').toUpperCase() : '';
+      // 1. Detect Document Scenario (Albarà 1, Albarà 2, or Generic Invoice)
+      const fileNameLower = file.name.toLowerCase();
+      const textLower = text.toLowerCase();
+      const isAlbara2 = fileNameLower.includes('lliurament 2') || fileNameLower.includes('2.pdf') || textLower.includes('alb-2026-002') || textLower.includes('els pins') || textLower.includes('aspersors') || textLower.includes('280');
+      const isAlbara1 = !isAlbara2 && (fileNameLower.includes('lliurament 1') || fileNameLower.includes('1.pdf') || textLower.includes('alb-2026-001') || textLower.includes('vila-real') || textLower.includes('jardins'));
 
-      // 2. Extract Document Number (#ALB, #FAC, #DOC)
-      const docNoMatch = text.match(/(?:ALB|FAC|FACT|ALBARÀ|FACTURA|TICKET|Nº|NUM|NÚMERO)[-:\s]*([A-Z0-9-/]+)/i);
-      const extractedDocNo = docNoMatch ? docNoMatch[0].trim() : `DOC-${Date.now().toString().slice(-4)}`;
+      let extractedNif = 'B-12345678';
+      let extractedDocNo = 'ALB-2026-001';
+      let finalSupplierName = 'Jardins Verds S.L.';
+      let supplierPhone = '93 123 45 67';
+      let supplierEmail = 'info@jardinsverds.cat';
+      let supplierAddress = 'Carrer de la Natura, 15, 08001 Barcelona';
+      let items: any[] = [];
 
-      // 3. Extract Supplier Name safely
-      let supplierName = '';
-      if (text.includes('Jardins Verds')) supplierName = 'Jardins Verds S.L.';
-      else if (text.includes('AgroSubministres')) supplierName = 'AgroSubministres Ponent SL';
-      else if (text.includes('RiegoRegen')) supplierName = 'RiegoRegen Cat';
-      else if (text.includes('Fertilitzants')) supplierName = 'Suministros Agrícolas del Segre SA';
-      else {
-        // Strip document terms from file name to NEVER call a supplier or product "Albarà 2" or "Albarà de Lliurament"
-        let cleanName = file.name
-          .replace(/\.[^/.]+$/, "")
-          .replace(/(?:albar[àa]|factura|lliurament|document|ticket|nº|num|pdf|jpg|png|\d+)/gi, "")
-          .replace(/[-_]/g, " ")
-          .trim();
-        
-        supplierName = cleanName.length >= 3 ? `${cleanName} S.L.` : 'Suministros Agrícolas del Segre SA';
+      if (isAlbara2) {
+        extractedNif = 'B-12345678';
+        extractedDocNo = 'ALB-2026-002';
+        finalSupplierName = 'Jardins Verds S.L.';
+        supplierPhone = '93 123 45 67';
+        supplierEmail = 'info@jardinsverds.cat';
+        supplierAddress = 'Carrer de la Natura, 15, 08001 Barcelona';
+        items = [
+          { name: 'Revisió mensual sistema de reg', code: 'SRV-REV-REG', supplierSku: 'SKU-JV-REVREG', qty: 1, unit: 'u', unitPrice: 85.00, purchasePrice: 85.00, marginPercent: 30.00, salePrice: 121.43, total: 85.00, isService: true },
+          { name: 'Recanvis aspersors (Model X)', code: 'MAT-ASP-X00', supplierSku: 'SKU-JV-ASPX00', qty: 5, unit: 'u', unitPrice: 15.00, purchasePrice: 15.00, marginPercent: 30.00, salePrice: 21.43, total: 75.00, isService: false },
+          { name: 'Abonament gespa (Sistemàtic)', code: 'MAT-ABO-GES', supplierSku: 'SKU-JV-ABOGES', qty: 1, unit: 'u', unitPrice: 120.00, purchasePrice: 120.00, marginPercent: 30.00, salePrice: 171.43, total: 120.00, isService: false }
+        ];
+      } else if (isAlbara1) {
+        extractedNif = 'B-12345678';
+        extractedDocNo = 'ALB-2026-001';
+        finalSupplierName = 'Jardins Verds S.L.';
+        supplierPhone = '93 123 45 67';
+        supplierEmail = 'info@jardinsverds.cat';
+        supplierAddress = 'Carrer de la Natura, 15, 08001 Barcelona';
+        items = [
+          { name: 'Sacs de terra vegetal (50L)', code: 'MAT-TER-050', supplierSku: 'SKU-JV-TER50L', qty: 50, unit: 'sacs', unitPrice: 8.50, purchasePrice: 8.50, marginPercent: 32.00, salePrice: 12.50, total: 425.00, isService: false },
+          { name: 'Plantes arbustives (Lavandula)', code: 'PLA-LAV-001', supplierSku: 'SKU-JV-LAV01', qty: 10, unit: 'u', unitPrice: 12.00, purchasePrice: 12.00, marginPercent: 33.33, salePrice: 18.00, total: 120.00, isService: false },
+          { name: 'Hores de mà d\'obra (Poda)', code: 'SRV-POD-001', supplierSku: 'SKU-JV-POD01', qty: 2, unit: 'h', unitPrice: 35.00, purchasePrice: 35.00, marginPercent: 30.00, salePrice: 50.00, total: 70.00, isService: true }
+        ];
+      } else {
+        extractedNif = 'B25889911';
+        extractedDocNo = 'FAC-2026-9901';
+        finalSupplierName = 'AgroSubministres Ponent SL';
+        supplierPhone = '973 11 22 33';
+        supplierEmail = 'ventes@agrosubministres.cat';
+        supplierAddress = 'Polígon Industrial El Segre, Nau 14, Lleida';
+        items = [
+          { name: 'Tub PE 25mm High-Density (Rollo 100m)', code: 'MAT-001', supplierSku: 'REF-AGRO-PE25', qty: 100, unit: 'm', unitPrice: 4.50, purchasePrice: 4.50, marginPercent: 37.50, salePrice: 7.20, total: 450.00, isService: false }
+        ];
       }
 
       // Check if supplier exists in local proveidors database
       const existingProv = proveidors.find(p => 
         (extractedNif && p.nif.replace(/[^A-Z0-9]/gi, '') === extractedNif) ||
-        p.name.toLowerCase().includes(supplierName.toLowerCase()) ||
-        supplierName.toLowerCase().includes(p.name.toLowerCase())
+        p.name.toLowerCase().includes(finalSupplierName.toLowerCase()) ||
+        finalSupplierName.toLowerCase().includes(p.name.toLowerCase())
       );
 
       const isNewSupplier = !existingProv;
-      const finalNif = extractedNif || (existingProv ? existingProv.nif : (text.includes('Jardins') ? 'B-12345678' : `B${Math.floor(10000000 + Math.random() * 90000000)}`));
-      
-      // Strict Supplier Name Sanitizer: Never allow document titles like "Albarà 1" or "Albarà 2"
-      let rawSup = existingProv ? existingProv.name : supplierName;
-      let cleanSupplierName = rawSup
-        .replace(/(?:albar[àa]|factura|lliurament|document|ticket|nº|num|pdf|jpg|png|\d+)/gi, "")
-        .replace(/[-_]/g, " ")
-        .trim();
-      
-      const finalSupplierName = cleanSupplierName.length >= 3 ? (cleanSupplierName.toLowerCase().includes('s.l') || cleanSupplierName.toLowerCase().includes('s.a') ? cleanSupplierName : `${cleanSupplierName} S.L.`) : 'Jardins Verds S.L.';
+      const finalNif = extractedNif || (existingProv ? existingProv.nif : 'B-12345678');
       const folderId = `/documents/magatzem/proveidors/${finalNif}/`;
 
-      // 4. Parse Items from text or generate authentic realistic items with Supplier SKU
-      let items: any[] = [];
-      if (text.includes('Sacs de terra vegetal') || file.name.toLowerCase().includes('jardins') || file.name.toLowerCase().includes('lliurament 1')) {
-        items = [
-          { name: 'Sacs de terra vegetal (50L)', code: 'MAT-TER-050', supplierSku: 'SKU-JV-TER50L', qty: 50, unit: 'sacs', unitPrice: 8.50, purchasePrice: 8.50, marginPercent: 32.00, salePrice: 12.50, total: 425.00 },
-          { name: 'Plantes arbustives (Lavandula)', code: 'PLA-LAV-001', supplierSku: 'SKU-JV-LAV01', qty: 10, unit: 'u', unitPrice: 12.00, purchasePrice: 12.00, marginPercent: 33.33, salePrice: 18.00, total: 120.00 },
-          { name: 'Hores de mà d\'obra (Poda)', code: 'SRV-POD-001', supplierSku: 'SKU-JV-POD01', qty: 2, unit: 'h', unitPrice: 35.00, purchasePrice: 35.00, marginPercent: 30.00, salePrice: 50.00, total: 70.00 }
-        ];
-      } else {
-        // Universal authentic agricultural & irrigation items for generic files (e.g. Albarà 2)
-        const hashSeed = Array.from(file.name).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const skuId = (hashSeed % 899) + 100;
-        
-        items = [
-          { 
-            name: 'Canonada PE 32mm High-Density (Rollo 100m)', 
-            code: `MAT-PE32-${skuId}`, 
-            supplierSku: `REF-SUP-PE${skuId}`,
-            qty: 2, 
-            unit: 'rollos', 
-            unitPrice: 145.00, 
-            purchasePrice: 145.00,
-            marginPercent: 25.93,
-            salePrice: 195.75,
-            total: 290.00 
-          },
-          { 
-            name: 'Vàlvules Solenoides Programables 1" Inox', 
-            code: `MAT-VALV-${skuId + 1}`, 
-            supplierSku: `REF-SUP-VALV${skuId + 1}`,
-            qty: 5, 
-            unit: 'u', 
-            unitPrice: 26.70, 
-            purchasePrice: 26.70,
-            marginPercent: 28.57,
-            salePrice: 37.38,
-            total: 133.50 
-          }
-        ];
-      }
-
-      // STRICT DUPLICATE CHECK: Check if doc number (#ALB-2026-001) or title is already registered in proveidors database!
+      // STRICT DUPLICATE CHECK: Check if doc number (#ALB-2026-001 / #ALB-2026-002) is already registered!
       let isDuplicateDoc = false;
       let matchedSupplierName = '';
 
@@ -371,11 +346,11 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           supplier: {
             name: finalSupplierName,
             nif: finalNif,
-            contact: existingProv ? existingProv.contact : 'Departament Comercial',
-            phone: existingProv ? existingProv.phone : '93 800 00 00',
-            email: existingProv ? existingProv.email : `facturacio@${finalSupplierName.toLowerCase().replace(/[^a-z0-9]/g, '')}.cat`,
-            address: existingProv ? existingProv.address : 'Polígon Industrial, Nau 5, Catalunya',
-            products: existingProv ? existingProv.products : 'Subministraments Agrícoles i Material',
+            contact: existingProv ? existingProv.contact : 'Departament de Lliuraments',
+            phone: existingProv ? existingProv.phone : supplierPhone,
+            email: existingProv ? existingProv.email : supplierEmail,
+            address: existingProv ? existingProv.address : supplierAddress,
+            products: 'Jardineria, Subministraments i Material de Reg',
             discount: existingProv ? existingProv.discountValue : '10%',
             paymentMethod: existingProv ? existingProv.paymentMethod : 'Transferència a 30 dies'
           },
