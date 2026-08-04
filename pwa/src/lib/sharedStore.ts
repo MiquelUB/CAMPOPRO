@@ -30,6 +30,7 @@ export interface SupplierItem {
 export interface MaterialItem {
   id: string;
   code: string;
+  supplierSku?: string; // Codi / Referència de l'article al proveïdor (per comandes)
   name: string;
   stockTotal: number;
   stockCheckedOut: number;
@@ -40,7 +41,8 @@ export interface MaterialItem {
   supplier: string;
   unitPrice: number; // Default price
   purchasePrice?: number; // Preu de compra
-  salePrice?: number; // Preu de venda
+  marginPercent?: number; // % Marge de benefici sobre preu de compra
+  salePrice?: number; // Preu de venda (Calculat: purchasePrice * (1 + marginPercent/100))
   supplierDiscount?: string | number; // Descompte proveïdor (%)
   vatRate?: number; // Valor IVA (%)
   accumulatedExpense?: number; // Historial acumulatiu del gasto (€)
@@ -180,6 +182,7 @@ export const INITIAL_MATERIALS: MaterialItem[] = [
   { 
     id: 'm-ter-050', 
     code: 'MAT-TER-050', 
+    supplierSku: 'SKU-JV-TER50L',
     name: 'Sacs de terra vegetal (50L)', 
     stockTotal: 50, 
     stockCheckedOut: 0, 
@@ -190,6 +193,7 @@ export const INITIAL_MATERIALS: MaterialItem[] = [
     supplier: 'Jardins Verds S.L.',
     unitPrice: 12.50,
     purchasePrice: 8.50,
+    marginPercent: 47.06,
     salePrice: 12.50,
     supplierDiscount: '10%',
     vatRate: 21,
@@ -204,6 +208,7 @@ export const INITIAL_MATERIALS: MaterialItem[] = [
   { 
     id: 'm-lav-001', 
     code: 'PLA-LAV-001', 
+    supplierSku: 'SKU-JV-LAV01',
     name: 'Plantes arbustives (Lavandula)', 
     stockTotal: 10, 
     stockCheckedOut: 0, 
@@ -214,6 +219,7 @@ export const INITIAL_MATERIALS: MaterialItem[] = [
     supplier: 'Jardins Verds S.L.',
     unitPrice: 18.00,
     purchasePrice: 12.00,
+    marginPercent: 50.00,
     salePrice: 18.00,
     supplierDiscount: '10%',
     vatRate: 21,
@@ -228,6 +234,7 @@ export const INITIAL_MATERIALS: MaterialItem[] = [
   { 
     id: 's-pod-001', 
     code: 'SRV-POD-001', 
+    supplierSku: 'SKU-JV-POD01',
     name: 'Hores de mà d\'obra (Poda)', 
     stockTotal: 999, 
     stockCheckedOut: 0, 
@@ -238,6 +245,7 @@ export const INITIAL_MATERIALS: MaterialItem[] = [
     supplier: 'Jardins Verds S.L.',
     unitPrice: 50.00,
     purchasePrice: 35.00,
+    marginPercent: 42.86,
     salePrice: 50.00,
     supplierDiscount: '0%',
     vatRate: 21,
@@ -250,6 +258,7 @@ export const INITIAL_MATERIALS: MaterialItem[] = [
   { 
     id: 'm1', 
     code: 'MAT-001', 
+    supplierSku: 'REF-AGRO-PE25',
     name: 'Tub PE 25mm High-Density', 
     stockTotal: 150, 
     stockCheckedOut: 30, 
@@ -260,6 +269,7 @@ export const INITIAL_MATERIALS: MaterialItem[] = [
     supplier: 'AgroSubministres Ponent SL',
     unitPrice: 7.20,
     purchasePrice: 4.50,
+    marginPercent: 60.00,
     salePrice: 7.20,
     supplierDiscount: '15%',
     vatRate: 21,

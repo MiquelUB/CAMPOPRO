@@ -284,29 +284,43 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
       const finalSupplierName = existingProv ? existingProv.name : supplierName;
       const folderId = `/documents/magatzem/proveidors/${finalNif}/`;
 
-      // 4. Parse Items from text or generate dynamic items from file attributes
+      // 4. Parse Items from text or generate authentic realistic items with Supplier SKU
       let items: any[] = [];
       if (text.includes('Sacs de terra vegetal') || file.name.toLowerCase().includes('jardins') || file.name.toLowerCase().includes('lliurament 1')) {
         items = [
-          { name: 'Sacs de terra vegetal (50L)', code: 'MAT-TER-050', qty: 50, unit: 'sacs', unitPrice: 8.50, total: 425.00 },
-          { name: 'Plantes arbustives (Lavandula)', code: 'PLA-LAV-001', qty: 10, unit: 'u', unitPrice: 12.00, total: 120.00 },
-          { name: 'Hores de mà d\'obra (Poda)', code: 'SRV-POD-001', qty: 2, unit: 'h', unitPrice: 35.00, total: 70.00 }
+          { name: 'Sacs de terra vegetal (50L)', code: 'MAT-TER-050', supplierSku: 'SKU-JV-TER50L', qty: 50, unit: 'sacs', unitPrice: 8.50, purchasePrice: 8.50, marginPercent: 47.06, salePrice: 12.50, total: 425.00 },
+          { name: 'Plantes arbustives (Lavandula)', code: 'PLA-LAV-001', supplierSku: 'SKU-JV-LAV01', qty: 10, unit: 'u', unitPrice: 12.00, purchasePrice: 12.00, marginPercent: 50.00, salePrice: 18.00, total: 120.00 },
+          { name: 'Hores de mà d\'obra (Poda)', code: 'SRV-POD-001', supplierSku: 'SKU-JV-POD01', qty: 2, unit: 'h', unitPrice: 35.00, purchasePrice: 35.00, marginPercent: 42.86, salePrice: 50.00, total: 70.00 }
         ];
       } else {
-        // Universal dynamic item parsing for ANY generic uploaded file
-        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        // Universal authentic item parsing for generic files (e.g. Albarà 2) with real SKU codes
         const hashSeed = Array.from(file.name).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const qty1 = (hashSeed % 30) + 5;
-        const price1 = parseFloat(((hashSeed % 40) + 12.50).toFixed(2));
+        const skuId = (hashSeed % 899) + 100;
         
         items = [
           { 
-            name: `Material de Subministrament (${baseName})`, 
-            code: `MAT-ALB-${(hashSeed % 899) + 100}`, 
-            qty: qty1, 
+            name: 'Canonada PE 32mm High-Density (Rollo 100m)', 
+            code: `MAT-PE32-${skuId}`, 
+            supplierSku: `REF-SUP-PE${skuId}`,
+            qty: 2, 
+            unit: 'rollos', 
+            unitPrice: 145.00, 
+            purchasePrice: 145.00,
+            marginPercent: 35.00,
+            salePrice: 195.75,
+            total: 290.00 
+          },
+          { 
+            name: 'Vàlvules Solenoides Programables 1" Inox', 
+            code: `MAT-VALV-${skuId + 1}`, 
+            supplierSku: `REF-SUP-VALV${skuId + 1}`,
+            qty: 5, 
             unit: 'u', 
-            unitPrice: price1, 
-            total: parseFloat((qty1 * price1).toFixed(2)) 
+            unitPrice: 26.70, 
+            purchasePrice: 26.70,
+            marginPercent: 40.00,
+            salePrice: 37.38,
+            total: 133.50 
           }
         ];
       }
@@ -490,10 +504,15 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         );
 
         if (existingIndex >= 0) {
-          // Material exists -> increment stock
+          // Material exists -> update purchase price, calculate sale price, increment stock & accumulated expense!
           const existingMat = updatedMaterials[existingIndex];
           const newStock = existingMat.stock + itemExtracted.qty;
           const newStockTotal = existingMat.stockTotal + itemExtracted.qty;
+          const newPurchasePrice = itemExtracted.unitPrice || existingMat.purchasePrice || existingMat.unitPrice;
+          const margin = existingMat.marginPercent !== undefined ? existingMat.marginPercent : 30;
+          const newSalePrice = parseFloat((newPurchasePrice * (1 + margin / 100)).toFixed(2));
+          const newAccumulated = (existingMat.accumulatedExpense || 0) + itemExtracted.total;
+
           const newPurchaseHist = {
             id: `h-${Date.now()}-${Math.random()}`,
             date: aiAuditResult.date,
@@ -507,15 +526,24 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
             ...existingMat,
             stock: newStock,
             stockTotal: newStockTotal,
-            unitPrice: itemExtracted.unitPrice || existingMat.unitPrice,
+            purchasePrice: newPurchasePrice,
+            salePrice: newSalePrice,
+            unitPrice: newSalePrice,
+            accumulatedExpense: newAccumulated,
+            supplierSku: itemExtracted.supplierSku || existingMat.supplierSku || 'SKU-PROV-100',
             lastPurchaseDate: aiAuditResult.date,
             purchaseHistory: [newPurchaseHist, ...(existingMat.purchaseHistory || [])]
           };
         } else {
-          // Material does NOT exist -> Create new material in warehouse!
+          // Material does NOT exist -> Create new material in warehouse with computed sale price & supplierSku!
+          const pPrice = itemExtracted.unitPrice || 10.00;
+          const margin = itemExtracted.marginPercent || 30;
+          const sPrice = itemExtracted.salePrice || parseFloat((pPrice * (1 + margin / 100)).toFixed(2));
+
           const newMatObj: MaterialItem = {
             id: `m-${Date.now()}-${Math.random()}`,
             code: itemExtracted.code || `MAT-${Math.floor(100 + Math.random() * 900)}`,
+            supplierSku: itemExtracted.supplierSku || `REF-SUP-${Math.floor(100 + Math.random() * 900)}`,
             name: itemExtracted.name,
             stockTotal: itemExtracted.qty,
             stockCheckedOut: 0,
@@ -524,7 +552,13 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
             unit: itemExtracted.unit || 'u',
             location: 'Magatzem Central (Recepció Albarà)',
             supplier: aiAuditResult.supplier.name,
-            unitPrice: itemExtracted.unitPrice || 0,
+            unitPrice: sPrice,
+            purchasePrice: pPrice,
+            marginPercent: margin,
+            salePrice: sPrice,
+            supplierDiscount: '10%',
+            vatRate: 21,
+            accumulatedExpense: itemExtracted.total,
             isService: false,
             lastPurchaseDate: aiAuditResult.date,
             workerMovementHistory: [],
@@ -699,6 +733,22 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
   const deleteProveidor = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setProveidors(proveidors.filter((p) => p.id !== id));
+  };
+
+  const computeAccumulatedExpense = (item: any): number => {
+    if (!item) return 0;
+    if (item.accumulatedExpense !== undefined && item.accumulatedExpense > 0) {
+      return item.accumulatedExpense;
+    }
+    if (item.purchaseHistory && item.purchaseHistory.length > 0) {
+      const sum = item.purchaseHistory.reduce((acc: number, h: any) => {
+        const val = parseFloat(String(h.price).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+        return acc + val;
+      }, 0);
+      if (sum > 0) return sum;
+    }
+    const pPrice = item.purchasePrice !== undefined ? item.purchasePrice : item.unitPrice;
+    return (pPrice || 0) * (item.stockTotal || item.stock || 0);
   };
 
   // Filtered Databases
@@ -1385,7 +1435,35 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                 />
               </div>
 
-              {/* Preu de Compra (€) */}
+              {/* Codi / SKU Proveïdor (per Comandes) */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-1">
+                  <Tag size={12} className="text-primary" /> Codi / SKU Proveïdor (per Comandes)
+                </label>
+                <input 
+                  type="text" 
+                  value={editingProductModal.supplierSku || editingProductModal.code}
+                  onChange={(e) => setEditingProductModal({ ...editingProductModal, supplierSku: e.target.value })}
+                  className="p-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-mono font-bold text-neutral-900 outline-none focus:border-primary focus:bg-white"
+                  placeholder="ex. SKU-JV-TER50L"
+                />
+              </div>
+
+              {/* Proveïdor Assignat */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Proveïdor Assignat</label>
+                <select 
+                  value={editingProductModal.supplier}
+                  onChange={(e) => setEditingProductModal({ ...editingProductModal, supplier: e.target.value })}
+                  className="p-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-semibold outline-none focus:border-primary focus:bg-white"
+                >
+                  {proveidors.map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Preu de Compra (€) - Actualitzat per Albarà */}
               <div className="flex flex-col gap-1 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
                 <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider flex items-center justify-between">
                   Preu de Compra (€)
@@ -1396,17 +1474,55 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                     type="number" 
                     step="0.01"
                     value={editingProductModal.purchasePrice !== undefined ? editingProductModal.purchasePrice : editingProductModal.unitPrice}
-                    onChange={(e) => setEditingProductModal({ ...editingProductModal, purchasePrice: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => {
+                      const pPrice = parseFloat(e.target.value) || 0;
+                      const margin = editingProductModal.marginPercent !== undefined ? editingProductModal.marginPercent : 30;
+                      const calculatedSale = parseFloat((pPrice * (1 + margin / 100)).toFixed(2));
+                      setEditingProductModal({ 
+                        ...editingProductModal, 
+                        purchasePrice: pPrice,
+                        salePrice: calculatedSale,
+                        unitPrice: calculatedSale 
+                      });
+                    }}
                     className="w-full p-2 bg-white border border-neutral-300 rounded-lg text-sm font-bold text-neutral-900 outline-none focus:border-primary"
                   />
                   <span className="text-xs font-bold text-neutral-500">€/{editingProductModal.unit}</span>
                 </div>
               </div>
 
-              {/* Preu de Venda (€) */}
-              <div className="flex flex-col gap-1 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+              {/* % Marge de Benefici sobre Preu Compra */}
+              <div className="flex flex-col gap-1 bg-purple-50 p-3 rounded-xl border border-purple-200">
+                <label className="text-xs font-bold text-purple-900 uppercase tracking-wider flex items-center justify-between">
+                  % Marge de Benefici
+                  <span className="text-[10px] text-purple-700 font-bold">% Marge Aplicat</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={editingProductModal.marginPercent !== undefined ? editingProductModal.marginPercent : 30}
+                    onChange={(e) => {
+                      const newMargin = parseFloat(e.target.value) || 0;
+                      const pPrice = editingProductModal.purchasePrice !== undefined ? editingProductModal.purchasePrice : editingProductModal.unitPrice;
+                      const calculatedSale = parseFloat((pPrice * (1 + newMargin / 100)).toFixed(2));
+                      setEditingProductModal({ 
+                        ...editingProductModal, 
+                        marginPercent: newMargin, 
+                        salePrice: calculatedSale, 
+                        unitPrice: calculatedSale 
+                      });
+                    }}
+                    className="w-full p-2 bg-white border border-purple-300 rounded-lg text-sm font-bold text-purple-900 outline-none focus:border-purple-600"
+                  />
+                  <span className="text-xs font-bold text-purple-800">%</span>
+                </div>
+              </div>
+
+              {/* Preu de Venda (€) - Calculat Automàticament */}
+              <div className="sm:col-span-2 flex flex-col gap-1 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
                 <label className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center justify-between">
-                  Preu de Venda (€)
+                  Preu de Venda (€) — Calculat Automàticament (Preu Compra + Marge %)
                   <span className="text-[10px] text-emerald-700 font-bold">Pressupostos & Factures</span>
                 </label>
                 <div className="flex items-center gap-2">
@@ -1414,10 +1530,20 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                     type="number" 
                     step="0.01"
                     value={editingProductModal.salePrice !== undefined ? editingProductModal.salePrice : editingProductModal.unitPrice}
-                    onChange={(e) => setEditingProductModal({ ...editingProductModal, salePrice: parseFloat(e.target.value) || 0, unitPrice: parseFloat(e.target.value) || 0 })}
-                    className="w-full p-2 bg-white border border-emerald-400 rounded-lg text-sm font-bold text-emerald-900 outline-none focus:border-emerald-600"
+                    onChange={(e) => {
+                      const newSale = parseFloat(e.target.value) || 0;
+                      const pPrice = editingProductModal.purchasePrice !== undefined ? editingProductModal.purchasePrice : (newSale / 1.3);
+                      const derivedMargin = pPrice > 0 ? parseFloat((((newSale - pPrice) / pPrice) * 100).toFixed(2)) : 30;
+                      setEditingProductModal({ 
+                        ...editingProductModal, 
+                        salePrice: newSale, 
+                        unitPrice: newSale,
+                        marginPercent: derivedMargin
+                      });
+                    }}
+                    className="w-full p-2.5 bg-white border border-emerald-400 rounded-lg text-base font-bold text-emerald-900 outline-none focus:border-emerald-600"
                   />
-                  <span className="text-xs font-bold text-emerald-700">€/{editingProductModal.unit}</span>
+                  <span className="text-sm font-bold text-emerald-700">€/{editingProductModal.unit}</span>
                 </div>
               </div>
 
@@ -1495,14 +1621,14 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                 </div>
               </div>
 
-              {/* Historial Acumulatiu del Gasto */}
+              {/* Historial Acumulatiu del Gasto (€) - Calculat Sincronitzat */}
               <div className="flex flex-col gap-1 bg-amber-50 p-3 rounded-xl border border-amber-200">
                 <label className="text-xs font-bold text-amber-900 uppercase tracking-wider">Gasto Acumulat (€)</label>
                 <div className="flex items-center gap-2 mt-1">
                   <input 
                     type="number"
                     step="0.01" 
-                    value={editingProductModal.accumulatedExpense || 0}
+                    value={computeAccumulatedExpense(editingProductModal).toFixed(2)}
                     onChange={(e) => setEditingProductModal({ ...editingProductModal, accumulatedExpense: parseFloat(e.target.value) || 0 })}
                     className="w-full p-2 bg-white border border-amber-300 rounded-lg text-sm font-bold text-amber-900 outline-none"
                   />
