@@ -16,12 +16,68 @@ export default function Page() {
     yearNum: ''
   });
 
-  // Kanban Tasks State (Interactive & Dynamic)
+  // Unified Kanban & Upcoming Tasks State (Structured by Date)
   const [kanbanTasks, setKanbanTasks] = useState([
-    { id: 'kt-1', code: '#OT-440', title: "Adobat de finques 'La Vall'", location: "Sector 4 - Polígon 12", operator: "Jordi S.", status: "PENDENT", priority: "Alta", dateOffset: 0 },
-    { id: 'kt-2', code: '#OT-441', title: "Revisió sistemes de reg", location: "Zona Nord - Bassa 2", operator: "Carles T.", status: "EN_CURS", priority: "Mitjana", dateOffset: 1 },
-    { id: 'kt-3', code: '#OT-443', title: "Sembrat i anivellat de terra", location: "Sector B4 - Camp Sud", operator: "Marc M.", status: "EN_CURS", priority: "Alta", dateOffset: 1 },
-    { id: 'kt-4', code: '#OT-442', title: "Tractament fitosanitari", location: "Finca Masia Vella", operator: "Maria P.", status: "COMPLETAT", priority: "Normal", dateOffset: 2 },
+    { 
+      id: 'kt-1', 
+      code: '#OT-440', 
+      title: "Adobat de finques 'La Vall'", 
+      location: "Sector 4 - Polígon 12", 
+      operator: "Jordi S.", 
+      status: "PENDENT", 
+      priority: "Alta", 
+      dateOffset: 0,
+      hasIncident: false,
+      billed: false 
+    },
+    { 
+      id: 'kt-2', 
+      code: '#OT-441', 
+      title: "Revisió sistemes de reg", 
+      location: "Zona Nord - Bassa 2", 
+      operator: "Carles T.", 
+      status: "EN_CURS", 
+      priority: "Mitjana", 
+      dateOffset: 1,
+      hasIncident: false,
+      billed: false 
+    },
+    { 
+      id: 'kt-3', 
+      code: '#OT-443', 
+      title: "Sembrat i anivellat de terra", 
+      location: "Sector B4 - Camp Sud", 
+      operator: "Marc M.", 
+      status: "EN_CURS", 
+      priority: "Alta", 
+      dateOffset: 1,
+      hasIncident: false,
+      billed: false 
+    },
+    { 
+      id: 'kt-4', 
+      code: '#OT-442', 
+      title: "Tractament fitosanitari", 
+      location: "Finca Masia Vella", 
+      operator: "Maria P.", 
+      status: "COMPLETAT", 
+      priority: "Normal", 
+      dateOffset: 2,
+      hasIncident: true, // Has incident -> Needs review before billing
+      billed: false 
+    },
+    { 
+      id: 'kt-5', 
+      code: '#OT-439', 
+      title: "Neteja de canals de reg", 
+      location: "Sector C-12", 
+      operator: "Jordi S.", 
+      status: "COMPLETAT", 
+      priority: "Normal", 
+      dateOffset: -1,
+      hasIncident: false, // No incident -> Automatically passed to billing
+      billed: true 
+    }
   ]);
 
   // View toggle for jobs: Kanban vs Llista
@@ -45,7 +101,6 @@ export default function Page() {
       g = 'Bona tarda';
     }
 
-    // Format date in Catalan: "Dimarts, 4 d'Agost de 2026"
     const formatted = now.toLocaleDateString('ca-ES', { 
       weekday: 'long', 
       day: 'numeric', 
@@ -53,7 +108,6 @@ export default function Page() {
       year: 'numeric' 
     });
     
-    // Capitalize first letter of string
     const capFormatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
     
     const day = String(now.getDate()).padStart(2, '0');
@@ -83,6 +137,11 @@ export default function Page() {
     setKanbanTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
   };
 
+  // Toggle Incident status on a completed task
+  const toggleIncidentStatus = (id: string) => {
+    setKanbanTasks(prev => prev.map(t => t.id === id ? { ...t, hasIncident: !t.hasIncident } : t));
+  };
+
   // Mark maintenance alert as resolved
   const resolveAlert = (id: string) => {
     setMaintenanceAlerts(prev => prev.filter(a => a.id !== id));
@@ -96,7 +155,7 @@ export default function Page() {
     <>
       <main className="relative pt-6 px-4 md:px-xl pb-xl bg-surface min-h-screen">
         <div className="flex flex-col w-full gap-xl">
-          {/* Header Section (Updated with night/day greeting & dynamic date, no breadcrumb caseta, no orange bar) */}
+          {/* Header Section */}
           <header className="flex flex-col md:flex-row md:items-end justify-between gap-md mb-xs">
             <div className="flex flex-col gap-xs">
               <h1 className="font-display-lg text-display-lg text-primary tracking-tight flex items-center gap-2">
@@ -117,7 +176,7 @@ export default function Page() {
             </div>
           </header>
 
-          {/* KPI Grid: Interactive Cards responding to live logic */}
+          {/* KPI Grid */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
             {/* KPI 1 */}
             <div 
@@ -136,9 +195,6 @@ export default function Page() {
               <div className="flex items-baseline gap-xs">
                 <span className="font-display-lg text-display-lg text-primary">{kanbanTasks.length}</span>
                 <span className="text-on-surface-variant font-body-base">assignades</span>
-              </div>
-              <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <span className="material-symbols-outlined text-[96px]">assignment</span>
               </div>
             </div>
 
@@ -190,7 +246,9 @@ export default function Page() {
                 <div className="p-sm bg-purple-50 rounded-lg text-purple-600">
                   <span className="material-symbols-outlined">payments</span>
                 </div>
-                <span className="text-xs font-label-caps text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">92% objectiu</span>
+                <span className="text-xs font-label-caps text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                  {kanbanTasks.filter(t => t.status === 'COMPLETAT' && !t.hasIncident).length} a Facturació
+                </span>
               </div>
               <h3 className="font-label-caps text-on-surface-variant mb-xs">FACTURACIÓ MES</h3>
               <div className="flex items-baseline gap-xs">
@@ -199,80 +257,115 @@ export default function Page() {
             </div>
           </section>
 
-          {/* Interactive Kanban Board for Real Data */}
+          {/* Unified Kanban Block: "Ordres de treball" (Structured by Dates, with Nova Ordre button & Incident -> Billing Logic) */}
           <section className="bg-surface-container-lowest p-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col gap-md">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-sm pb-sm border-b border-outline-variant/20">
               <div className="flex items-center gap-md">
-                <h2 className="font-section-title text-section-title text-primary flex items-center gap-2">
-                  <span className="material-symbols-outlined">view_kanban</span>
-                  Kanban d'Ordres de Treball
+                <h2 className="font-section-title text-section-title text-primary">
+                  Ordres de treball
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold text-xs">
-                  {kanbanTasks.length} Feines Reals
+                  Estructurat per dates ({kanbanTasks.length})
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 bg-surface-container p-1 rounded-lg">
+              <div className="flex items-center gap-md">
                 <button 
-                  onClick={() => setActiveView('kanban')}
-                  className={`px-3 py-1 text-xs font-body-strong rounded-md transition-all ${activeView === 'kanban' ? 'bg-primary text-white shadow-xs' : 'text-on-surface-variant hover:text-primary'}`}
+                  onClick={() => router.push('/gestio/feines/crear')}
+                  className="px-md py-1.5 bg-primary text-white rounded-lg text-xs font-body-strong flex items-center gap-1 shadow-xs hover:bg-primary-container transition-all"
                 >
-                  Vista Kanban
+                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  Nova ordre de treball
                 </button>
-                <button 
-                  onClick={() => setActiveView('llista')}
-                  className={`px-3 py-1 text-xs font-body-strong rounded-md transition-all ${activeView === 'llista' ? 'bg-primary text-white shadow-xs' : 'text-on-surface-variant hover:text-primary'}`}
-                >
-                  Vista Llista
-                </button>
+
+                <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
+                  <button 
+                    onClick={() => setActiveView('kanban')}
+                    className={`px-3 py-1 text-xs font-body-strong rounded-md transition-all ${activeView === 'kanban' ? 'bg-primary text-white shadow-xs' : 'text-on-surface-variant hover:text-primary'}`}
+                  >
+                    Vista Kanban
+                  </button>
+                  <button 
+                    onClick={() => setActiveView('llista')}
+                    className={`px-3 py-1 text-xs font-body-strong rounded-md transition-all ${activeView === 'llista' ? 'bg-primary text-white shadow-xs' : 'text-on-surface-variant hover:text-primary'}`}
+                  >
+                    Vista Llista
+                  </button>
+                </div>
               </div>
             </div>
 
             {activeView === 'kanban' ? (
-              /* 3 Column Kanban Board */
+              /* 3 Column Kanban Board: PENDENT/PROPERES | EN CURS | COMPLETAT */
               <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
-                {/* Column 1: Pendent */}
+                
+                {/* Column 1: Pendent / Properes (Structured by Date) */}
                 <div className="bg-surface-container-low/60 p-md rounded-xl border border-outline-variant/20 flex flex-col gap-sm">
                   <div className="flex items-center justify-between pb-xs border-b border-outline-variant/20">
                     <span className="font-body-strong text-sm text-orange-700 flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 bg-orange-500 rounded-full"></span>
-                      PENDENT
+                      PENDENT / PROPERES
                     </span>
                     <span className="text-xs font-bold px-2 py-0.5 bg-orange-100 text-orange-800 rounded-full">
                       {pendingCount}
                     </span>
                   </div>
 
-                  <div className="space-y-sm min-h-[140px]">
-                    {kanbanTasks.filter(t => t.status === 'PENDENT').map(task => (
-                      <div key={task.id} className="bg-surface p-md rounded-lg border border-outline-variant/30 shadow-xs flex flex-col gap-2 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[11px] font-bold text-primary">{task.code}</span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded">
-                            {task.priority}
-                          </span>
-                        </div>
-                        <h4 className="font-body-strong text-sm text-on-surface">{task.title}</h4>
-                        <p className="text-xs text-on-surface-variant flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">location_on</span>
-                          {task.location}
-                        </p>
-                        <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10 text-xs">
-                          <span className="text-on-surface-variant">👤 {task.operator}</span>
-                          <button 
-                            onClick={() => moveTaskStatus(task.id, 'EN_CURS')}
-                            className="px-2 py-1 text-[11px] bg-primary text-white rounded font-body-strong hover:bg-primary-container transition-colors flex items-center gap-1"
-                          >
-                            Iniciar <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="space-y-sm min-h-[160px]">
+                    {kanbanTasks
+                      .filter(t => t.status === 'PENDENT')
+                      .sort((a, b) => a.dateOffset - b.dateOffset)
+                      .map(task => {
+                        const dateBadge = getFormattedDateForOffset(task.dateOffset);
+                        return (
+                          <div key={task.id} className="bg-surface p-md rounded-lg border border-outline-variant/30 shadow-xs flex flex-col gap-2 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-center">
+                              {/* Date Badge */}
+                              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 rounded text-primary text-xs font-bold">
+                                <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                                <span>{dateBadge.day} {dateBadge.month}</span>
+                              </div>
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded">
+                                {task.priority}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span className="text-[11px] font-bold text-on-surface-variant block">{task.code}</span>
+                              <h4 className="font-body-strong text-sm text-on-surface">{task.title}</h4>
+                            </div>
+
+                            <p className="text-xs text-on-surface-variant flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px]">location_on</span>
+                              {task.location}
+                            </p>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10 text-xs">
+                              <span className="text-on-surface-variant">👤 {task.operator}</span>
+                              <button 
+                                onClick={() => moveTaskStatus(task.id, 'EN_CURS')}
+                                className="px-2.5 py-1 text-[11px] bg-primary text-white rounded-lg font-body-strong hover:bg-primary-container transition-colors flex items-center gap-1"
+                              >
+                                Iniciar <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
                     {pendingCount === 0 && (
                       <div className="p-lg text-center text-xs text-on-surface-variant border-2 border-dashed border-outline-variant/30 rounded-lg">
                         Sense feines pendents
                       </div>
                     )}
+
+                    <button 
+                      onClick={() => router.push('/gestio/feines/crear')}
+                      className="w-full py-2 border border-dashed border-outline-variant rounded-lg text-xs text-primary font-body-strong hover:bg-primary/5 transition-colors flex items-center justify-center gap-1 mt-2"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">add</span>
+                      Afegir ordre de treball
+                    </button>
                   </div>
                 </div>
 
@@ -288,40 +381,53 @@ export default function Page() {
                     </span>
                   </div>
 
-                  <div className="space-y-sm min-h-[140px]">
-                    {kanbanTasks.filter(t => t.status === 'EN_CURS').map(task => (
-                      <div key={task.id} className="bg-surface p-md rounded-lg border border-blue-200 shadow-xs flex flex-col gap-2 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[11px] font-bold text-primary">{task.code}</span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">
-                            {task.priority}
-                          </span>
-                        </div>
-                        <h4 className="font-body-strong text-sm text-on-surface">{task.title}</h4>
-                        <p className="text-xs text-on-surface-variant flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">location_on</span>
-                          {task.location}
-                        </p>
-                        <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10 text-xs">
-                          <span className="text-on-surface-variant">👤 {task.operator}</span>
-                          <div className="flex gap-1">
-                            <button 
-                              onClick={() => moveTaskStatus(task.id, 'PENDENT')}
-                              className="px-2 py-1 text-[11px] bg-surface-container-high text-on-surface-variant rounded hover:bg-surface-container-highest"
-                              title="Tornar a Pendent"
-                            >
-                              <span className="material-symbols-outlined text-[12px]">arrow_back</span>
-                            </button>
-                            <button 
-                              onClick={() => moveTaskStatus(task.id, 'COMPLETAT')}
-                              className="px-2 py-1 text-[11px] bg-green-600 text-white rounded font-body-strong hover:bg-green-700 transition-colors flex items-center gap-1"
-                            >
-                              Finalitzar <span className="material-symbols-outlined text-[12px]">check</span>
-                            </button>
+                  <div className="space-y-sm min-h-[160px]">
+                    {kanbanTasks.filter(t => t.status === 'EN_CURS').map(task => {
+                      const dateBadge = getFormattedDateForOffset(task.dateOffset);
+                      return (
+                        <div key={task.id} className="bg-surface p-md rounded-lg border border-blue-200 shadow-xs flex flex-col gap-2 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 rounded text-blue-700 text-xs font-bold">
+                              <span className="material-symbols-outlined text-[14px]">schedule</span>
+                              <span>{dateBadge.day} {dateBadge.month}</span>
+                            </div>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                              Activa
+                            </span>
+                          </div>
+
+                          <div>
+                            <span className="text-[11px] font-bold text-on-surface-variant block">{task.code}</span>
+                            <h4 className="font-body-strong text-sm text-on-surface">{task.title}</h4>
+                          </div>
+
+                          <p className="text-xs text-on-surface-variant flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]">location_on</span>
+                            {task.location}
+                          </p>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10 text-xs">
+                            <span className="text-on-surface-variant">👤 {task.operator}</span>
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={() => moveTaskStatus(task.id, 'PENDENT')}
+                                className="px-2 py-1 text-[11px] bg-surface-container-high text-on-surface-variant rounded hover:bg-surface-container-highest"
+                                title="Tornar a Pendent"
+                              >
+                                <span className="material-symbols-outlined text-[12px]">arrow_back</span>
+                              </button>
+                              <button 
+                                onClick={() => moveTaskStatus(task.id, 'COMPLETAT')}
+                                className="px-2.5 py-1 text-[11px] bg-green-600 text-white rounded-lg font-body-strong hover:bg-green-700 transition-colors flex items-center gap-1"
+                              >
+                                Finalitzar <span className="material-symbols-outlined text-[12px]">check</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+
                     {inProgressCount === 0 && (
                       <div className="p-lg text-center text-xs text-on-surface-variant border-2 border-dashed border-outline-variant/30 rounded-lg">
                         Cap feina en curs
@@ -330,7 +436,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                {/* Column 3: Completat */}
+                {/* Column 3: Completat (Valoració d'Incidència & Passa a Facturació) */}
                 <div className="bg-surface-container-low/60 p-md rounded-xl border border-outline-variant/20 flex flex-col gap-sm">
                   <div className="flex items-center justify-between pb-xs border-b border-outline-variant/20">
                     <span className="font-body-strong text-sm text-green-700 flex items-center gap-1.5">
@@ -342,32 +448,87 @@ export default function Page() {
                     </span>
                   </div>
 
-                  <div className="space-y-sm min-h-[140px]">
-                    {kanbanTasks.filter(t => t.status === 'COMPLETAT').map(task => (
-                      <div key={task.id} className="bg-surface p-md rounded-lg border border-green-200 shadow-xs flex flex-col gap-2 opacity-90 hover:opacity-100 transition-opacity">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[11px] font-bold text-primary">{task.code}</span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 bg-green-50 text-green-600 rounded">
-                            Resolt
-                          </span>
+                  <div className="space-y-sm min-h-[160px]">
+                    {kanbanTasks.filter(t => t.status === 'COMPLETAT').map(task => {
+                      return (
+                        <div 
+                          key={task.id} 
+                          className={`bg-surface p-md rounded-lg border shadow-xs flex flex-col gap-2 transition-all ${
+                            task.hasIncident 
+                              ? 'border-error/40 bg-error-container/5' 
+                              : 'border-green-300 bg-green-50/20'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-[11px] font-bold text-primary">{task.code}</span>
+                            
+                            {/* Toggle Incident status for testing/management */}
+                            <button
+                              onClick={() => toggleIncidentStatus(task.id)}
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1 ${
+                                task.hasIncident
+                                  ? 'bg-error text-white hover:bg-error/90'
+                                  : 'bg-green-100 text-green-800 hover:bg-green-200'
+                              }`}
+                              title="Fes clic per canviar estat d'incidència"
+                            >
+                              <span className="material-symbols-outlined text-[12px]">
+                                {task.hasIncident ? 'report_problem' : 'verified'}
+                              </span>
+                              {task.hasIncident ? 'Amb Incidència' : 'Sense Incidència'}
+                            </button>
+                          </div>
+
+                          <div>
+                            <h4 className="font-body-strong text-sm text-on-surface">{task.title}</h4>
+                            <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
+                              <span className="material-symbols-outlined text-[14px]">location_on</span>
+                              {task.location}
+                            </p>
+                          </div>
+
+                          {/* Incident vs Billing Status Banner */}
+                          {task.hasIncident ? (
+                            <div className="p-2 bg-error-container/20 rounded-lg border border-error/30 flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-1.5 text-error font-bold">
+                                <span className="material-symbols-outlined text-[16px]">warning</span>
+                                <span>Incidència pendent</span>
+                              </div>
+                              <button 
+                                onClick={() => router.push('/gestio/incidencies')}
+                                className="px-2 py-0.5 bg-error text-white rounded text-[11px] font-body-strong hover:bg-error/90"
+                              >
+                                Revisar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="p-2 bg-purple-50 rounded-lg border border-purple-200 flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-1.5 text-purple-700 font-bold">
+                                <span className="material-symbols-outlined text-[16px]">payments</span>
+                                <span>Passa a Facturació</span>
+                              </div>
+                              <button 
+                                onClick={() => router.push('/gestio/feines/completades')}
+                                className="px-2 py-0.5 bg-purple-600 text-white rounded text-[11px] font-body-strong hover:bg-purple-700"
+                              >
+                                {task.billed ? 'Facturat' : 'Facturar'}
+                              </button>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-xs">
+                            <span className="text-on-surface-variant">👤 {task.operator}</span>
+                            <button 
+                              onClick={() => moveTaskStatus(task.id, 'EN_CURS')}
+                              className="text-[11px] text-on-surface-variant hover:text-primary underline"
+                            >
+                              Reobrir feina
+                            </button>
+                          </div>
                         </div>
-                        <h4 className="font-body-strong text-sm text-on-surface line-through text-on-surface-variant">{task.title}</h4>
-                        <p className="text-xs text-on-surface-variant flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">location_on</span>
-                          {task.location}
-                        </p>
-                        <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10 text-xs">
-                          <span className="text-on-surface-variant">👤 {task.operator}</span>
-                          <button 
-                            onClick={() => moveTaskStatus(task.id, 'EN_CURS')}
-                            className="px-2 py-1 text-[11px] bg-surface-container-high text-on-surface-variant rounded hover:bg-surface-container-highest"
-                            title="Reobrir feina"
-                          >
-                            Reobrir
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+
                     {completedCount === 0 && (
                       <div className="p-lg text-center text-xs text-on-surface-variant border-2 border-dashed border-outline-variant/30 rounded-lg">
                         Encara cap feina finalitzada
@@ -375,33 +536,50 @@ export default function Page() {
                     )}
                   </div>
                 </div>
+
               </div>
             ) : (
-              /* List View fallback */
+              /* List View Fallback */
               <div className="divide-y divide-outline-variant/10">
-                {kanbanTasks.map(task => (
-                  <div key={task.id} className="p-md hover:bg-surface-container-low flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-xs text-primary mr-2">{task.code}</span>
-                      <span className="font-body-strong text-sm text-on-surface">{task.title}</span>
-                      <p className="text-xs text-on-surface-variant">{task.location} • Assignat a {task.operator}</p>
+                {kanbanTasks.map(task => {
+                  const dateBadge = getFormattedDateForOffset(task.dateOffset);
+                  return (
+                    <div key={task.id} className="p-md hover:bg-surface-container-low flex items-center justify-between">
+                      <div className="flex items-center gap-md">
+                        <div className="px-2.5 py-1 bg-surface-container rounded text-center min-w-[50px]">
+                          <span className="text-[10px] block font-bold text-on-surface-variant">{dateBadge.month}</span>
+                          <span className="text-sm font-bold text-primary">{dateBadge.day}</span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-xs text-primary mr-2">{task.code}</span>
+                          <span className="font-body-strong text-sm text-on-surface">{task.title}</span>
+                          <p className="text-xs text-on-surface-variant">{task.location} • Assignat a {task.operator}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-md">
+                        {task.status === 'COMPLETAT' && (
+                          <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${
+                            task.hasIncident ? 'bg-error/10 text-error border border-error/30' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {task.hasIncident ? 'Amb Incidència' : 'Facturació OK'}
+                          </span>
+                        )}
+                        <span className={`px-2.5 py-0.5 text-xs rounded-full font-bold ${
+                          task.status === 'PENDENT' ? 'bg-orange-100 text-orange-800' :
+                          task.status === 'EN_CURS' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {task.status}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-md">
-                      <span className={`px-2.5 py-0.5 text-xs rounded-full font-bold ${
-                        task.status === 'PENDENT' ? 'bg-orange-100 text-orange-800' :
-                        task.status === 'EN_CURS' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                      }`}>
-                        {task.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
 
-          {/* Main Content: Map & Upcoming Jobs */}
-          <div className="grid grid-cols-1 lg:grid-cols-10 gap-xl">
+          {/* Bottom Grid: Real-time Map & Maintenance Alerts */}
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-xl mb-xl">
             {/* Map Preview (60%) */}
             <section className="lg:col-span-6 flex flex-col gap-md">
               <div className="flex items-center justify-between">
@@ -420,7 +598,7 @@ export default function Page() {
 
               <div 
                 onClick={() => router.push('/gestio/feines/mapa')}
-                className="relative group bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm h-[420px] border border-outline-variant/30 cursor-pointer"
+                className="relative group bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm h-[380px] border border-outline-variant/30 cursor-pointer"
               >
                 <div className="w-full h-full bg-cover bg-center grayscale-[0.2] contrast-[1.05]" style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu')` }}></div>
                 
@@ -448,106 +626,8 @@ export default function Page() {
               </div>
             </section>
 
-            {/* Upcoming Jobs with Dynamic Updated Calendar Dates (40%) */}
+            {/* Maintenance Alerts (40%) */}
             <section className="lg:col-span-4 flex flex-col gap-md">
-              <div className="flex items-center justify-between">
-                <h2 className="font-section-title text-section-title text-primary">Properes feines</h2>
-                <Link href="/gestio/feines/mapa" className="material-symbols-outlined text-outline cursor-pointer hover:text-primary">more_vert</Link>
-              </div>
-
-              <div className="flex flex-col gap-sm">
-                {/* Dynamic Calendar Job Card 1 */}
-                {(() => {
-                  const d1 = getFormattedDateForOffset(0);
-                  return (
-                    <div 
-                      onClick={() => router.push('/gestio/feines/crear')}
-                      className="bg-surface-container-lowest p-md rounded-xl border-l-4 border-secondary-container shadow-sm flex gap-md items-center group hover:bg-surface-container-low transition-colors cursor-pointer"
-                    >
-                      <div className="flex-shrink-0 text-center w-12 py-2 bg-surface-container rounded-lg group-hover:bg-white transition-colors">
-                        <p className="text-[10px] font-label-caps text-on-surface-variant">{d1.month}</p>
-                        <p className="text-lg font-display-lg text-primary">{d1.day}</p>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-xs">
-                          <h4 className="font-body-strong text-primary truncate">Adobat de finques 'La Vall'</h4>
-                          <span className="flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-label-caps bg-orange-50 text-orange-600 font-bold">PENDENT</span>
-                        </div>
-                        <p className="text-xs text-on-surface-variant flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">location_on</span>
-                          Sector 4 - Polígon 12
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Dynamic Calendar Job Card 2 */}
-                {(() => {
-                  const d2 = getFormattedDateForOffset(1);
-                  return (
-                    <div 
-                      onClick={() => router.push('/gestio/feines/mapa')}
-                      className="bg-surface-container-lowest p-md rounded-xl border-l-4 border-primary shadow-sm flex gap-md items-center group hover:bg-surface-container-low transition-colors cursor-pointer"
-                    >
-                      <div className="flex-shrink-0 text-center w-12 py-2 bg-surface-container rounded-lg group-hover:bg-white transition-colors">
-                        <p className="text-[10px] font-label-caps text-on-surface-variant">{d2.month}</p>
-                        <p className="text-lg font-display-lg text-primary">{d2.day}</p>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-xs">
-                          <h4 className="font-body-strong text-primary truncate">Revisió sistemes de reg</h4>
-                          <span className="flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-label-caps bg-blue-50 text-blue-600 font-bold">PROGRAMAT</span>
-                        </div>
-                        <p className="text-xs text-on-surface-variant flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">location_on</span>
-                          Zona Nord - Bassa 2
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Dynamic Calendar Job Card 3 */}
-                {(() => {
-                  const d3 = getFormattedDateForOffset(2);
-                  return (
-                    <div 
-                      onClick={() => router.push('/gestio/feines/completades')}
-                      className="bg-surface-container-lowest p-md rounded-xl border-l-4 border-primary-container shadow-sm flex gap-md items-center group hover:bg-surface-container-low transition-colors opacity-80 cursor-pointer"
-                    >
-                      <div className="flex-shrink-0 text-center w-12 py-2 bg-surface-container rounded-lg">
-                        <p className="text-[10px] font-label-caps text-on-surface-variant">{d3.month}</p>
-                        <p className="text-lg font-display-lg text-primary">{d3.day}</p>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-xs">
-                          <h4 className="font-body-strong text-primary truncate">Tractament fitosanitari</h4>
-                          <span className="flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-label-caps bg-surface-container-highest text-outline">EN ESPERA</span>
-                        </div>
-                        <p className="text-xs text-on-surface-variant flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">location_on</span>
-                          Finca Masia Vella
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              <button 
-                onClick={() => router.push('/gestio/feines/crear')}
-                className="w-full py-md border-2 border-dashed border-outline-variant rounded-xl text-outline font-body-strong hover:bg-surface-container-low hover:text-primary hover:border-primary transition-all cursor-pointer"
-              >
-                + Redactar nova feina
-              </button>
-            </section>
-          </div>
-
-          {/* Bottom Section: Maintenance Alerts (With "Resolt" button & 3 Critical Items) & Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-xl mb-xl">
-            {/* Maintenance Alerts */}
-            <section className="flex flex-col gap-md">
               <div className="flex items-center justify-between">
                 <h2 className="font-section-title text-section-title text-primary flex items-center gap-md">
                   Alertes de Manteniment
@@ -589,18 +669,11 @@ export default function Page() {
                             e.stopPropagation();
                             resolveAlert(alert.id);
                           }}
-                          className="bg-green-600 hover:bg-green-700 text-white px-md py-1.5 rounded-lg text-xs font-body-strong flex items-center gap-1 transition-colors shadow-xs"
+                          className="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-body-strong flex items-center gap-1 transition-colors shadow-xs"
                           title="Marcar alerta com a resolta"
                         >
                           <span className="material-symbols-outlined text-[14px]">check_circle</span>
                           Resolt
-                        </button>
-
-                        <button 
-                          onClick={() => router.push(alert.link)}
-                          className="bg-error hover:bg-error/90 text-white px-sm py-1.5 rounded-lg text-xs font-body-strong transition-colors"
-                        >
-                          {alert.actionText}
                         </button>
                       </div>
                     </div>
@@ -611,25 +684,6 @@ export default function Page() {
                     <p className="font-body-strong text-sm text-green-700">Totes les alertes de manteniment han estat resoltes!</p>
                   </div>
                 )}
-              </div>
-            </section>
-
-            {/* Recent Activity */}
-            <section className="flex flex-col gap-md">
-              <h2 className="font-section-title text-section-title text-primary">Activitat recent</h2>
-              <div className="relative pl-8 space-y-lg before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-surface-container-highest">
-                <div className="relative">
-                  <span className="absolute -left-8 w-6 h-6 rounded-full bg-primary border-4 border-surface flex items-center justify-center">
-                    <span className="w-1 h-1 bg-white rounded-full"></span>
-                  </span>
-                  <div className="bg-white p-md rounded-xl shadow-sm border border-outline-variant/30">
-                    <p className="text-sm font-body-base text-on-surface">
-                      <span className="font-body-strong">Jordi S.</span> ha completat la feina 
-                      <span className="text-primary font-body-strong underline decoration-primary/30"> #OT-442</span>
-                    </p>
-                    <p className="text-[11px] text-on-surface-variant mt-1">Fa 15 minuts • Sector C-12</p>
-                  </div>
-                </div>
               </div>
             </section>
           </div>
