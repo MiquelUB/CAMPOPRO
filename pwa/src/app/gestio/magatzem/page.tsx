@@ -6,7 +6,8 @@ import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckC
 import { getStoredProveidors, saveStoredProveidors, getStoredMaterials, saveStoredMaterials, SupplierItem, MaterialItem } from '@/lib/sharedStore';
 
 export default function MagatzemDashboard() {
-  const [activeTab, setActiveTab] = useState<'materials' | 'eines' | 'vehicles' | 'proveidors'>('materials');
+  const [activeTab, setActiveTab] = useState<'materials' | 'serveis' | 'eines' | 'vehicles' | 'proveidors'>('materials');
+  const [editingProductModal, setEditingProductModal] = useState<MaterialItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   
@@ -700,8 +701,9 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
     setProveidors(proveidors.filter((p) => p.id !== id));
   };
 
-  // Filters
-  const filteredMaterials = materials.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.code.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Filtered Databases
+  const physicalMaterials = materials.filter(m => !m.isService && (m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.code.toLowerCase().includes(searchTerm.toLowerCase())));
+  const serviceTariffs = materials.filter(m => m.isService && (m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.code.toLowerCase().includes(searchTerm.toLowerCase())));
   const filteredEines = eines.filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) || e.code.toLowerCase().includes(searchTerm.toLowerCase()));
   const filteredVehicles = vehicles.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.plate.toLowerCase().includes(searchTerm.toLowerCase()));
   const filteredProveidors = proveidors.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.nif.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -721,10 +723,10 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             Control de Magatzem, Flota i Tarifes de Servei
             <span className="bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1">
-              <Tag size={12} /> Articles de Serveis Editables
+              <Tag size={12} /> Preu de Venda & Tarifes Editables
             </span>
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">Gestió de materials físics i articles de serveis (Hora Operari, Hora Tractor, Transport, Desplaçament, Extra) amb preus editables.</p>
+          <p className="text-sm text-neutral-500 mt-1">Gestió de materials físics i tarifes de serveis tècnics amb edició completa de preus de compra, preus de venda, IVA i descompte de proveïdor.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -733,7 +735,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
               setShowAIModal(true);
               setAiStep(1);
             }}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:from-emerald-700 hover:to-teal-800 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95"
+            className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:from-emerald-700 hover:to-teal-800 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95 cursor-pointer"
           >
             <Bot size={18} />
             Escanejar amb IA
@@ -741,7 +743,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90 px-5 py-3 rounded-xl font-medium text-sm transition-all shadow-md active:scale-95"
+            className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90 px-5 py-3 rounded-xl font-medium text-sm transition-all shadow-md active:scale-95 cursor-pointer"
           >
             <Plus size={18} />
             Donar d'Alta (Manual)
@@ -749,46 +751,56 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         </div>
       </div>
 
-      {/* 4 Main Tabs */}
+      {/* 5 Main Tabs (Materials i Tarifes de Servei dividits en 2 pestanyes separades) */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex bg-neutral-100 p-1.5 rounded-xl border border-neutral-200 flex-wrap">
+        <div className="flex bg-neutral-100 p-1.5 rounded-xl border border-neutral-200 flex-wrap gap-1">
           <button 
             onClick={() => setActiveTab('materials')}
-            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              activeTab === 'materials' ? 'bg-white shadow-md text-primary scale-105' : 'text-neutral-500 hover:text-neutral-900'
+            className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'materials' ? 'bg-white shadow-md text-primary scale-105 font-bold' : 'text-neutral-500 hover:text-neutral-900'
             }`}
           >
-            <Package size={18} />
-            Materials i Tarifes de Servei ({materials.length})
+            <Package size={17} />
+            Materials ({physicalMaterials.length})
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('serveis')}
+            className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'serveis' ? 'bg-white shadow-md text-purple-700 scale-105 font-bold' : 'text-neutral-500 hover:text-neutral-900'
+            }`}
+          >
+            <Tag size={17} />
+            Tarifes de Servei ({serviceTariffs.length})
           </button>
 
           <button 
             onClick={() => setActiveTab('eines')}
-            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              activeTab === 'eines' ? 'bg-white shadow-md text-primary scale-105' : 'text-neutral-500 hover:text-neutral-900'
+            className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'eines' ? 'bg-white shadow-md text-primary scale-105 font-bold' : 'text-neutral-500 hover:text-neutral-900'
             }`}
           >
-            <PenTool size={18} />
+            <PenTool size={17} />
             Eines ({eines.length})
           </button>
 
           <button 
             onClick={() => setActiveTab('vehicles')}
-            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              activeTab === 'vehicles' ? 'bg-white shadow-md text-primary scale-105' : 'text-neutral-500 hover:text-neutral-900'
+            className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'vehicles' ? 'bg-white shadow-md text-primary scale-105 font-bold' : 'text-neutral-500 hover:text-neutral-900'
             }`}
           >
-            <Truck size={18} />
+            <Truck size={17} />
             Vehicles ({vehicles.length})
           </button>
 
           <button 
             onClick={() => setActiveTab('proveidors')}
-            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              activeTab === 'proveidors' ? 'bg-white shadow-md text-primary scale-105' : 'text-neutral-500 hover:text-neutral-900'
+            className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'proveidors' ? 'bg-white shadow-md text-primary scale-105 font-bold' : 'text-neutral-500 hover:text-neutral-900'
             }`}
           >
-            <Building2 size={18} />
+            <Building2 size={17} />
             Proveïdors ({proveidors.length})
           </button>
         </div>
@@ -806,83 +818,70 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
         </div>
       </div>
 
-      {/* TAB 1: MATERIALS & EDITABLE SERVICE TARIFF ARTICLES */}
+      {/* TAB 1: MATERIALS FÍSICS */}
       {activeTab === 'materials' && (
         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-500 font-semibold flex items-center justify-between">
-            <span>💡 Pots editar directament el preu unitari de qualsevol article o tarifa de servei (Hora Operari, Hora Tractor, Transport, Desplaçament, Extra) per ajustar els pressupostos.</span>
-            <span className="text-primary font-bold">{filteredMaterials.length} articles trobats</span>
+          <div className="p-4 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-600 font-semibold flex items-center justify-between">
+            <span>💡 Clica a sobre de qualsevol nom de producte per obrir el Pop-up d'Edició Completa (Preu de Compra, Preu de Venda, IVA, Descompte Proveïdor i Historial Gasto).</span>
+            <span className="text-primary font-bold">{physicalMaterials.length} materials registrats</span>
           </div>
           <table className="w-full text-sm text-left">
             <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase font-semibold text-xs">
               <tr>
                 <th className="px-6 py-4">Codi</th>
-                <th className="px-6 py-4">Nom de l'Article / Servei</th>
-                <th className="px-6 py-4 text-center">Tipus d'Article</th>
-                <th className="px-6 py-4 text-center">Disponible Magatzem</th>
-                <th className="px-6 py-4 text-center">Preu Unitari Editable (€)</th>
+                <th className="px-6 py-4">Nom del Material (Clica per Editar)</th>
+                <th className="px-6 py-4 text-center">Ubicació Magatzem</th>
+                <th className="px-6 py-4 text-center">Disponibilitat (Estoc)</th>
+                <th className="px-6 py-4 text-center">Preu de Venda (€)</th>
+                <th className="px-6 py-4 text-center">Gasto Acumulat (€)</th>
                 <th className="px-6 py-4 text-center">Estat / Reposició</th>
                 <th className="px-6 py-4 text-right">Accions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {filteredMaterials.map((item) => {
-                const isLowStock = !item.isService && item.stock <= item.minStock;
+              {physicalMaterials.map((item) => {
+                const isLowStock = item.stock <= item.minStock;
+                const salePrice = item.salePrice !== undefined ? item.salePrice : item.unitPrice;
+                const accumulated = item.accumulatedExpense !== undefined ? item.accumulatedExpense : (item.purchasePrice ? item.purchasePrice * item.stockTotal : item.unitPrice * item.stockTotal);
+
                 return (
                   <tr 
                     key={item.id} 
-                    onClick={() => setSelectedItem({ type: 'material', data: item })}
+                    onClick={() => setEditingProductModal(item)}
                     className="hover:bg-primary/5 transition-colors cursor-pointer group"
                   >
                     <td className="px-6 py-4 font-mono text-xs text-neutral-500 font-bold">{item.code}</td>
                     <td className="px-6 py-4 font-semibold text-neutral-900 group-hover:text-primary transition-colors flex items-center gap-2">
-                      {item.name}
-                      {item.isService && (
-                        <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded font-bold">
-                          Tarifa de Servei
-                        </span>
-                      )}
+                      <span className="group-hover:underline">{item.name}</span>
                     </td>
 
+                    {/* UBICACIÓ MAGATZEM */}
                     <td className="px-6 py-4 text-center text-xs">
-                      {item.isService ? (
-                        <span className="bg-purple-50 text-purple-700 font-bold border border-purple-200 px-2.5 py-1 rounded-full">
-                          ⚡ Servei / Tarifació
-                        </span>
-                      ) : (
-                        <span className="bg-neutral-100 text-neutral-700 font-medium px-2.5 py-1 rounded-full">
-                          📦 Material Físic
-                        </span>
-                      )}
+                      <span className="bg-neutral-100 text-neutral-800 font-semibold px-2.5 py-1 rounded-lg border border-neutral-200">
+                        📍 {item.location || 'Magatzem Central'}
+                      </span>
                     </td>
 
+                    {/* DISPONIBILITAT ACTUAL (ESTOC) */}
                     <td className="px-6 py-4 text-center font-bold text-base text-emerald-800">
-                      {item.isService ? 'Sense Límit' : item.stock} <span className="text-xs font-normal text-neutral-500">{item.unit}</span>
+                      {item.stock} <span className="text-xs font-normal text-neutral-500">{item.unit}</span>
                     </td>
 
-                    {/* EDITABLE UNIT PRICE INPUT */}
-                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-1">
-                        <input 
-                          type="number"
-                          step="0.50"
-                          value={item.unitPrice}
-                          onChange={(e) => handleUpdateUnitPrice(item.id, e.target.value)}
-                          className="w-24 p-1.5 bg-neutral-50 border border-neutral-300 rounded-lg text-center font-bold text-primary text-sm outline-none focus:border-primary focus:bg-white"
-                        />
-                        <span className="text-xs font-bold text-neutral-500">€ / {item.unit}</span>
-                      </div>
+                    {/* PREU DE VENDA (€) - MAI EL DE COMPRA */}
+                    <td className="px-6 py-4 text-center font-bold text-emerald-700 font-mono text-sm">
+                      {salePrice.toFixed(2)} € <span className="text-[10px] font-normal text-neutral-400">/{item.unit}</span>
+                    </td>
+
+                    {/* HISTORIAL ACUMULATIU DEL GASTO (€) */}
+                    <td className="px-6 py-4 text-center font-mono text-xs font-bold text-neutral-700">
+                      {accumulated.toFixed(2)} €
                     </td>
 
                     <td className="px-6 py-4 text-center">
                       <div className="flex flex-col items-center gap-1.5">
-                        {item.isService ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
-                            <Tag size={12} /> Actiu per a Pressupost
-                          </span>
-                        ) : isLowStock ? (
+                        {isLowStock ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                            <AlertTriangle size={12} /> Estoc Baix
+                            <AlertTriangle size={12} /> Estoc Baix (Min: {item.minStock})
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
@@ -893,7 +892,79 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                     </td>
 
                     <td className="px-6 py-4 text-right">
-                      <button onClick={(e) => deleteMaterial(item.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors">
+                      <button onClick={(e) => deleteMaterial(item.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors cursor-pointer">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* TAB 2: TARIFES DE SERVEI */}
+      {activeTab === 'serveis' && (
+        <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="p-4 bg-purple-50/70 border-b border-purple-200 text-xs text-purple-900 font-semibold flex items-center justify-between">
+            <span>⚡ Tarifes de serveis tècnics, operaris, maquinària i logística per a la confecció de pressupostos i facturació a clients.</span>
+            <span className="text-purple-800 font-bold">{serviceTariffs.length} tarifes actives</span>
+          </div>
+          <table className="w-full text-sm text-left">
+            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase font-semibold text-xs">
+              <tr>
+                <th className="px-6 py-4">Codi</th>
+                <th className="px-6 py-4">Nom de la Tarifa de Servei</th>
+                <th className="px-6 py-4 text-center">Ubicació / Secció</th>
+                <th className="px-6 py-4 text-center">Preu de Venda (€)</th>
+                <th className="px-6 py-4 text-center">Preu de Compra (€)</th>
+                <th className="px-6 py-4 text-center">Valor IVA (%)</th>
+                <th className="px-6 py-4 text-center">Estat Pressupost</th>
+                <th className="px-6 py-4 text-right">Accions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {serviceTariffs.map((item) => {
+                const salePrice = item.salePrice !== undefined ? item.salePrice : item.unitPrice;
+                const purchasePrice = item.purchasePrice !== undefined ? item.purchasePrice : 25.00;
+                return (
+                  <tr 
+                    key={item.id} 
+                    onClick={() => setEditingProductModal(item)}
+                    className="hover:bg-purple-50/50 transition-colors cursor-pointer group"
+                  >
+                    <td className="px-6 py-4 font-mono text-xs text-neutral-500 font-bold">{item.code}</td>
+                    <td className="px-6 py-4 font-semibold text-neutral-900 group-hover:text-purple-700 transition-colors flex items-center gap-2">
+                      <span className="group-hover:underline">{item.name}</span>
+                    </td>
+
+                    <td className="px-6 py-4 text-center text-xs">
+                      <span className="bg-purple-100 text-purple-800 font-bold px-2.5 py-1 rounded-lg">
+                        ⚡ {item.location || 'Tarifa Interna'}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-center font-bold text-purple-700 font-mono text-sm">
+                      {salePrice.toFixed(2)} € <span className="text-[10px] font-normal text-neutral-400">/{item.unit}</span>
+                    </td>
+
+                    <td className="px-6 py-4 text-center font-mono text-xs text-neutral-600">
+                      {purchasePrice.toFixed(2)} €
+                    </td>
+
+                    <td className="px-6 py-4 text-center font-bold text-xs text-neutral-700">
+                      {item.vatRate || 21}%
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                        <Tag size={12} /> Actiu Pressupost
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-right">
+                      <button onClick={(e) => deleteMaterial(item.id, e)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors cursor-pointer">
                         <Trash2 size={16} />
                       </button>
                     </td>
@@ -1267,6 +1338,232 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
 
               </div>
             )}
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL EDITAR PRODUCTE / TARIFE (Preu Compra, Preu Venda, IVA, Descompte, Estoc Mínim, Ubicació, Historial Gasto) */}
+      {/* ========================================================================= */}
+      {editingProductModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-neutral-200 flex flex-col gap-5 max-h-[92vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center pb-3 border-b border-neutral-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary text-white rounded-xl shadow-md">
+                  <Package size={22} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
+                    Fitxa i Edició de Producte: {editingProductModal.name}
+                  </h3>
+                  <p className="text-xs text-neutral-500 font-mono">Codi Referència: {editingProductModal.code}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingProductModal(null)} 
+                className="text-neutral-400 hover:text-neutral-700 p-1 cursor-pointer"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Modal Form Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Product Name */}
+              <div className="sm:col-span-2 flex flex-col gap-1">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Nom del Producte / Servei</label>
+                <input 
+                  type="text" 
+                  value={editingProductModal.name}
+                  onChange={(e) => setEditingProductModal({ ...editingProductModal, name: e.target.value })}
+                  className="p-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-semibold outline-none focus:border-primary focus:bg-white"
+                />
+              </div>
+
+              {/* Preu de Compra (€) */}
+              <div className="flex flex-col gap-1 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider flex items-center justify-between">
+                  Preu de Compra (€)
+                  <span className="text-[10px] text-neutral-400 font-normal">Preu Proveïdor</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={editingProductModal.purchasePrice !== undefined ? editingProductModal.purchasePrice : editingProductModal.unitPrice}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, purchasePrice: parseFloat(e.target.value) || 0 })}
+                    className="w-full p-2 bg-white border border-neutral-300 rounded-lg text-sm font-bold text-neutral-900 outline-none focus:border-primary"
+                  />
+                  <span className="text-xs font-bold text-neutral-500">€/{editingProductModal.unit}</span>
+                </div>
+              </div>
+
+              {/* Preu de Venda (€) */}
+              <div className="flex flex-col gap-1 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                <label className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center justify-between">
+                  Preu de Venda (€)
+                  <span className="text-[10px] text-emerald-700 font-bold">Pressupostos & Factures</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={editingProductModal.salePrice !== undefined ? editingProductModal.salePrice : editingProductModal.unitPrice}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, salePrice: parseFloat(e.target.value) || 0, unitPrice: parseFloat(e.target.value) || 0 })}
+                    className="w-full p-2 bg-white border border-emerald-400 rounded-lg text-sm font-bold text-emerald-900 outline-none focus:border-emerald-600"
+                  />
+                  <span className="text-xs font-bold text-emerald-700">€/{editingProductModal.unit}</span>
+                </div>
+              </div>
+
+              {/* Descompte del Proveïdor (%) */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Descompte Proveïdor (%)</label>
+                <input 
+                  type="text" 
+                  value={editingProductModal.supplierDiscount || '0%'}
+                  onChange={(e) => setEditingProductModal({ ...editingProductModal, supplierDiscount: e.target.value })}
+                  className="p-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-semibold outline-none focus:border-primary focus:bg-white"
+                  placeholder="ex. 10%"
+                />
+              </div>
+
+              {/* Valor IVA (%) */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Valor IVA (%)</label>
+                <select 
+                  value={editingProductModal.vatRate || 21}
+                  onChange={(e) => setEditingProductModal({ ...editingProductModal, vatRate: parseInt(e.target.value) || 21 })}
+                  className="p-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-semibold outline-none focus:border-primary focus:bg-white"
+                >
+                  <option value={21}>21% (IVA General)</option>
+                  <option value={10}>10% (IVA Reduït Agrícola)</option>
+                  <option value={4}>4% (IVA Superreduït)</option>
+                  <option value={0}>0% (Exempt d'IVA)</option>
+                </select>
+              </div>
+
+              {/* Estoc Mínim */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Estoc Mínim (Llindar de Reposició)</label>
+                <input 
+                  type="number" 
+                  value={editingProductModal.minStock}
+                  onChange={(e) => setEditingProductModal({ ...editingProductModal, minStock: parseInt(e.target.value) || 0 })}
+                  className="p-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-semibold outline-none focus:border-primary focus:bg-white"
+                />
+              </div>
+
+              {/* Ubicació Magatzem */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Ubicació Magatzem</label>
+                <input 
+                  type="text" 
+                  value={editingProductModal.location}
+                  onChange={(e) => setEditingProductModal({ ...editingProductModal, location: e.target.value })}
+                  className="p-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-semibold outline-none focus:border-primary focus:bg-white"
+                  placeholder="ex. Palet B-2, Prestatgeria A-1"
+                />
+              </div>
+
+              {/* Disponibilitat Actual / Estoc */}
+              <div className="flex flex-col gap-1 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+                <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Disponibilitat Actual (Estoc)</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <button 
+                    type="button"
+                    onClick={() => setEditingProductModal({ ...editingProductModal, stock: Math.max(0, editingProductModal.stock - 1) })}
+                    className="w-8 h-8 bg-neutral-200 rounded-lg font-bold text-neutral-700 hover:bg-neutral-300 flex items-center justify-center cursor-pointer"
+                  >-</button>
+                  <input 
+                    type="number" 
+                    value={editingProductModal.stock}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, stock: parseInt(e.target.value) || 0 })}
+                    className="w-20 p-1.5 bg-white border border-neutral-300 rounded-lg text-center font-bold text-neutral-900 text-sm"
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setEditingProductModal({ ...editingProductModal, stock: editingProductModal.stock + 1 })}
+                    className="w-8 h-8 bg-neutral-200 rounded-lg font-bold text-neutral-700 hover:bg-neutral-300 flex items-center justify-center cursor-pointer"
+                  >+</button>
+                  <span className="text-xs font-bold text-neutral-500">{editingProductModal.unit}</span>
+                </div>
+              </div>
+
+              {/* Historial Acumulatiu del Gasto */}
+              <div className="flex flex-col gap-1 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                <label className="text-xs font-bold text-amber-900 uppercase tracking-wider">Gasto Acumulat (€)</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <input 
+                    type="number"
+                    step="0.01" 
+                    value={editingProductModal.accumulatedExpense || 0}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, accumulatedExpense: parseFloat(e.target.value) || 0 })}
+                    className="w-full p-2 bg-white border border-amber-300 rounded-lg text-sm font-bold text-amber-900 outline-none"
+                  />
+                  <span className="text-xs font-bold text-amber-800">€</span>
+                </div>
+              </div>
+
+              {/* Historial de Sustraccions d'Operaris & Alertes de Material no previst a l'OT */}
+              <div className="sm:col-span-2 flex flex-col gap-2 pt-2 border-t border-neutral-200">
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">Historial de Sustraccions d'Operaris per Ordre de Treball:</span>
+                <div className="max-h-36 overflow-y-auto divide-y divide-neutral-200 border border-neutral-200 rounded-xl">
+                  {editingProductModal.workerMovementHistory && editingProductModal.workerMovementHistory.length > 0 ? (
+                    editingProductModal.workerMovementHistory.map((mov: any, idx: number) => {
+                      const isUnmatched = !mov.isExpected || mov.status === 'ALERTA_MATERIAL_NO_PREVIST';
+                      return (
+                        <div key={idx} className={`p-3 text-xs flex justify-between items-center ${isUnmatched ? 'bg-red-50/70 border-l-4 border-red-500' : 'bg-white'}`}>
+                          <div>
+                            <p className="font-bold text-neutral-900 flex items-center gap-2">
+                              {mov.worker} • Ordre #{mov.workOrderId || 'OT-402'}
+                              {isUnmatched && (
+                                <span className="px-2 py-0.5 bg-red-100 text-red-800 font-bold rounded-full text-[10px] flex items-center gap-1">
+                                  <AlertTriangle size={10} /> Material No Previst a l'OT!
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-neutral-500 text-[11px] mt-0.5">{mov.date} • Sustret: <strong>{mov.qty}</strong></p>
+                          </div>
+                          <span className={`font-bold text-[11px] px-2 py-1 rounded ${isUnmatched ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                            {isUnmatched ? 'ALERTA MATERIAL' : 'CONFORME OT'}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="p-3 text-xs text-neutral-500 text-center">Sense sustraccions recents d'operaris.</p>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex justify-end gap-3 pt-3 border-t border-neutral-200">
+              <button 
+                onClick={() => setEditingProductModal(null)}
+                className="px-4 py-2.5 bg-neutral-100 text-neutral-700 font-bold text-xs rounded-xl hover:bg-neutral-200 cursor-pointer"
+              >
+                Cancel·lar
+              </button>
+              <button 
+                onClick={() => {
+                  const updated = materials.map(m => m.id === editingProductModal.id ? editingProductModal : m);
+                  setMaterials(updated);
+                  saveStoredMaterials(updated);
+                  setEditingProductModal(null);
+                }}
+                className="px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl hover:bg-primary/90 shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCircle2 size={16} /> Desar Canvis del Producte
+              </button>
+            </div>
 
           </div>
         </div>
