@@ -13,6 +13,12 @@ export default function Page() {
   // Active Modal Chart State (for KPI Cards 1, 2, 3, 4)
   const [activeChartModal, setActiveChartModal] = useState<'clients' | 'proveidors' | 'operaris' | 'benefici' | null>(null);
 
+  // Time Range Filter for All Charts: 'setmanal' | 'mensual' | 'anual'
+  const [timeFilter, setTimeFilter] = useState<'setmanal' | 'mensual' | 'anual'>('mensual');
+
+  // Selected Category in Operator Expenses Chart to view specific tickets
+  const [selectedTicketCategory, setSelectedTicketCategory] = useState<string | null>(null);
+
   // Active Invoice & Budget Inspection Modal
   const [selectedInvoiceModal, setSelectedInvoiceModal] = useState<any | null>(null);
 
@@ -208,57 +214,129 @@ export default function Page() {
     }
   ]);
 
-  // Operator Expenses & Cards Data (Targetes i Liquidacions d'Operaris)
-  const [operatorCards] = useState([
+  // Operator Expenses & Cards Data categorized for full ticket inspection
+  const [allOperatorTickets] = useState([
+    // Combustible Gasoil B Tickets
     {
-      id: 'op-card-1',
-      operator: 'Jordi Soler',
-      cardNumber: '💳 **** **** **** 4821',
-      concept: 'Repostatge Gasoil B + Peatge C-16',
-      date: '03/08/2026',
-      amount: '142,50 €',
-      rawAmount: 142.50,
+      id: 'tiq-1',
       category: 'COMBUSTIBLE',
-      color: '#10b981', // Emerald
-      percentage: '59.7%'
+      categoryLabel: 'Combustible Gasoil B',
+      operator: 'Jordi Soler',
+      role: 'Cap d\'Equip (Tractor 04)',
+      cardNumber: '💳 **** **** 4821',
+      ticketRef: 'TIQ-8812',
+      date: '03/08/2026',
+      amount: '98,50 €',
+      concept: 'Repostatge Gasoil B (Estació Repsol Segre)',
+      receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
     },
     {
-      id: 'op-card-2',
+      id: 'tiq-2',
+      category: 'COMBUSTIBLE',
+      categoryLabel: 'Combustible Gasoil B',
+      operator: 'Carles Torras',
+      role: 'Operari Agrícola',
+      cardNumber: '💳 **** **** 1092',
+      ticketRef: 'TIQ-8815',
+      date: '02/08/2026',
+      amount: '44,00 €',
+      concept: 'Repostatge Dièsel Furgoneta Ford',
+      receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
+    },
+    // Material Urgència Camp Tickets
+    {
+      id: 'tiq-3',
+      category: 'MATERIAL_CAMP',
+      categoryLabel: 'Material Urgència Camp',
       operator: 'Pau Ribas',
-      cardNumber: '💳 **** **** **** 1092',
-      concept: 'Material d\'Urgència: Cinta Tefló + Brides Inox',
+      role: 'Maquinista Agrícola',
+      cardNumber: '💳 **** **** 1092',
+      ticketRef: 'TIQ-8809',
       date: '02/08/2026',
       amount: '45,80 €',
-      rawAmount: 45.80,
-      category: 'MATERIAL_CAMP',
-      color: '#f97316', // Orange
-      percentage: '19.2%'
+      concept: 'Cinta Tefló + Brides Inox (Ferreteria Local)',
+      receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
     },
+    // Manteniment Maquinària Tickets
     {
-      id: 'op-card-3',
+      id: 'tiq-4',
+      category: 'MANTENIMENT',
+      categoryLabel: 'Manteniment Maquinària',
       operator: 'Joan Martí',
-      cardNumber: '💳 **** **** **** 3310',
-      concept: 'Manteniment i Rentat Maquinària',
+      role: 'Manteniment General',
+      cardNumber: '💳 **** **** 3310',
+      ticketRef: 'TIQ-8780',
       date: '31/07/2026',
       amount: '32,00 €',
-      rawAmount: 32.00,
-      category: 'MANTENIMENT',
-      color: '#a855f7', // Purple
-      percentage: '13.4%'
+      concept: 'Rentat i desinfecció a alta pressió de tractor',
+      receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
     },
+    // Dietes i Manutenció Tickets
     {
-      id: 'op-card-4',
+      id: 'tiq-5',
+      category: 'DIETES',
+      categoryLabel: 'Dietes i Manutenció',
       operator: 'Marc Andreu',
-      cardNumber: '💳 **** **** **** 7731',
-      concept: 'Dieta Menú Tècnic en Intervenció',
+      role: 'Tècnic IOT',
+      cardNumber: '💳 **** **** 7731',
+      ticketRef: 'TIQ-8798',
       date: '01/08/2026',
       amount: '18,50 €',
-      rawAmount: 18.50,
-      category: 'DIETES',
-      color: '#06b6d4', // Cyan
-      percentage: '7.7%'
+      concept: 'Menú de migdia durant jornada Finca Masia Vella',
+      receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
     }
   ]);
+
+  // Client Bar Data depending on Time Filter
+  const getClientChartData = () => {
+    if (timeFilter === 'setmanal') {
+      return [
+        { name: 'AgroServei Ponent', amount: '1.200 €', height: '100%', val: 1200 },
+        { name: 'Finca Santa Anna', amount: '450 €', height: '37%', val: 450 },
+        { name: 'Finca Masia Vella', amount: '380 €', height: '31%', val: 380 },
+        { name: 'Cooperativa d\'Ivars', amount: '160 €', height: '13%', val: 160 },
+      ];
+    }
+    if (timeFilter === 'anual') {
+      return [
+        { name: 'AgroServei Ponent', amount: '28.500 €', height: '100%', val: 28500 },
+        { name: 'Finca Santa Anna', amount: '14.200 €', height: '50%', val: 14200 },
+        { name: 'Finca Masia Vella', amount: '9.800 €', height: '34%', val: 9800 },
+        { name: 'Cooperativa d\'Ivars', amount: '6.400 €', height: '22%', val: 6400 },
+      ];
+    }
+    // Mensual (default)
+    return [
+      { name: 'AgroServei Ponent', amount: '2.450 €', height: '100%', val: 2450 },
+      { name: 'Finca Santa Anna', amount: '980 €', height: '40%', val: 980 },
+      { name: 'Finca Masia Vella', amount: '680 €', height: '28%', val: 680 },
+      { name: 'Cooperativa d\'Ivars', amount: '320 €', height: '13%', val: 320 },
+    ];
+  };
+
+  // Supplier Bar Data depending on Time Filter
+  const getSupplierChartData = () => {
+    if (timeFilter === 'setmanal') {
+      return [
+        { name: 'Tuberies i Regs de Ponent', amount: '520,00 €', height: '100%' },
+        { name: 'Suministros del Segre SA', amount: '270,00 €', height: '52%' },
+        { name: 'Tractores i Recanvis Ponent', amount: '120,00 €', height: '23%' },
+      ];
+    }
+    if (timeFilter === 'anual') {
+      return [
+        { name: 'Tuberies i Regs de Ponent', amount: '14.800 €', height: '100%' },
+        { name: 'Suministros del Segre SA', amount: '8.400 €', height: '56%' },
+        { name: 'Tractores i Recanvis Ponent', amount: '4.200 €', height: '28%' },
+      ];
+    }
+    // Mensual (default)
+    return [
+      { name: 'Tuberies i Regs de Ponent', amount: '1.076,90 €', height: '100%' },
+      { name: 'Suministros del Segre SA', amount: '544,50 €', height: '51%' },
+      { name: 'Tractores i Recanvis Ponent', amount: '254,10 €', height: '24%' },
+    ];
+  };
 
   return (
     <main className="relative pt-6 px-4 md:px-xl pb-xl bg-surface min-h-screen">
@@ -277,7 +355,7 @@ export default function Page() {
               Comptabilitat de l'Empresa
             </h1>
             <p className="font-body-base text-on-surface-variant">
-              Haz clic a qualsevol targeta KPI superior per obrir les gràfiques analíques interactives (Barres, Formatgetes i Línies de Tendència).
+              Quadre de comandament unificat. Clica qualsevol targeta KPI per obrir les gràfiques interactives.
             </p>
           </div>
 
@@ -299,14 +377,14 @@ export default function Page() {
           </div>
         </section>
 
-        {/* Global Financial Control Overview KPIs (INTERACTIVE CARDS WITH CHARTS ON CLICK) */}
+        {/* Global Financial Control Overview KPIs */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-md">
           
           {/* KPI 1: Ingressos Clients -> Opens BAR CHART Modal */}
           <div 
             onClick={() => setActiveChartModal('clients')}
             className="group bg-surface-container-lowest p-lg rounded-xl shadow-sm border-l-4 border-emerald-500 flex flex-col justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
-            title="Haz clic per veure la gràfica de barres per clients"
+            title="Haz clic per veure la gràfica d'ingressos per client"
           >
             <div>
               <div className="flex justify-between items-start">
@@ -329,7 +407,7 @@ export default function Page() {
           <div 
             onClick={() => setActiveChartModal('proveidors')}
             className="group bg-surface-container-lowest p-lg rounded-xl shadow-sm border-l-4 border-orange-500 flex flex-col justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
-            title="Haz clic per veure la gràfica de barres de proveïdors"
+            title="Haz clic per veure la gràfica de compres per proveïdor"
           >
             <div>
               <div className="flex justify-between items-start">
@@ -352,7 +430,7 @@ export default function Page() {
           <div 
             onClick={() => setActiveChartModal('operaris')}
             className="group bg-surface-container-lowest p-lg rounded-xl shadow-sm border-l-4 border-blue-500 flex flex-col justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
-            title="Haz clic per veure la gràfica de formatgetes (quesitos) de despeses"
+            title="Haz clic per veure la gràfica de despeses d'operaris"
           >
             <div>
               <div className="flex justify-between items-start">
@@ -366,7 +444,7 @@ export default function Page() {
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-outline-variant/10 text-xs">
               <span className="text-blue-600 font-bold">4 tiquets d'equip</span>
               <span className="text-primary font-bold flex items-center gap-0.5 group-hover:underline">
-                Gràfica Formatgetes <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                Gràfica Despeses <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </span>
             </div>
           </div>
@@ -375,7 +453,7 @@ export default function Page() {
           <div 
             onClick={() => setActiveChartModal('benefici')}
             className="group bg-surface-container-lowest p-lg rounded-xl shadow-sm border-l-4 border-purple-500 flex flex-col justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
-            title="Haz clic per veure la gràfica de línies de benefici, costos i IVA"
+            title="Haz clic per veure la gràfica de benefici, costos i IVA"
           >
             <div>
               <div className="flex justify-between items-start">
@@ -433,7 +511,7 @@ export default function Page() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[20px]">badge</span>
-                Targetes i Liquidacions Operaris ({operatorCards.length})
+                Targetes i Liquidacions Operaris ({allOperatorTickets.length})
               </button>
 
               <button 
@@ -477,7 +555,6 @@ export default function Page() {
                   <tbody className="divide-y divide-outline-variant/10 text-sm">
                     {clientInvoices.map((inv) => (
                       <tr key={inv.id} className="hover:bg-surface-container-low transition-colors">
-                        {/* Clicking Invoice No -> Opens Modal showing BOTH Invoice & Original Budget */}
                         <td className="px-md py-md font-bold text-primary">
                           <button 
                             onClick={() => setSelectedInvoiceModal(inv)}
@@ -489,7 +566,6 @@ export default function Page() {
                           </button>
                         </td>
 
-                        {/* Clicking Order Code -> Opens Task Detail Modal (Fixa de la tasca feta per l'operari) */}
                         <td className="px-md py-md font-body-strong">
                           <button 
                             onClick={() => setSelectedTaskDetailModal(inv)}
@@ -624,21 +700,33 @@ export default function Page() {
                       <th className="px-md py-sm">CATEGORIA</th>
                       <th className="px-md py-sm">DATA</th>
                       <th className="px-md py-sm text-right">IMPORT</th>
+                      <th className="px-md py-sm text-right">ACCIONS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/10 text-sm">
-                    {operatorCards.map((card) => (
-                      <tr key={card.id} className="hover:bg-surface-container-low transition-colors">
-                        <td className="px-md py-md font-body-strong text-primary">{card.operator}</td>
-                        <td className="px-md py-md text-xs font-mono font-bold text-on-surface">{card.cardNumber}</td>
-                        <td className="px-md py-md text-xs text-on-surface-variant max-w-xs">{card.concept}</td>
+                    {allOperatorTickets.map((t) => (
+                      <tr key={t.id} className="hover:bg-surface-container-low transition-colors">
+                        <td className="px-md py-md">
+                          <p className="font-body-strong text-primary">{t.operator}</p>
+                          <p className="text-xs text-on-surface-variant">{t.role}</p>
+                        </td>
+                        <td className="px-md py-md font-mono font-bold text-xs">{t.cardNumber}</td>
+                        <td className="px-md py-md text-xs text-on-surface-variant">{t.concept}</td>
                         <td className="px-md py-md text-xs">
-                          <span className="px-2 py-0.5 bg-surface-container-high text-on-surface rounded font-bold">
-                            {card.category}
+                          <span className="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-bold">
+                            {t.categoryLabel}
                           </span>
                         </td>
-                        <td className="px-md py-md text-xs font-bold">{card.date}</td>
-                        <td className="px-md py-md text-right font-bold text-blue-700 font-mono">{card.amount}</td>
+                        <td className="px-md py-md text-xs font-bold">{t.date}</td>
+                        <td className="px-md py-md text-right font-bold text-blue-700 font-mono">{t.amount}</td>
+                        <td className="px-md py-md text-right">
+                          <button 
+                            onClick={() => alert(`S'ha descarregat el rebut del tiquet ref ${t.ticketRef}`)}
+                            className="px-2.5 py-1 bg-surface-container-high hover:bg-surface-container-highest rounded text-primary text-xs font-body-strong flex items-center gap-1 ml-auto"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">receipt</span> Veure Rebut
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -712,54 +800,62 @@ export default function Page() {
       {activeChartModal === 'clients' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-surface rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-outline-variant flex flex-col gap-md">
-            <div className="flex justify-between items-center pb-sm border-b border-outline-variant/20">
+            
+            {/* Header + Time Filter Selector */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-sm border-b border-outline-variant/20 gap-md">
               <div className="flex items-center gap-2 text-emerald-700">
                 <span className="material-symbols-outlined text-2xl">bar_chart</span>
-                <h3 className="font-headline-md text-lg">Gràfica de Barres: Ingressos per Client</h3>
+                <h3 className="font-headline-md text-lg">Gràfica Ingressos per Client</h3>
               </div>
-              <button onClick={() => setActiveChartModal(null)} className="text-on-surface-variant hover:text-primary p-1">
+
+              {/* Time Range Filter Selector: Setmanal, Mensual, Anual */}
+              <div className="flex items-center gap-xs bg-surface-container-high p-1 rounded-xl">
+                <button 
+                  onClick={() => setTimeFilter('setmanal')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'setmanal' ? 'bg-primary text-white shadow-xs' : 'text-on-surface-variant hover:text-primary'}`}
+                >
+                  Setmanal
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('mensual')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'mensual' ? 'bg-primary text-white shadow-xs' : 'text-on-surface-variant hover:text-primary'}`}
+                >
+                  Mensual
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('anual')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'anual' ? 'bg-primary text-white shadow-xs' : 'text-on-surface-variant hover:text-primary'}`}
+                >
+                  Anual
+                </button>
+              </div>
+
+              <button onClick={() => setActiveChartModal(null)} className="text-on-surface-variant hover:text-primary p-1 ml-auto sm:ml-0">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            <p className="text-xs text-on-surface-variant">
-              Desglossament d'import facturat en euros (eix vertical/superior) per a cada client (eix horitzontal inferior).
-            </p>
-
-            {/* Visual Bar Chart Component */}
-            <div className="bg-surface-container-low p-lg rounded-xl border border-outline-variant/20 flex flex-col gap-lg min-h-[280px] justify-end">
-              <div className="grid grid-cols-4 gap-md items-end h-48 border-b border-outline-variant/30 pb-2">
-                {/* Bar 1 */}
-                <div className="flex flex-col items-center gap-1 group">
-                  <span className="text-xs font-bold text-emerald-700 font-mono">2.450 €</span>
-                  <div className="w-full bg-emerald-500 rounded-t-lg transition-all group-hover:bg-emerald-600" style={{ height: '100%' }}></div>
-                </div>
-
-                {/* Bar 2 */}
-                <div className="flex flex-col items-center gap-1 group">
-                  <span className="text-xs font-bold text-emerald-700 font-mono">980 €</span>
-                  <div className="w-full bg-emerald-500/80 rounded-t-lg transition-all group-hover:bg-emerald-600" style={{ height: '40%' }}></div>
-                </div>
-
-                {/* Bar 3 */}
-                <div className="flex flex-col items-center gap-1 group">
-                  <span className="text-xs font-bold text-emerald-700 font-mono">680 €</span>
-                  <div className="w-full bg-emerald-500/60 rounded-t-lg transition-all group-hover:bg-emerald-600" style={{ height: '28%' }}></div>
-                </div>
-
-                {/* Bar 4 */}
-                <div className="flex flex-col items-center gap-1 group">
-                  <span className="text-xs font-bold text-emerald-700 font-mono">320 €</span>
-                  <div className="w-full bg-emerald-500/40 rounded-t-lg transition-all group-hover:bg-emerald-600" style={{ height: '14%' }}></div>
-                </div>
+            {/* Solid Rendered Bar Chart (100% visible and responsive) */}
+            <div className="bg-surface-container-low p-lg rounded-xl border border-outline-variant/20 flex flex-col gap-lg min-h-[290px] justify-end">
+              <div className="grid grid-cols-4 gap-md items-end h-52 border-b-2 border-outline-variant/40 pb-2 px-2">
+                {getClientChartData().map((bar, idx) => (
+                  <div key={idx} className="flex flex-col items-center gap-2 group h-full justify-end">
+                    <span className="text-xs font-bold text-emerald-800 font-mono bg-emerald-100 px-2 py-0.5 rounded shadow-xs">
+                      {bar.amount}
+                    </span>
+                    <div 
+                      className="w-full max-w-[64px] bg-emerald-500 rounded-t-xl transition-all duration-300 group-hover:bg-emerald-600 shadow-md border-t border-emerald-300"
+                      style={{ height: bar.height, minHeight: '24px' }}
+                    ></div>
+                  </div>
+                ))}
               </div>
 
               {/* Bottom Client Names */}
               <div className="grid grid-cols-4 gap-md text-center text-xs font-body-strong text-primary">
-                <div>AgroServei Ponent</div>
-                <div>Finca Santa Anna</div>
-                <div>Finca Masia Vella</div>
-                <div>Cooperativa d'Ivars</div>
+                {getClientChartData().map((bar, idx) => (
+                  <div key={idx} className="truncate" title={bar.name}>{bar.name}</div>
+                ))}
               </div>
             </div>
 
@@ -778,46 +874,62 @@ export default function Page() {
       {activeChartModal === 'proveidors' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-surface rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-outline-variant flex flex-col gap-md">
-            <div className="flex justify-between items-center pb-sm border-b border-outline-variant/20">
+            
+            {/* Header + Time Filter Selector */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-sm border-b border-outline-variant/20 gap-md">
               <div className="flex items-center gap-2 text-orange-700">
                 <span className="material-symbols-outlined text-2xl">equalizer</span>
-                <h3 className="font-headline-md text-lg">Gràfica de Barres: Compres per Proveïdor</h3>
+                <h3 className="font-headline-md text-lg">Gràfica Compres per Proveïdor</h3>
               </div>
-              <button onClick={() => setActiveChartModal(null)} className="text-on-surface-variant hover:text-primary p-1">
+
+              {/* Time Range Filter Selector */}
+              <div className="flex items-center gap-xs bg-surface-container-high p-1 rounded-xl">
+                <button 
+                  onClick={() => setTimeFilter('setmanal')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'setmanal' ? 'bg-orange-600 text-white shadow-xs' : 'text-on-surface-variant hover:text-orange-700'}`}
+                >
+                  Setmanal
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('mensual')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'mensual' ? 'bg-orange-600 text-white shadow-xs' : 'text-on-surface-variant hover:text-orange-700'}`}
+                >
+                  Mensual
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('anual')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'anual' ? 'bg-orange-600 text-white shadow-xs' : 'text-on-surface-variant hover:text-orange-700'}`}
+                >
+                  Anual
+                </button>
+              </div>
+
+              <button onClick={() => setActiveChartModal(null)} className="text-on-surface-variant hover:text-primary p-1 ml-auto sm:ml-0">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            <p className="text-xs text-on-surface-variant">
-              Desglossament d'import acumulat de compres per proveïdor (eix horitzontal inferior).
-            </p>
-
-            <div className="bg-surface-container-low p-lg rounded-xl border border-outline-variant/20 flex flex-col gap-lg min-h-[280px] justify-end">
-              <div className="grid grid-cols-3 gap-lg items-end h-48 border-b border-outline-variant/30 pb-2">
-                {/* Bar 1 */}
-                <div className="flex flex-col items-center gap-1 group">
-                  <span className="text-xs font-bold text-orange-700 font-mono">1.076,90 €</span>
-                  <div className="w-full bg-orange-500 rounded-t-lg transition-all group-hover:bg-orange-600" style={{ height: '100%' }}></div>
-                </div>
-
-                {/* Bar 2 */}
-                <div className="flex flex-col items-center gap-1 group">
-                  <span className="text-xs font-bold text-orange-700 font-mono">544,50 €</span>
-                  <div className="w-full bg-orange-500/70 rounded-t-lg transition-all group-hover:bg-orange-600" style={{ height: '51%' }}></div>
-                </div>
-
-                {/* Bar 3 */}
-                <div className="flex flex-col items-center gap-1 group">
-                  <span className="text-xs font-bold text-orange-700 font-mono">254,10 €</span>
-                  <div className="w-full bg-orange-500/40 rounded-t-lg transition-all group-hover:bg-orange-600" style={{ height: '24%' }}></div>
-                </div>
+            {/* Solid Rendered Supplier Bar Chart */}
+            <div className="bg-surface-container-low p-lg rounded-xl border border-outline-variant/20 flex flex-col gap-lg min-h-[290px] justify-end">
+              <div className="grid grid-cols-3 gap-lg items-end h-52 border-b-2 border-outline-variant/40 pb-2 px-4">
+                {getSupplierChartData().map((bar, idx) => (
+                  <div key={idx} className="flex flex-col items-center gap-2 group h-full justify-end">
+                    <span className="text-xs font-bold text-orange-800 font-mono bg-orange-100 px-2 py-0.5 rounded shadow-xs">
+                      {bar.amount}
+                    </span>
+                    <div 
+                      className="w-full max-w-[80px] bg-orange-500 rounded-t-xl transition-all duration-300 group-hover:bg-orange-600 shadow-md border-t border-orange-300"
+                      style={{ height: bar.height, minHeight: '24px' }}
+                    ></div>
+                  </div>
+                ))}
               </div>
 
               {/* Bottom Supplier Names */}
-              <div className="grid grid-cols-3 gap-lg text-center text-xs font-body-strong text-orange-900">
-                <div>Tuberies i Regs de Ponent</div>
-                <div>Suministros del Segre SA</div>
-                <div>Tractores i Recanvis Ponent</div>
+              <div className="grid grid-cols-3 gap-lg text-center text-xs font-body-strong text-orange-950">
+                {getSupplierChartData().map((bar, idx) => (
+                  <div key={idx} className="truncate" title={bar.name}>{bar.name}</div>
+                ))}
               </div>
             </div>
 
@@ -831,82 +943,169 @@ export default function Page() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 3: PIE/DONUT CHART FOR OPERATOR EXPENSES ("Quesitos") (Click on KPI 3) */}
+      {/* MODAL 3: OPERATOR EXPENSES CHART & INTERACTIVE TICKETS INSPECTION (KPI 3) */}
       {/* ========================================================================= */}
       {activeChartModal === 'operaris' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-surface rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-outline-variant flex flex-col gap-md">
-            <div className="flex justify-between items-center pb-sm border-b border-outline-variant/20">
+          <div className="bg-surface rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-outline-variant flex flex-col gap-md">
+            
+            {/* Header + Time Filter Selector */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-sm border-b border-outline-variant/20 gap-md">
               <div className="flex items-center gap-2 text-blue-700">
                 <span className="material-symbols-outlined text-2xl">pie_chart</span>
-                <h3 className="font-headline-md text-lg">Gràfica de Formatgetes (Quesitos): Despeses d'Operaris</h3>
+                <h3 className="font-headline-md text-lg">Gràfica Despeses d'Operaris</h3>
               </div>
-              <button onClick={() => setActiveChartModal(null)} className="text-on-surface-variant hover:text-primary p-1">
+
+              {/* Time Range Filter Selector */}
+              <div className="flex items-center gap-xs bg-surface-container-high p-1 rounded-xl">
+                <button 
+                  onClick={() => setTimeFilter('setmanal')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'setmanal' ? 'bg-blue-600 text-white shadow-xs' : 'text-on-surface-variant hover:text-blue-700'}`}
+                >
+                  Setmanal
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('mensual')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'mensual' ? 'bg-blue-600 text-white shadow-xs' : 'text-on-surface-variant hover:text-blue-700'}`}
+                >
+                  Mensual
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('anual')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'anual' ? 'bg-blue-600 text-white shadow-xs' : 'text-on-surface-variant hover:text-blue-700'}`}
+                >
+                  Anual
+                </button>
+              </div>
+
+              <button onClick={() => {
+                setActiveChartModal(null);
+                setSelectedTicketCategory(null);
+              }} className="text-on-surface-variant hover:text-primary p-1 ml-auto sm:ml-0">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            <p className="text-xs text-on-surface-variant">
-              Distribució percentual de les diferents opcions de despesa dels operaris mitjançant la targeta d'empresa.
-            </p>
-
+            {/* Pie Chart + Clickable Legend to access specific section tickets */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-lg items-center bg-surface-container-low p-lg rounded-xl border border-outline-variant/20">
-              {/* Pie/Donut Chart Visual SVG */}
-              <div className="flex justify-center items-center relative">
+              
+              {/* Visual Pie/Donut Chart */}
+              <div className="flex justify-center items-center relative py-2">
                 <svg className="w-48 h-48 -rotate-90" viewBox="0 0 36 36">
                   {/* Combustible: 59.7% */}
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#10b981" strokeWidth="3.8" strokeDasharray="59.7 40.3" strokeDashoffset="0" />
+                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#10b981" strokeWidth="4.2" strokeDasharray="59.7 40.3" strokeDashoffset="0" />
                   {/* Material Camp: 19.2% */}
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#f97316" strokeWidth="3.8" strokeDasharray="19.2 80.8" strokeDashoffset="-59.7" />
+                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#f97316" strokeWidth="4.2" strokeDasharray="19.2 80.8" strokeDashoffset="-59.7" />
                   {/* Manteniment: 13.4% */}
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#a855f7" strokeWidth="3.8" strokeDasharray="13.4 86.6" strokeDashoffset="-78.9" />
+                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#a855f7" strokeWidth="4.2" strokeDasharray="13.4 86.6" strokeDashoffset="-78.9" />
                   {/* Dietes: 7.7% */}
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#06b6d4" strokeWidth="3.8" strokeDasharray="7.7 92.3" strokeDashoffset="-92.3" />
+                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#06b6d4" strokeWidth="4.2" strokeDasharray="7.7 92.3" strokeDashoffset="-92.3" />
                 </svg>
                 <div className="absolute text-center">
-                  <span className="text-xl font-bold font-mono text-primary block">238,80 €</span>
+                  <span className="text-xl font-bold font-mono text-primary block">
+                    {timeFilter === 'setmanal' ? '142,50 €' : timeFilter === 'anual' ? '2.860,00 €' : '238,80 €'}
+                  </span>
                   <span className="text-[10px] text-on-surface-variant uppercase font-bold">Total Despeses</span>
                 </div>
               </div>
 
-              {/* Legend List */}
+              {/* Clickable Legend List (Click any category to inspect specific tickets) */}
               <div className="space-y-sm">
-                <div className="flex items-center justify-between p-sm bg-surface rounded-lg border border-outline-variant/20">
+                <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+                  Clica qualsevol opció per obrir els tiquets de la secció:
+                </p>
+
+                {/* Option 1: Combustible Gasoil B */}
+                <div 
+                  onClick={() => setSelectedTicketCategory(selectedTicketCategory === 'COMBUSTIBLE' ? null : 'COMBUSTIBLE')}
+                  className={`flex items-center justify-between p-sm rounded-lg border transition-all cursor-pointer ${selectedTicketCategory === 'COMBUSTIBLE' ? 'bg-emerald-100 border-emerald-500 shadow-sm font-bold' : 'bg-surface border-outline-variant/20 hover:bg-emerald-50/50'}`}
+                >
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
                     <span className="text-xs font-body-strong">Combustible Gasoil B</span>
                   </div>
-                  <span className="text-xs font-bold font-mono">142,50 € (59,7%)</span>
+                  <span className="text-xs font-mono font-bold text-emerald-800">142,50 € (59,7%)</span>
                 </div>
 
-                <div className="flex items-center justify-between p-sm bg-surface rounded-lg border border-outline-variant/20">
+                {/* Option 2: Material Urgència Camp */}
+                <div 
+                  onClick={() => setSelectedTicketCategory(selectedTicketCategory === 'MATERIAL_CAMP' ? null : 'MATERIAL_CAMP')}
+                  className={`flex items-center justify-between p-sm rounded-lg border transition-all cursor-pointer ${selectedTicketCategory === 'MATERIAL_CAMP' ? 'bg-orange-100 border-orange-500 shadow-sm font-bold' : 'bg-surface border-outline-variant/20 hover:bg-orange-50/50'}`}
+                >
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-                    <span className="text-xs font-body-strong">Material Urgència Camp</span>
+                    <span className="text-xs font-body-strong font-bold">Material Urgència Camp</span>
                   </div>
-                  <span className="text-xs font-bold font-mono">45,80 € (19,2%)</span>
+                  <span className="text-xs font-mono font-bold text-orange-800">45,80 € (19,2%)</span>
                 </div>
 
-                <div className="flex items-center justify-between p-sm bg-surface rounded-lg border border-outline-variant/20">
+                {/* Option 3: Manteniment Maquinària */}
+                <div 
+                  onClick={() => setSelectedTicketCategory(selectedTicketCategory === 'MANTENIMENT' ? null : 'MANTENIMENT')}
+                  className={`flex items-center justify-between p-sm rounded-lg border transition-all cursor-pointer ${selectedTicketCategory === 'MANTENIMENT' ? 'bg-purple-100 border-purple-500 shadow-sm font-bold' : 'bg-surface border-outline-variant/20 hover:bg-purple-50/50'}`}
+                >
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-purple-500"></span>
                     <span className="text-xs font-body-strong">Manteniment Maquinària</span>
                   </div>
-                  <span className="text-xs font-bold font-mono">32,00 € (13,4%)</span>
+                  <span className="text-xs font-mono font-bold text-purple-800">32,00 € (13,4%)</span>
                 </div>
 
-                <div className="flex items-center justify-between p-sm bg-surface rounded-lg border border-outline-variant/20">
+                {/* Option 4: Dietes i Manutenció */}
+                <div 
+                  onClick={() => setSelectedTicketCategory(selectedTicketCategory === 'DIETES' ? null : 'DIETES')}
+                  className={`flex items-center justify-between p-sm rounded-lg border transition-all cursor-pointer ${selectedTicketCategory === 'DIETES' ? 'bg-cyan-100 border-cyan-500 shadow-sm font-bold' : 'bg-surface border-outline-variant/20 hover:bg-cyan-50/50'}`}
+                >
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-cyan-500"></span>
                     <span className="text-xs font-body-strong">Dietes i Manutenció</span>
                   </div>
-                  <span className="text-xs font-bold font-mono">18,50 € (7,7%)</span>
+                  <span className="text-xs font-mono font-bold text-cyan-800">18,50 € (7,7%)</span>
                 </div>
               </div>
+
             </div>
 
+            {/* Specific Tickets Section for Selected Category */}
+            {selectedTicketCategory && (
+              <div className="p-md bg-surface-container-lowest rounded-xl border border-primary/30 flex flex-col gap-sm animate-in fade-in duration-200">
+                <div className="flex justify-between items-center pb-xs border-b border-outline-variant/20">
+                  <span className="font-body-strong text-xs text-primary flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">receipt</span>
+                    Tiquets de la secció: <strong>{selectedTicketCategory}</strong>
+                  </span>
+                  <button onClick={() => setSelectedTicketCategory(null)} className="text-xs text-on-surface-variant hover:text-primary">
+                    Amagar Tiquets
+                  </button>
+                </div>
+
+                <div className="space-y-xs">
+                  {allOperatorTickets.filter(t => t.category === selectedTicketCategory).map((t) => (
+                    <div key={t.id} className="p-sm bg-surface rounded-lg border border-outline-variant/20 flex items-center justify-between text-xs">
+                      <div>
+                        <p className="font-bold text-primary">{t.operator} ({t.ticketRef})</p>
+                        <p className="text-on-surface-variant text-[11px]">{t.concept} • {t.date}</p>
+                      </div>
+                      <div className="flex items-center gap-md">
+                        <span className="font-bold font-mono text-blue-800">{t.amount}</span>
+                        <button 
+                          onClick={() => alert(`Visualitzant la imatge escanejada del tiquet ${t.ticketRef}`)}
+                          className="px-2 py-1 bg-primary text-white rounded text-[11px] font-body-strong flex items-center gap-1 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[12px]">visibility</span> Rebut
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end pt-xs">
-              <button onClick={() => setActiveChartModal(null)} className="px-md py-2 bg-primary text-white rounded-lg text-xs font-body-strong">
+              <button onClick={() => {
+                setActiveChartModal(null);
+                setSelectedTicketCategory(null);
+              }} className="px-md py-2 bg-primary text-white rounded-lg text-xs font-body-strong">
                 Tancar Gràfica
               </button>
             </div>
@@ -920,22 +1119,43 @@ export default function Page() {
       {activeChartModal === 'benefici' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-surface rounded-2xl p-6 max-w-3xl w-full shadow-2xl border border-outline-variant flex flex-col gap-md">
-            <div className="flex justify-between items-center pb-sm border-b border-outline-variant/20">
+            
+            {/* Header + Time Filter Selector */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-sm border-b border-outline-variant/20 gap-md">
               <div className="flex items-center gap-2 text-purple-700">
                 <span className="material-symbols-outlined text-2xl">show_chart</span>
-                <h3 className="font-headline-md text-lg">Gràfica de Línies: Benefici, Costos i IVA</h3>
+                <h3 className="font-headline-md text-lg">Gràfica Benefici, Costos i IVA</h3>
               </div>
-              <button onClick={() => setActiveChartModal(null)} className="text-on-surface-variant hover:text-primary p-1">
+
+              {/* Time Range Filter Selector */}
+              <div className="flex items-center gap-xs bg-surface-container-high p-1 rounded-xl">
+                <button 
+                  onClick={() => setTimeFilter('setmanal')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'setmanal' ? 'bg-purple-700 text-white shadow-xs' : 'text-on-surface-variant hover:text-purple-700'}`}
+                >
+                  Setmanal
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('mensual')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'mensual' ? 'bg-purple-700 text-white shadow-xs' : 'text-on-surface-variant hover:text-purple-700'}`}
+                >
+                  Mensual
+                </button>
+                <button 
+                  onClick={() => setTimeFilter('anual')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeFilter === 'anual' ? 'bg-purple-700 text-white shadow-xs' : 'text-on-surface-variant hover:text-purple-700'}`}
+                >
+                  Anual
+                </button>
+              </div>
+
+              <button onClick={() => setActiveChartModal(null)} className="text-on-surface-variant hover:text-primary p-1 ml-auto sm:ml-0">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            <p className="text-xs text-on-surface-variant">
-              Evolució temporal comparativa amb 3 línies de diferents colors: <strong className="text-emerald-600">Benefici Net</strong>, <strong className="text-orange-600">Costos/Despeses</strong> i <strong className="text-blue-600">Liquidació d'IVA</strong>.
-            </p>
-
+            {/* Multi-Line Trend Chart Component */}
             <div className="bg-surface-container-low p-lg rounded-xl border border-outline-variant/20 flex flex-col gap-md">
-              {/* Multi-Line Chart SVG */}
               <div className="h-56 relative w-full border-b border-l border-outline-variant/40 pt-4 pr-4">
                 <svg className="w-full h-full overflow-visible" viewBox="0 0 400 160">
                   {/* Grid Lines */}
@@ -965,12 +1185,30 @@ export default function Page() {
                   <circle cx="380" cy="130" r="5" fill="#3b82f6" />
                 </svg>
 
-                {/* X Axis Month Labels */}
+                {/* X Axis Time Labels depending on Time Filter */}
                 <div className="flex justify-between text-xs font-bold text-on-surface-variant pt-2">
-                  <span>Maig 2026</span>
-                  <span>Juny 2026</span>
-                  <span>Juliol 2026</span>
-                  <span>Agost 2026 (Actual)</span>
+                  {timeFilter === 'setmanal' ? (
+                    <>
+                      <span>Dilluns</span>
+                      <span>Dimecres</span>
+                      <span>Divendres</span>
+                      <span>Avui (Diumenge)</span>
+                    </>
+                  ) : timeFilter === 'anual' ? (
+                    <>
+                      <span>Q1 2026</span>
+                      <span>Q2 2026</span>
+                      <span>Q3 2026</span>
+                      <span>Q4 2026 (Est.)</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Setmana 1</span>
+                      <span>Setmana 2</span>
+                      <span>Setmana 3</span>
+                      <span>Setmana 4 (Actual)</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -978,15 +1216,15 @@ export default function Page() {
               <div className="grid grid-cols-3 gap-md pt-md border-t border-outline-variant/20 text-xs text-center font-body-strong">
                 <div className="flex items-center justify-center gap-2 p-2 bg-emerald-50 text-emerald-800 rounded-lg">
                   <span className="w-3.5 h-1 bg-emerald-500 rounded-full"></span>
-                  <span>Benefici Net (10.335 €)</span>
+                  <span>Benefici Net ({timeFilter === 'setmanal' ? '2.140 €' : timeFilter === 'anual' ? '124.500 €' : '10.335 €'})</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 p-2 bg-orange-50 text-orange-800 rounded-lg">
                   <span className="w-3.5 h-1 bg-orange-500 rounded-full"></span>
-                  <span>Costos & Despeses (2.114 €)</span>
+                  <span>Costos & Despeses ({timeFilter === 'setmanal' ? '410 €' : timeFilter === 'anual' ? '24.800 €' : '2.114 €'})</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 p-2 bg-blue-50 text-blue-800 rounded-lg">
                   <span className="w-3.5 h-1 bg-blue-500 rounded-full"></span>
-                  <span>IVA Liquidació (1.835 €)</span>
+                  <span>IVA Liquidació ({timeFilter === 'setmanal' ? '320 €' : timeFilter === 'anual' ? '18.400 €' : '1.835 €'})</span>
                 </div>
               </div>
             </div>
