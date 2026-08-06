@@ -331,15 +331,45 @@ Return a single JSON object with this structure:
 
     const processExtractedText = (rawText: string) => {
       const fileNameLower = file.name.toLowerCase();
-      const textLower = rawText.toLowerCase();
       
+      // 1. PDF Vector Stream Pre-processor
+      let cleanText = rawText;
+      if (fileNameLower.endsWith('.pdf')) {
+        const pdfTextBlocks = [];
+        // Extract text from (text) Tj
+        const tjRegex = /\((.*?)\)\s*T[jJ]/g;
+        let match;
+        while ((match = tjRegex.exec(rawText)) !== null) {
+          pdfTextBlocks.push(match[1].replace(/\\(.)/g, '$1'));
+        }
+        
+        // Extract hex text from <hex> Tj
+        const hexTjRegex = /<([0-9a-fA-F]+)>\s*T[jJ]/g;
+        while ((match = hexTjRegex.exec(rawText)) !== null) {
+          try {
+            const hex = match[1];
+            let str = '';
+            for (let i = 0; i < hex.length; i += 2) {
+              str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+            }
+            pdfTextBlocks.push(str);
+          } catch(e) {}
+        }
+        
+        if (pdfTextBlocks.length > 0) {
+          // If we found vector text, overwrite the raw stream with the clean text!
+          cleanText = pdfTextBlocks.join('  ');
+        }
+      }
+
+      const textLower = cleanText.toLowerCase();
       const isInvoice = fileNameLower.includes('factura') || textLower.includes('factura') || fileNameLower.includes('fac');
 
-      // 1. Dynamic Extraction of Document Number (#ALB / #FAC)
+      // 2. Dynamic Extraction of Document Number (#ALB / #FAC)
       let extractedDocNo = '';
-      const docMatch = rawText.match(/(?:ALB|FAC|FACT|ALBARÀ|FACTURA|Nº|NUM|NÚMERO)[-:\s]*([A-Z0-9-/]{3,20})/i)
+      const docMatch = cleanText.match(/(?:ALB|FAC|FACT|ALBARÀ|FACTURA|Nº|NUM|NÚMERO)[-:\s]*([A-Z0-9-/]{3,20})/i)
                     || fileNameLower.match(/(?:ALB|FAC|FACT|ALBARÀ|FACTURA)[-_\s]*([A-Z0-9-/]{3,20})/i)
-                    || rawText.match(/([A-Z]{2,4}-\d{4}-\d{3,5})/i);
+                    || cleanText.match(/([A-Z]{2,4}-\d{4}-\d{3,5})/i);
       
       if (docMatch && docMatch[1]) {
         extractedDocNo = docMatch[1].trim().toUpperCase();
@@ -349,7 +379,7 @@ Return a single JSON object with this structure:
 
       // 2. Dynamic Extraction of NIF / CIF (Filtering out Client NIF B-87654321)
       let extractedNif = '';
-      const nifMatches = rawText.match(/(?:NIF|CIF):?\s*([A-Z0-9-]+)/gi) || rawText.match(/[A-Z][-]?\d{7,8}[A-Z0-9]?/gi);
+      const nifMatches = cleanText.match(/(?:NIF|CIF):?\s*([A-Z0-9-]+)/gi) || cleanText.match(/[A-Z][-]?\d{7,8}[A-Z0-9]?/gi);
       if (nifMatches && nifMatches.length > 0) {
         const supplierNifMatch = nifMatches.find(n => !n.includes('B87654321') && !n.includes('B-87654321'));
         if (supplierNifMatch) {
@@ -369,7 +399,7 @@ Return a single JSON object with this structure:
       // Check existing database first
       const existingProvMatch = proveidors.find(p => 
         (extractedNif && p.nif.replace(/[^A-Z0-9]/gi, '') === extractedNif.replace(/[^A-Z0-9]/gi, '')) ||
-        rawText.toLowerCase().includes(p.name.toLowerCase())
+        cleanText.toLowerCase().includes(p.name.toLowerCase())
       );
 
       if (existingProvMatch) {
@@ -380,7 +410,7 @@ Return a single JSON object with this structure:
         supplierAddress = existingProvMatch.address;
       } else {
         // Extract company line from text dynamically
-        const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        const lines = cleanText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
         let foundCompany = '';
 
         for (let i = 0; i < lines.length; i++) {
@@ -406,13 +436,13 @@ Return a single JSON object with this structure:
           finalSupplierName = cleanName.length >= 3 ? `${cleanName} S.L.` : 'Subministraments Agrícoles S.L.';
         }
 
-        const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        const emailMatch = cleanText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
         if (emailMatch) supplierEmail = emailMatch[0];
 
-        const phoneMatch = rawText.match(/(?:Telèfon|Tel|Phone|Mobil|Mòbil):?\s*([\d\s.-]{9,15})/i);
+        const phoneMatch = cleanText.match(/(?:Telèfon|Tel|Phone|Mobil|Mòbil):?\s*([\d\s.-]{9,15})/i);
         if (phoneMatch) supplierPhone = phoneMatch[1].trim();
 
-        const addrMatch = rawText.match(/(?:C\/|Carrer|Av\.|Avinguda|Passeig|Polígon|Plaça)[^,\n]+/i);
+        const addrMatch = cleanText.match(/(?:C\/|Carrer|Av\.|Avinguda|Passeig|Polígon|Plaça)[^,\n]+/i);
         if (addrMatch) supplierAddress = addrMatch[0].trim();
       }
 
@@ -426,7 +456,7 @@ Return a single JSON object with this structure:
       // Line Regex 1: Spaced table with pipes or spaces e.g. "PROD-01 | Sac Terra Vegetal (50L) | 20 | 5,50 | 110,00"
       const spacedTableRegex = /([A-Z0-9]{3,10}[-_][A-Z0-9]{2,8})\s*\|?\s*(.+?)\s*\|?\s*(\d+)\s*\|?\s*(\d+(?:[,.]\d{2})?)\s*\|?\s*(\d+(?:[,.]\d{2})?)/g;
       let match;
-      while ((match = spacedTableRegex.exec(rawText)) !== null) {
+      while ((match = spacedTableRegex.exec(cleanText)) !== null) {
         const code = match[1].trim();
         const name = match[2].trim();
         const qty = parseInt(match[3], 10);
@@ -458,7 +488,7 @@ Return a single JSON object with this structure:
       // Line Regex 2: Collapsed columns without spaces e.g. "PROD-01Sac Terra Vegetal (50L)205,50110,00"
       if (items.length === 0) {
         const collapsedRegex = /([A-Z0-9]{3,10}[-_][A-Z0-9]{2,8})([A-Za-zà-úÀ-Ú0-9\s()]+?)(\d{1,4})(\d+[,.]\d{2})(\d+[,.]\d{2})/g;
-        while ((match = collapsedRegex.exec(rawText)) !== null) {
+        while ((match = collapsedRegex.exec(cleanText)) !== null) {
           const code = match[1].trim();
           const name = match[2].trim();
           const qty = parseInt(match[3], 10);
@@ -491,7 +521,7 @@ Return a single JSON object with this structure:
       // Line Regex 3: Generic description line with quantity and price
       if (items.length === 0) {
         const genericLineRegex = /(.+?)\s+(\d+)\s+u(?:nitat|sacs|h)?\s+(\d+[,.]\d{2})\s*€?/gi;
-        while ((match = genericLineRegex.exec(rawText)) !== null) {
+        while ((match = genericLineRegex.exec(cleanText)) !== null) {
           const name = match[1].trim();
           const qty = parseInt(match[2], 10);
           const uPrice = parseFloat(match[3].replace(',', '.'));
