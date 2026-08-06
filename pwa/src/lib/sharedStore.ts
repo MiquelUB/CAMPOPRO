@@ -68,22 +68,16 @@ export const INITIAL_PROVEIDORS: SupplierItem[] = [
     paymentMethod: 'Transferència a 30 dies',
     paymentTerms: 'Transferència a 30 dies',
     iban: 'ES91 2100 0412 88 1234567890',
-    totalSpentNumeric: 615.00,
-    totalSpent: '615,00 €',
-    totalBilledMonth: '615,00 €',
-    totalBilledYear: '615,00 €',
-    pendingPayment: '615,00 €',
+    totalSpentNumeric: 0.00,
+    totalSpent: '0,00 €',
+    totalBilledMonth: '0,00 €',
+    totalBilledYear: '0,00 €',
+    pendingPayment: '0,00 €',
     status: 'ACTIU',
     documentsFolder: '/documents/magatzem/proveidors/B-12345678/',
-    digitizedDocs: [
-      { id: 'doc-jv-1', docNumber: 'ALB-2026-001', type: 'ALBARÀ DE LLIURAMENT', date: '04/08/2026', title: 'Albarà de Lliurament #ALB-2026-001 (Jardins Verds S.L.)', fileSize: '1.4 MB', url: '/documents/ALB-2026-001.pdf' }
-    ],
-    supplierHistory: [
-      { id: 'sp-jv-1', date: '04/08/2026', docNumber: 'ALB-2026-001', docType: 'ALBARÀ', concept: '50 Sacs terra vegetal + 10 Lavandula + 2h Poda', qty: '3 articles', amount: '615,00 €', buyer: 'IA Auto-Scan' }
-    ],
-    recentOrders: [
-      { id: 'ALB-2026-001', date: '04/08/2026', concept: 'Sacs de terra vegetal 50L + Lavandula + Hores Poda', amount: '615,00 €', status: 'PENDENT_PAGAMENT' }
-    ]
+    digitizedDocs: [],
+    supplierHistory: [],
+    recentOrders: []
   },
   {
     id: 'p1',
@@ -100,24 +94,16 @@ export const INITIAL_PROVEIDORS: SupplierItem[] = [
     paymentMethod: 'Transferència a 30 dies',
     paymentTerms: 'Transferència a 30 dies',
     iban: 'ES88 2100 0011 22 3344556677',
-    totalSpentNumeric: 1450.00,
-    totalSpent: '1.450,00 €',
-    totalBilledMonth: '490,00 €',
-    totalBilledYear: '1.450,00 €',
+    totalSpentNumeric: 0.00,
+    totalSpent: '0,00 €',
+    totalBilledMonth: '0,00 €',
+    totalBilledYear: '0,00 €',
     pendingPayment: '0,00 €',
     status: 'ACTIU',
     documentsFolder: '/documents/magatzem/proveidors/B25889911/',
-    digitizedDocs: [
-      { id: 'doc1', docNumber: 'ALB-2026-8812', type: 'ALBARÀ', date: '12/04/2026', title: 'Albarà de Lliurament 100m Tub PE 25mm', fileSize: '1.2 MB', url: '/documents/ALB-2026-8812.pdf' },
-      { id: 'doc2', docNumber: 'FAC-2026-9901', type: 'FACTURA', date: '30/04/2026', title: 'Factura Comercial Abril 2026', fileSize: '2.4 MB', url: '/documents/FAC-2026-9901.pdf' }
-    ],
-    supplierHistory: [
-      { id: 'sp1', date: '12/04/2026', docNumber: 'ALB-2026-8812', docType: 'ALBARÀ', concept: 'Tub PE 25mm High-Density (100m)', qty: '100m', amount: '450,00 €', buyer: 'Marc (Enginyer)' },
-      { id: 'sp2', date: '30/04/2026', docNumber: 'FAC-2026-9901', docType: 'FACTURA', concept: 'Factura Comercial Abril 2026 (Tub PE 25mm)', qty: '100m', amount: '490,00 €', buyer: 'Marc (Enginyer)' }
-    ],
-    recentOrders: [
-      { id: 'ALB-2026-8812', date: '12/04/2026', concept: '100m Tub PE 25mm High-Density', amount: '450,00 €', status: 'PAGAT' }
-    ]
+    digitizedDocs: [],
+    supplierHistory: [],
+    recentOrders: []
   },
   {
     id: 'sup-1',
@@ -134,19 +120,16 @@ export const INITIAL_PROVEIDORS: SupplierItem[] = [
     paymentMethod: 'Transferència a 30 dies',
     paymentTerms: 'Transferència a 30 dies',
     iban: 'ES12 2100 9988 77 6655443322',
-    totalSpentNumeric: 8400.00,
-    totalSpent: '8.400,00 €',
-    totalBilledMonth: '544,50 €',
-    totalBilledYear: '8.400,00 €',
-    pendingPayment: '544,50 €',
+    totalSpentNumeric: 0.00,
+    totalSpent: '0,00 €',
+    totalBilledMonth: '0,00 €',
+    totalBilledYear: '0,00 €',
+    pendingPayment: '0,00 €',
     status: 'ACTIU',
     documentsFolder: '/documents/magatzem/proveidors/A25112233/',
     digitizedDocs: [],
     supplierHistory: [],
-    recentOrders: [
-      { id: 'ORD-991', date: '01/08/2026', concept: '10 Sacs Fertilitzant N-12 + Fitonutrients', amount: '544,50 €', status: 'PENDENT_PAGAMENT' },
-      { id: 'ORD-940', date: '15/07/2026', concept: '20 Sacs Nitrat d\'Amoni 27%', amount: '1.120,00 €', status: 'PAGAT' }
-    ]
+    recentOrders: []
   },
   {
     id: 'sup-2',
@@ -163,18 +146,16 @@ export const INITIAL_PROVEIDORS: SupplierItem[] = [
     paymentMethod: 'Domiciliació Bancària (Dia 10)',
     paymentTerms: 'Domiciliació Bancària (Dia 10)',
     iban: 'ES44 2100 5544 33 2211009988',
-    totalSpentNumeric: 4200.00,
-    totalSpent: '4.200,00 €',
-    totalBilledMonth: '254,10 €',
-    totalBilledYear: '4.200,00 €',
+    totalSpentNumeric: 0.00,
+    totalSpent: '0,00 €',
+    totalBilledMonth: '0,00 €',
+    totalBilledYear: '0,00 €',
     pendingPayment: '0,00 €',
     status: 'ACTIU',
     documentsFolder: '/documents/magatzem/proveidors/B25987654/',
     digitizedDocs: [],
     supplierHistory: [],
-    recentOrders: [
-      { id: 'ORD-988', date: '28/07/2026', concept: 'Oli Sintètic 20L + Filtre Oli John Deere', amount: '254,10 €', status: 'PAGAT' }
-    ]
+    recentOrders: []
   }
 ];
 
@@ -511,5 +492,18 @@ export function saveStoredMaterials(list: MaterialItem[]) {
     window.dispatchEvent(new Event('campopro_store_updated'));
   } catch (e) {
     console.error('Error saving materials', e);
+  }
+}
+
+export function clearUploadedDocumentsStore() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem('campopro_proveidors');
+    localStorage.removeItem('campopro_materials');
+    localStorage.setItem('campopro_proveidors', JSON.stringify(INITIAL_PROVEIDORS));
+    localStorage.setItem('campopro_materials', JSON.stringify(INITIAL_MATERIALS));
+    window.dispatchEvent(new Event('campopro_store_updated'));
+  } catch (e) {
+    console.error('Error clearing store', e);
   }
 }

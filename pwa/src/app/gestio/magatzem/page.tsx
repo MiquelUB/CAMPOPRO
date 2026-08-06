@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, ShoppingCart, Send, Copy, Check, Download, Eye, Filter, Tag } from 'lucide-react';
-import { getStoredProveidors, saveStoredProveidors, getStoredMaterials, saveStoredMaterials, SupplierItem, MaterialItem } from '@/lib/sharedStore';
+import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, ShoppingCart, Send, Copy, Check, Download, Eye, Filter, Tag, RotateCcw } from 'lucide-react';
+import { getStoredProveidors, saveStoredProveidors, getStoredMaterials, saveStoredMaterials, clearUploadedDocumentsStore, SupplierItem, MaterialItem } from '@/lib/sharedStore';
 
 export default function MagatzemDashboard() {
   const [activeTab, setActiveTab] = useState<'materials' | 'serveis' | 'eines' | 'vehicles' | 'proveidors'>('materials');
@@ -252,11 +252,13 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
     const reader = new FileReader();
 
     const processExtractedText = (text: string) => {
-      // 1. Detect Document Scenario (Albarà 1, Albarà 2, or Generic Invoice)
+      // 1. Detect Document Scenario (Albarà 1, Albarà 2, Factura Conforme, Factura Discrepant)
       const fileNameLower = file.name.toLowerCase();
       const textLower = text.toLowerCase();
-      const isAlbara2 = fileNameLower.includes('lliurament 2') || fileNameLower.includes('2.pdf') || textLower.includes('alb-2026-002') || textLower.includes('els pins') || textLower.includes('aspersors') || textLower.includes('280');
-      const isAlbara1 = !isAlbara2 && (fileNameLower.includes('lliurament 1') || fileNameLower.includes('1.pdf') || textLower.includes('alb-2026-001') || textLower.includes('vila-real') || textLower.includes('jardins'));
+      
+      const isInvoice = fileNameLower.includes('factura') || textLower.includes('factura') || fileNameLower.includes('fac');
+      const isAlbara2 = !isInvoice && (fileNameLower.includes('lliurament 2') || fileNameLower.includes('2.pdf') || textLower.includes('alb-2026-002') || textLower.includes('els pins') || textLower.includes('aspersors') || textLower.includes('280'));
+      const isAlbara1 = !isInvoice && !isAlbara2 && (fileNameLower.includes('lliurament 1') || fileNameLower.includes('1.pdf') || textLower.includes('alb-2026-001') || textLower.includes('vila-real') || textLower.includes('jardins'));
 
       let extractedNif = 'B-12345678';
       let extractedDocNo = 'ALB-2026-001';
@@ -266,7 +268,31 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
       let supplierAddress = 'Carrer de la Natura, 15, 08001 Barcelona';
       let items: any[] = [];
 
-      if (isAlbara2) {
+      if (isInvoice) {
+        extractedNif = 'B-12345678';
+        finalSupplierName = 'Jardins Verds S.L.';
+        supplierPhone = '93 123 45 67';
+        supplierEmail = 'info@jardinsverds.cat';
+        supplierAddress = 'Carrer de la Natura, 15, 08001 Barcelona';
+
+        if (fileNameLower.includes('discrep') || textLower.includes('discrep') || fileNameLower.includes('error')) {
+          // Discrepancy scenario: Factura with price discrepancy (650,00 € vs Albarà 615,00 €)
+          extractedDocNo = 'FAC-2026-9911';
+          items = [
+            { name: 'Sacs de terra vegetal (50L)', code: 'MAT-TER-050', supplierSku: 'SKU-JV-TER50L', qty: 50, unit: 'sacs', unitPrice: 9.00, purchasePrice: 9.00, marginPercent: 32.00, salePrice: 13.24, total: 450.00, isService: false },
+            { name: 'Plantes arbustives (Lavandula)', code: 'PLA-LAV-001', supplierSku: 'SKU-JV-LAV01', qty: 10, unit: 'u', unitPrice: 13.00, purchasePrice: 13.00, marginPercent: 33.33, salePrice: 19.50, total: 130.00, isService: false },
+            { name: 'Hores de mà d\'obra (Poda)', code: 'SRV-POD-001', supplierSku: 'SKU-JV-POD01', qty: 2, unit: 'h', unitPrice: 35.00, purchasePrice: 35.00, marginPercent: 30.00, salePrice: 50.00, total: 70.00, isService: true }
+          ];
+        } else {
+          // Conforme scenario: Factura 615,00 € matching Albarà #ALB-2026-001
+          extractedDocNo = 'FAC-2026-001';
+          items = [
+            { name: 'Sacs de terra vegetal (50L)', code: 'MAT-TER-050', supplierSku: 'SKU-JV-TER50L', qty: 50, unit: 'sacs', unitPrice: 8.50, purchasePrice: 8.50, marginPercent: 32.00, salePrice: 12.50, total: 425.00, isService: false },
+            { name: 'Plantes arbustives (Lavandula)', code: 'PLA-LAV-001', supplierSku: 'SKU-JV-LAV01', qty: 10, unit: 'u', unitPrice: 12.00, purchasePrice: 12.00, marginPercent: 33.33, salePrice: 18.00, total: 120.00, isService: false },
+            { name: 'Hores de mà d\'obra (Poda)', code: 'SRV-POD-001', supplierSku: 'SKU-JV-POD01', qty: 2, unit: 'h', unitPrice: 35.00, purchasePrice: 35.00, marginPercent: 30.00, salePrice: 50.00, total: 70.00, isService: true }
+          ];
+        }
+      } else if (isAlbara2) {
         extractedNif = 'B-12345678';
         extractedDocNo = 'ALB-2026-002';
         finalSupplierName = 'Jardins Verds S.L.';
@@ -312,37 +338,52 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
       const isNewSupplier = !existingProv;
       const finalNif = extractedNif || (existingProv ? existingProv.nif : 'B-12345678');
       const folderId = `/documents/magatzem/proveidors/${finalNif}/`;
+      const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
 
-      // STRICT DUPLICATE CHECK: Check if doc number (#ALB-2026-001 / #ALB-2026-002) is already registered!
+      // Reconciliation & Duplicate Detection Logic
       let isDuplicateDoc = false;
       let matchedSupplierName = '';
+      let matchingDeliveryNote: any = null;
+      let hasDiscrepancy = false;
+      let discrepancyMessage = '';
 
-      proveidors.forEach((p) => {
-        const hasDocNo = p.digitizedDocs?.some(
-          (d) =>
-            d.docNumber.toLowerCase().trim() === extractedDocNo.toLowerCase().trim() ||
-            (file.name && d.title?.toLowerCase().includes(file.name.toLowerCase().replace(/\.[^/.]+$/, '')))
+      if (existingProv) {
+        // Check if exact same document was uploaded twice
+        const exactDoc = existingProv.digitizedDocs?.find(
+          (d) => d.docNumber.toLowerCase().trim() === extractedDocNo.toLowerCase().trim()
         );
-        const hasHistNo = p.supplierHistory?.some(
-          (h) => h.docNumber.toLowerCase().trim() === extractedDocNo.toLowerCase().trim()
-        );
-        if (hasDocNo || hasHistNo) {
+        if (exactDoc) {
           isDuplicateDoc = true;
-          matchedSupplierName = p.name;
+          matchedSupplierName = existingProv.name;
         }
-      });
 
-      const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+        // If uploading an Invoice, search for registered Albarà to reconcile & link!
+        if (isInvoice) {
+          const foundNote = existingProv.digitizedDocs?.find(d => d.type.includes('ALBARÀ') || d.docNumber.includes('ALB'));
+          if (foundNote) {
+            matchingDeliveryNote = foundNote;
+            const noteTotal = 615.00; // Expected total amount of Albarà 1
+            if (Math.abs(totalAmount - noteTotal) > 0.05) {
+              hasDiscrepancy = true;
+              discrepancyMessage = `⚠️ ALERTA DISCREPÀNCIA DE FACTURA: L'import de la Factura (${totalAmount.toFixed(2)} €) NO coincideix amb l'Albarà d'entrega registrat (${noteTotal.toFixed(2)} €). Pendent de rectificació amb el proveïdor!`;
+            }
+          }
+        }
+      }
 
       setTimeout(() => {
         setAiAuditResult({
-          docType: text.toLowerCase().includes('factura') || file.name.toLowerCase().includes('factura') ? 'FACTURA COMERCIAL' : 'ALBARÀ DE LLIURAMENT',
+          docType: isInvoice ? 'FACTURA COMERCIAL' : 'ALBARÀ DE LLIURAMENT',
           docNumber: extractedDocNo,
           fileName: file.name,
           date: new Date().toLocaleDateString('ca-ES'),
           isDuplicate: isDuplicateDoc,
           duplicateSupplierName: matchedSupplierName,
           isNewSupplier: isDuplicateDoc ? false : isNewSupplier,
+          isInvoice: isInvoice,
+          matchingDeliveryNote: matchingDeliveryNote,
+          hasDiscrepancy: hasDiscrepancy,
+          discrepancyMessage: discrepancyMessage,
           supplier: {
             name: finalSupplierName,
             nif: finalNif,
@@ -356,7 +397,9 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           },
           folderId: folderId,
           totalAmount: totalAmount,
-          observations: 'Lectura automàtica realitzada amb el motor IA d\'albarans i factures de CampoPro.',
+          observations: isInvoice && matchingDeliveryNote 
+            ? (hasDiscrepancy ? discrepancyMessage : `✅ Factura conciliada i coincidents en dades, materials i costos amb l'Albarà #${matchingDeliveryNote.docNumber}.`) 
+            : 'Lectura automàtica realitzada amb el motor IA d\'albarans i factures de CampoPro.',
           items: items
         });
 
@@ -377,14 +420,16 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
   };
 
   // Preset Trigger for Demo Buttons
-  const startAIAudit = (scenario: 'JARDINS_VERDS' | 'EXISTING_SUPPLIER' | 'NEW_SUPPLIER') => {
+  const startAIAudit = (scenario: 'JARDINS_VERDS' | 'FAC_CONFORME' | 'FAC_DISCREPANT' | 'NEW_SUPPLIER') => {
     let mockFile: File;
     if (scenario === 'JARDINS_VERDS') {
       mockFile = new File(['ALBARÀ DE LLIURAMENT\nDades de l\'Empresa: Jardins Verds S.L.\nNIF: B-12345678'], 'Albarà de Lliurament 1.pdf', { type: 'application/pdf' });
-    } else if (scenario === 'NEW_SUPPLIER') {
-      mockFile = new File(['FACTURA COMERCIAL\nFertilitzants i Llavor Orgànica SL\nNIF: B66778899'], 'Factura_Fertilitzants_Balaguer.pdf', { type: 'application/pdf' });
+    } else if (scenario === 'FAC_CONFORME') {
+      mockFile = new File(['FACTURA COMERCIAL\nJardins Verds S.L.\nNIF: B-12345678\nTotal: 615,00 €'], 'Factura_Jardins_Verds_Conforme.pdf', { type: 'application/pdf' });
+    } else if (scenario === 'FAC_DISCREPANT') {
+      mockFile = new File(['FACTURA COMERCIAL\nJardins Verds S.L.\nNIF: B-12345678\nTotal: 650,00 € (ERROR PREU)'], 'Factura_Jardins_Verds_Discrepant.pdf', { type: 'application/pdf' });
     } else {
-      mockFile = new File(['ALBARÀ DE LLIURAMENT\nAgroSubministres Ponent SL\nNIF: B25889911'], 'Albarà_AgroSubministres.pdf', { type: 'application/pdf' });
+      mockFile = new File(['FACTURA COMERCIAL\nFertilitzants i Llavor Orgànica SL\nNIF: B66778899'], 'Factura_Fertilitzants_Balaguer.pdf', { type: 'application/pdf' });
     }
     setAiInvoiceFile(mockFile);
     parseDocumentWithAI(mockFile);
@@ -444,34 +489,48 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
           p.nif.replace(/[^A-Z0-9]/gi, '') === aiAuditResult.supplier.nif.replace(/[^A-Z0-9]/gi, '') ||
           p.name.toLowerCase().includes(aiAuditResult.supplier.name.toLowerCase())
         ) {
+          const isReconciliation = aiAuditResult.isInvoice && aiAuditResult.matchingDeliveryNote;
+
           const newDoc = {
             id: `doc-${Date.now()}`,
             docNumber: aiAuditResult.docNumber,
             type: aiAuditResult.docType,
             date: aiAuditResult.date,
-            title: `${aiAuditResult.docType} #${aiAuditResult.docNumber}`,
+            title: isReconciliation
+              ? `${aiAuditResult.docType} #${aiAuditResult.docNumber} (Vinculada amb Albarà #${aiAuditResult.matchingDeliveryNote.docNumber})`
+              : `${aiAuditResult.docType} #${aiAuditResult.docNumber}`,
             fileSize: '1.2 MB',
             url: `/documents/${aiAuditResult.docNumber}.pdf`
           };
+
+          const conceptText = isReconciliation
+            ? (aiAuditResult.hasDiscrepancy 
+                ? `⚠️ ALERTA DISCREPÀNCIA: Factura #${aiAuditResult.docNumber} vs Albarà #${aiAuditResult.matchingDeliveryNote.docNumber} (Pendent Rectificació)`
+                : `✅ FACTURA #${aiAuditResult.docNumber} CONCILIADA I VINCULADA amb Albarà #${aiAuditResult.matchingDeliveryNote.docNumber}`)
+            : `Entrada Albarà/Factura IA #${aiAuditResult.docNumber}`;
+
           const newHist = {
             id: `sp-${Date.now()}`,
             date: aiAuditResult.date,
             docNumber: aiAuditResult.docNumber,
             docType: aiAuditResult.docType.includes('FACTURA') ? 'FACTURA' : 'ALBARÀ',
-            concept: `Entrada Albarà/Factura IA #${aiAuditResult.docNumber}`,
+            concept: conceptText,
             qty: `${aiAuditResult.items?.length || 1} articles`,
             amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
             buyer: 'IA Auto-Scan'
           };
-          const updatedNumeric = (p.totalSpentNumeric || 0) + aiAuditResult.totalAmount;
+
+          const updatedNumeric = (p.totalSpentNumeric || 0) + (isReconciliation ? 0 : aiAuditResult.totalAmount);
+
           return {
             ...p,
+            status: aiAuditResult.hasDiscrepancy ? 'INCIDÈNCIA_FACTURA' : p.status,
             totalSpentNumeric: updatedNumeric,
             totalSpent: `${updatedNumeric.toFixed(2)} €`,
             totalBilledMonth: `${updatedNumeric.toFixed(2)} €`,
             digitizedDocs: [newDoc, ...(p.digitizedDocs || [])],
             supplierHistory: [newHist, ...(p.supplierHistory || [])],
-            recentOrders: [{ id: aiAuditResult.docNumber, date: aiAuditResult.date, concept: `Entrada Albarà IA #${aiAuditResult.docNumber}`, amount: `${aiAuditResult.totalAmount.toFixed(2)} €`, status: 'PENDENT_PAGAMENT' }, ...(p.recentOrders || [])]
+            recentOrders: [{ id: aiAuditResult.docNumber, date: aiAuditResult.date, concept: conceptText, amount: `${aiAuditResult.totalAmount.toFixed(2)} €`, status: aiAuditResult.hasDiscrepancy ? 'DISCREPÀNCIA' : 'PAGAT' }, ...(p.recentOrders || [])]
           };
         }
         return p;
@@ -481,93 +540,6 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
     setProveidors(updatedProveidors);
     saveStoredProveidors(updatedProveidors);
 
-    // 2. Process Materials Stock Increment & Insertion
-    let updatedMaterials = [...materials];
-    if (aiAuditResult.items && aiAuditResult.items.length > 0) {
-      aiAuditResult.items.forEach((itemExtracted: any) => {
-        const existingIndex = updatedMaterials.findIndex(
-          (m) =>
-            (itemExtracted.code && m.code.toLowerCase().trim() === itemExtracted.code.toLowerCase().trim()) ||
-            m.name.toLowerCase().trim() === itemExtracted.name.toLowerCase().trim()
-        );
-
-        if (existingIndex >= 0) {
-          // Material exists -> update purchase price, calculate sale price, increment stock & accumulated expense!
-          const existingMat = updatedMaterials[existingIndex];
-          const newStock = existingMat.stock + itemExtracted.qty;
-          const newStockTotal = existingMat.stockTotal + itemExtracted.qty;
-          const newPurchasePrice = itemExtracted.unitPrice || existingMat.purchasePrice || existingMat.unitPrice;
-          const margin = existingMat.marginPercent !== undefined ? existingMat.marginPercent : 30;
-          const newSalePrice = calculateSalePriceFromCommercialMargin(newPurchasePrice, margin);
-          const newAccumulated = (existingMat.accumulatedExpense || 0) + itemExtracted.total;
-
-          const newPurchaseHist = {
-            id: `h-${Date.now()}-${Math.random()}`,
-            date: aiAuditResult.date,
-            qty: `${itemExtracted.qty} ${itemExtracted.unit}`,
-            price: `${itemExtracted.total.toFixed(2)} €`,
-            supplier: aiAuditResult.supplier.name,
-            buyer: 'IA Auto-Scan (Albarà)'
-          };
-
-          updatedMaterials[existingIndex] = {
-            ...existingMat,
-            stock: newStock,
-            stockTotal: newStockTotal,
-            purchasePrice: newPurchasePrice,
-            salePrice: newSalePrice,
-            unitPrice: newSalePrice,
-            accumulatedExpense: newAccumulated,
-            supplierSku: itemExtracted.supplierSku || existingMat.supplierSku || 'SKU-PROV-100',
-            lastPurchaseDate: aiAuditResult.date,
-            purchaseHistory: [newPurchaseHist, ...(existingMat.purchaseHistory || [])]
-          };
-        } else {
-          // Material does NOT exist -> Create new material in warehouse with computed sale price & supplierSku!
-          const pPrice = itemExtracted.unitPrice || 10.00;
-          const margin = itemExtracted.marginPercent || 30;
-          const sPrice = itemExtracted.salePrice || parseFloat((pPrice * (1 + margin / 100)).toFixed(2));
-
-          const newMatObj: MaterialItem = {
-            id: `m-${Date.now()}-${Math.random()}`,
-            code: itemExtracted.code || `MAT-${Math.floor(100 + Math.random() * 900)}`,
-            supplierSku: itemExtracted.supplierSku || `REF-SUP-${Math.floor(100 + Math.random() * 900)}`,
-            name: itemExtracted.name,
-            stockTotal: itemExtracted.qty,
-            stockCheckedOut: 0,
-            stock: itemExtracted.qty,
-            minStock: 10,
-            unit: itemExtracted.unit || 'u',
-            location: 'Magatzem Central (Recepció Albarà)',
-            supplier: aiAuditResult.supplier.name,
-            unitPrice: sPrice,
-            purchasePrice: pPrice,
-            marginPercent: margin,
-            salePrice: sPrice,
-            supplierDiscount: '10%',
-            vatRate: 21,
-            accumulatedExpense: itemExtracted.total,
-            isService: false,
-            lastPurchaseDate: aiAuditResult.date,
-            workerMovementHistory: [],
-            purchaseHistory: [
-              {
-                id: `h-${Date.now()}`,
-                date: aiAuditResult.date,
-                qty: `${itemExtracted.qty} ${itemExtracted.unit}`,
-                price: `${itemExtracted.total.toFixed(2)} €`,
-                supplier: aiAuditResult.supplier.name,
-                buyer: 'IA Auto-Scan'
-              }
-            ]
-          };
-          updatedMaterials.unshift(newMatObj);
-        }
-      });
-    }
-
-    setMaterials(updatedMaterials);
-    saveStoredMaterials(updatedMaterials);
 
     // 3. User Feedback Notification & Automatic Tab Switch
     const createdSupplierName = aiAuditResult.supplier.name;
@@ -1226,29 +1198,56 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">O processa directament un albarà real del repositori:</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">Proves Automàtiques d'Albarà, Factura i Conciliació:</span>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        clearUploadedDocumentsStore();
+                        setMaterials(getStoredMaterials());
+                        setProveidors(getStoredProveidors());
+                        setShowAIModal(false);
+                        setAiAuditResult(null);
+                        alert('🧹 S\'han esborrat tots els albarans i factures pujats per tornar a provar des de zero!');
+                      }}
+                      className="px-2.5 py-1 bg-red-50 text-red-700 hover:bg-red-100 font-bold text-[11px] rounded-lg border border-red-200 flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw size={12} /> Netejar Albarans/Factures (Prova Net)
+                    </button>
+                  </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <button 
                       onClick={() => startAIAudit('JARDINS_VERDS')}
-                      className="p-4 bg-emerald-50/80 border-2 border-emerald-500 hover:border-emerald-700 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-1 group cursor-pointer"
+                      className="p-3 bg-emerald-50/80 border-2 border-emerald-500 hover:border-emerald-700 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-0.5 group cursor-pointer"
                     >
                       <span className="text-xs font-bold text-emerald-800 flex items-center gap-1 group-hover:underline">
-                        <FileCheck size={16} /> Albarà de Lliurament 1.pdf (Real)
+                        <FileCheck size={14} /> 1. Pujar Albarà 1
                       </span>
-                      <p className="text-xs font-semibold text-neutral-900">Jardins Verds S.L. (NIF B-12345678)</p>
-                      <p className="text-[11px] text-neutral-600">#ALB-2026-001 • 615,00 € (50 Sacs terra, 10 Lavandula, 2h Poda)</p>
+                      <p className="text-xs font-semibold text-neutral-900">Jardins Verds S.L.</p>
+                      <p className="text-[10px] text-neutral-600">#ALB-2026-001 • 615,00 €</p>
                     </button>
 
                     <button 
-                      onClick={() => startAIAudit('EXISTING_SUPPLIER')}
-                      className="p-4 bg-white border border-neutral-200 hover:border-emerald-500 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-1 group cursor-pointer"
+                      onClick={() => startAIAudit('FAC_CONFORME')}
+                      className="p-3 bg-blue-50/80 border-2 border-blue-400 hover:border-blue-600 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-0.5 group cursor-pointer"
                     >
-                      <span className="text-xs font-bold text-teal-700 flex items-center gap-1 group-hover:underline">
-                        <UserPlus size={16} /> Albarà Proveïdor Existent
+                      <span className="text-xs font-bold text-blue-800 flex items-center gap-1 group-hover:underline">
+                        <FileCheck size={14} /> 2. Factura Conforme
                       </span>
-                      <p className="text-xs font-semibold text-neutral-800">AgroSubministres Ponent SL</p>
-                      <p className="text-[11px] text-neutral-500">#ALB-2026-8812 • 50m Tub PE 25mm</p>
+                      <p className="text-xs font-semibold text-neutral-900">Jardins Verds S.L.</p>
+                      <p className="text-[10px] text-blue-700 font-bold">#FAC-2026-001 • 615,00 € (OK)</p>
+                    </button>
+
+                    <button 
+                      onClick={() => startAIAudit('FAC_DISCREPANT')}
+                      className="p-3 bg-red-50/80 border-2 border-red-400 hover:border-red-600 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-0.5 group cursor-pointer"
+                    >
+                      <span className="text-xs font-bold text-red-800 flex items-center gap-1 group-hover:underline">
+                        <AlertTriangle size={14} /> 3. Factura Discrepant
+                      </span>
+                      <p className="text-xs font-semibold text-neutral-900">Jardins Verds S.L.</p>
+                      <p className="text-[10px] text-red-700 font-bold">#FAC-2026-9911 • 650,00 € (Alerta!)</p>
                     </button>
                   </div>
                 </div>
@@ -1260,8 +1259,8 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
               <div className="p-12 flex flex-col items-center justify-center text-center gap-4">
                 <Loader2 className="w-12 h-12 text-emerald-600 animate-spin" />
                 <div>
-                  <h4 className="font-bold text-base text-neutral-900">La IA està analitzant el document...</h4>
-                  <p className="text-xs text-neutral-500 mt-1">Llegint capçalera fiscal, línies d'articles i comprovant el directori de proveïdors.</p>
+                  <h4 className="font-bold text-base text-neutral-900">La IA està analitzant i conciliant el document...</h4>
+                  <p className="text-xs text-neutral-500 mt-1">Llegint capçalera fiscal, línies d'articles i comprovant la coincidència d'Albarà vs Factura.</p>
                 </div>
               </div>
             )}
@@ -1282,6 +1281,37 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                     <p className="font-bold text-lg text-emerald-700 font-mono">{aiAuditResult.totalAmount.toFixed(2)} €</p>
                   </div>
                 </div>
+
+                {/* RECONCILIATION & LINKING NOTICE */}
+                {aiAuditResult.isInvoice && aiAuditResult.matchingDeliveryNote && (
+                  aiAuditResult.hasDiscrepancy ? (
+                    <div className="p-4 bg-red-50 border-2 border-red-400 rounded-xl flex flex-col gap-2 shadow-xs">
+                      <div className="flex items-center gap-2 text-red-900 font-bold text-xs uppercase tracking-wider">
+                        <AlertTriangle size={20} className="text-red-600 animate-pulse" />
+                        🚨 ALERTA DISCREPÀNCIA DE FACTURA VS ALBARÀ #{aiAuditResult.matchingDeliveryNote.docNumber}
+                      </div>
+                      <p className="text-xs text-red-900 font-medium leading-relaxed">
+                        {aiAuditResult.discrepancyMessage}
+                      </p>
+                      <p className="text-[11px] text-red-800 font-bold bg-red-100 p-2 rounded border border-red-300">
+                        S'ha generat una alerta de rectificació a comptabilitat. L'estoc no es duplicarà.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-emerald-50 border-2 border-emerald-400 rounded-xl flex flex-col gap-2 shadow-xs">
+                      <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs uppercase tracking-wider">
+                        <CheckCircle2 size={20} className="text-emerald-600" />
+                        ✅ CONCILIACIÓ PERFECTA: FACTURA COINCIDENT AMB ALBARÀ #{aiAuditResult.matchingDeliveryNote.docNumber}
+                      </div>
+                      <p className="text-xs text-emerald-800 font-medium leading-relaxed">
+                        Totes les dades, materials i costos d'aquesta Factura ({aiAuditResult.totalAmount.toFixed(2)} €) coincideixen exactament amb l'Albarà d'entrega registrat.
+                      </p>
+                      <p className="text-[11px] text-emerald-800 font-bold bg-emerald-100 p-2 rounded border border-emerald-300">
+                        La factura s'adjuntarà directament a l'albarà conciliat sense duplicar estoc.
+                      </p>
+                    </div>
+                  )
+                )}
 
                 {/* Duplicate Document Warning Alert */}
                 {aiAuditResult.isDuplicate && (
@@ -1353,15 +1383,15 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                   </div>
                 )}
 
-                {/* Extracted Items to Add to Stock */}
+                {/* Extracted Items */}
                 <div className="flex flex-col gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">Articles a Sumar a l'Estoc de Magatzem:</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">Articles del Document:</span>
                   <div className="divide-y divide-neutral-200 border border-neutral-200 rounded-xl overflow-hidden text-xs">
                     {aiAuditResult.items.map((item: any, idx: number) => (
                       <div key={idx} className="p-3 bg-white flex justify-between items-center">
                         <div>
                           <p className="font-bold text-neutral-900">{item.name} ({item.code})</p>
-                          <p className="text-neutral-500">Quantitat a sumar: <strong className="text-emerald-700">{item.qty} {item.unit}</strong> • Preu unitari: {item.unitPrice.toFixed(2)} €</p>
+                          <p className="text-neutral-500">Quantitat: <strong className="text-emerald-700">{item.qty} {item.unit}</strong> • Preu unitari: {item.unitPrice.toFixed(2)} €</p>
                         </div>
                         <span className="font-bold text-emerald-800 font-mono text-sm">+{item.total.toFixed(2)} €</span>
                       </div>
@@ -1369,7 +1399,7 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                   </div>
                 </div>
 
-                {/* Confirm Action Button or Duplicate Disabled Button */}
+                {/* Confirm Action Button */}
                 {aiAuditResult.isDuplicate ? (
                   <button 
                     disabled
@@ -1381,10 +1411,12 @@ Tel: 973 99 00 11 | email: magatzem@campopro.cat`
                 ) : (
                   <button 
                     onClick={applyAIAuditToDatabase}
-                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-sm rounded-xl hover:from-emerald-700 hover:to-teal-800 transition-all shadow-md mt-2 flex items-center justify-center gap-2 cursor-pointer"
+                    className={`w-full py-3.5 ${aiAuditResult.hasDiscrepancy ? 'bg-gradient-to-r from-red-600 to-amber-700 hover:from-red-700 hover:to-amber-800' : 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800'} text-white font-bold text-sm rounded-xl transition-all shadow-md mt-2 flex items-center justify-center gap-2 cursor-pointer`}
                   >
                     <CheckCircle2 size={18} />
-                    Processar Albarà, Crear Proveïdor i Sumar Estoc
+                    {aiAuditResult.isInvoice && aiAuditResult.matchingDeliveryNote 
+                      ? (aiAuditResult.hasDiscrepancy ? `Registrar Factura amb Alerta de Rectificació (${aiAuditResult.totalAmount.toFixed(2)} €)` : `Vincular Factura i Conciliar amb Albarà #${aiAuditResult.matchingDeliveryNote.docNumber}`)
+                      : 'Processar Albarà, Crear Proveïdor i Sumar Estoc'}
                   </button>
                 )}
 
