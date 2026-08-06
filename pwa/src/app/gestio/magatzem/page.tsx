@@ -556,11 +556,65 @@ Return a single JSON object with this structure:
   const startAIAudit = (scenario: 'JARDINS_VERDS' | 'FAC_CONFORME' | 'FAC_DISCREPANT' | 'NEW_SUPPLIER') => {
     let mockFile: File;
     if (scenario === 'JARDINS_VERDS') {
-      mockFile = new File(['ALBARÀ DE LLIURAMENT\nDades de l\'Empresa: Jardins Verds S.L.\nNIF: B-12345678'], 'Albarà de Lliurament 1.pdf', { type: 'application/pdf' });
+      const albaraText = `ALBARÀ DE LLIURAMENT
+Dades de l'Empresa Emissora:
+Jardineria Verda, S.A.
+C/ de les Flors, 45
+08001 Barcelona
+NIF: A-12345678
+Telèfon: 93 123 45 67
+Email: info@jardineriaverda.cat
+
+Dades del Client:
+Campopro, S.L.
+Av. de la Pagesia, 120
+25001 Lleida
+NIF: B-87654321
+
+Detalls de l'Albarà:
+Número d'Albarà: ALB-2026-001
+Data d'Emissió: 01 d'Agost de 2026
+
+PROD-01 Sac Terra Vegetal (50L) 20 5,50 110,00
+PROD-02 Test Terracota Gran 10 12,00 120,00
+PROD-03 Fertilitzant Orgànic (1L) 15 8,20 123,00
+PROD-04 Tisores de Podar Professionals 5 25,00 125,00
+
+Subtotal: 478,00 €`;
+      mockFile = new File([albaraText], 'Albarà de Lliurament Jardineria Verda.pdf', { type: 'application/pdf' });
     } else if (scenario === 'FAC_CONFORME') {
-      mockFile = new File(['FACTURA COMERCIAL\nJardins Verds S.L.\nNIF: B-12345678\nTotal: 615,00 €'], 'Factura_Jardins_Verds_Conforme.pdf', { type: 'application/pdf' });
+      const facConformeText = `FACTURA COMERCIAL
+Dades de l'Empresa Emissora:
+Jardineria Verda, S.A.
+NIF: A-12345678
+Email: info@jardineriaverda.cat
+
+Número de Factura: FAC-2026-001
+Albarà Vinculat: ALB-2026-001
+
+PROD-01 Sac Terra Vegetal (50L) 20 5,50 110,00
+PROD-02 Test Terracota Gran 10 12,00 120,00
+PROD-03 Fertilitzant Orgànic (1L) 15 8,20 123,00
+PROD-04 Tisores de Podar Professionals 5 25,00 125,00
+
+Total Factura: 478,00 €`;
+      mockFile = new File([facConformeText], 'Factura_Jardineria_Verda_Conforme.pdf', { type: 'application/pdf' });
     } else if (scenario === 'FAC_DISCREPANT') {
-      mockFile = new File(['FACTURA COMERCIAL\nJardins Verds S.L.\nNIF: B-12345678\nTotal: 650,00 € (ERROR PREU)'], 'Factura_Jardins_Verds_Discrepant.pdf', { type: 'application/pdf' });
+      const facDiscrepantText = `FACTURA COMERCIAL
+Dades de l'Empresa Emissora:
+Jardineria Verda, S.A.
+NIF: A-12345678
+
+Número de Factura: FAC-2026-9911
+Albarà Vinculat: ALB-2026-001
+
+PROD-01 Sac Terra Vegetal (50L) 20 6,50 130,00
+PROD-02 Test Terracota Gran 10 13,00 130,00
+PROD-03 Fertilitzant Orgànic (1L) 15 9,00 135,00
+PROD-04 Tisores de Podar Professionals 5 27,00 135,00
+
+Total Factura: 530,00 €`;
+      mockFile = new File([facDiscrepantText], 'Factura_Jardineria_Verda_Discrepant.pdf', { type: 'application/pdf' });
     } else {
       mockFile = new File(['FACTURA COMERCIAL\nFertilitzants i Llavor Orgànica SL\nNIF: B66778899'], 'Factura_Fertilitzants_Balaguer.pdf', { type: 'application/pdf' });
     }
@@ -571,13 +625,17 @@ Return a single JSON object with this structure:
   const applyAIAuditToDatabase = () => {
     if (!aiAuditResult) return;
 
+    const supplierLegalName = aiAuditResult.supplier.legalName || aiAuditResult.supplier.name;
+    const supplierNif = aiAuditResult.supplier.nifCif || aiAuditResult.supplier.nif;
+    const isInvoice = aiAuditResult.docType.includes('FACTURA') || aiAuditResult.isInvoice;
+
     // 1. Process Supplier Profile Creation or Update
     let updatedProveidors = [...proveidors];
     if (aiAuditResult.isNewSupplier) {
       const newProvObj: SupplierItem = {
         id: `p-${Date.now()}`,
-        nif: aiAuditResult.supplier.nif,
-        name: aiAuditResult.supplier.name,
+        nif: supplierNif,
+        name: supplierLegalName,
         category: aiAuditResult.supplier.products || 'Subministraments Agrícoles',
         contact: aiAuditResult.supplier.contact || 'Departament Comercial',
         contactPerson: `${aiAuditResult.supplier.contact || 'Departament Comercial'} (${aiAuditResult.supplier.phone || ''})`,
@@ -595,7 +653,7 @@ Return a single JSON object with this structure:
         totalBilledYear: `${aiAuditResult.totalAmount.toFixed(2)} €`,
         pendingPayment: `${aiAuditResult.totalAmount.toFixed(2)} €`,
         status: 'ACTIU',
-        documentsFolder: aiAuditResult.folderId || `/documents/magatzem/proveidors/${aiAuditResult.supplier.nif}/`,
+        documentsFolder: aiAuditResult.folderId || `/documents/magatzem/proveidors/${supplierNif}/`,
         digitizedDocs: [
           { id: `doc-${Date.now()}`, docNumber: aiAuditResult.docNumber, type: aiAuditResult.docType, date: aiAuditResult.date, title: `${aiAuditResult.docType} #${aiAuditResult.docNumber}`, fileSize: '1.2 MB', url: `/documents/${aiAuditResult.docNumber}.pdf` }
         ],
@@ -604,7 +662,7 @@ Return a single JSON object with this structure:
             id: `sp-${Date.now()}`,
             date: aiAuditResult.date,
             docNumber: aiAuditResult.docNumber,
-            docType: aiAuditResult.docType.includes('FACTURA') ? 'FACTURA' : 'ALBARÀ',
+            docType: isInvoice ? 'FACTURA' : 'ALBARÀ',
             concept: `Alta de Proveïdor via ${aiAuditResult.docType} #${aiAuditResult.docNumber}`,
             qty: `${aiAuditResult.items?.length || 1} articles`,
             amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
@@ -619,10 +677,11 @@ Return a single JSON object with this structure:
     } else {
       updatedProveidors = updatedProveidors.map((p) => {
         if (
-          p.nif.replace(/[^A-Z0-9]/gi, '') === aiAuditResult.supplier.nif.replace(/[^A-Z0-9]/gi, '') ||
-          p.name.toLowerCase().includes(aiAuditResult.supplier.name.toLowerCase())
+          p.nif.replace(/[^A-Z0-9]/gi, '') === supplierNif.replace(/[^A-Z0-9]/gi, '') ||
+          p.name.toLowerCase().includes(supplierLegalName.toLowerCase()) ||
+          supplierLegalName.toLowerCase().includes(p.name.toLowerCase())
         ) {
-          const isReconciliation = aiAuditResult.isInvoice && aiAuditResult.matchingDeliveryNote;
+          const isReconciliation = isInvoice && aiAuditResult.matchingDeliveryNote;
 
           const newDoc = {
             id: `doc-${Date.now()}`,
@@ -646,7 +705,7 @@ Return a single JSON object with this structure:
             id: `sp-${Date.now()}`,
             date: aiAuditResult.date,
             docNumber: aiAuditResult.docNumber,
-            docType: aiAuditResult.docType.includes('FACTURA') ? 'FACTURA' : 'ALBARÀ',
+            docType: isInvoice ? 'FACTURA' : 'ALBARÀ',
             concept: conceptText,
             qty: `${aiAuditResult.items?.length || 1} articles`,
             amount: `${aiAuditResult.totalAmount.toFixed(2)} €`,
@@ -673,10 +732,94 @@ Return a single JSON object with this structure:
     setProveidors(updatedProveidors);
     saveStoredProveidors(updatedProveidors);
 
+    // 2. Process Warehouse Stock Update (ONLY Delivery Notes / Albarans add stock!)
+    let updatedMaterials = [...materials];
+
+    if (!isInvoice) {
+      aiAuditResult.items?.forEach((item: any) => {
+        const itemCode = item.code?.trim() || '';
+        const itemDesc = (item.description || item.name || '').trim();
+        const itemQty = Number(item.quantity || item.qty) || 1;
+        const itemUnitPrice = Number(item.unitPrice) || 0;
+        const itemMargin = Number(item.marginPercent) || 30;
+        const itemSalePrice = Number(item.salePrice) || calculateSalePriceFromCommercialMargin(itemUnitPrice, itemMargin);
+        const itemIsService = Boolean(item.isService);
+
+        const existingMatIndex = updatedMaterials.findIndex(m => 
+          (itemCode && m.code.toLowerCase().trim() === itemCode.toLowerCase()) ||
+          m.name.toLowerCase().trim() === itemDesc.toLowerCase()
+        );
+
+        if (existingMatIndex >= 0) {
+          const existingMat = updatedMaterials[existingMatIndex];
+          const newStockTotal = (existingMat.stockTotal || 0) + itemQty;
+          const newStockAvailable = newStockTotal - (existingMat.stockCheckedOut || 0);
+
+          updatedMaterials[existingMatIndex] = {
+            ...existingMat,
+            stockTotal: newStockTotal,
+            stock: newStockAvailable,
+            purchasePrice: itemUnitPrice,
+            marginPercent: itemMargin,
+            salePrice: itemSalePrice,
+            unitPrice: itemSalePrice,
+            lastPurchaseDate: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
+            purchaseHistory: [
+              {
+                id: `ph-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                date: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
+                docNumber: aiAuditResult.docNumber,
+                qty: itemQty,
+                unitPrice: itemUnitPrice,
+                supplierName: supplierLegalName
+              },
+              ...(existingMat.purchaseHistory || [])
+            ]
+          };
+        } else {
+          // Create NEW Material Item in Warehouse Database
+          const newMaterial: MaterialItem = {
+            id: `m-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            code: itemCode || `MAT-${Math.floor(100 + Math.random() * 900)}`,
+            name: itemDesc,
+            supplierSku: item.supplierSku || `REF-SUP-${itemCode}`,
+            stockTotal: itemQty,
+            stockCheckedOut: 0,
+            stock: itemQty,
+            minStock: 5,
+            unit: item.unitOfMeasure || item.unit || 'u',
+            location: 'Magatzem Central',
+            supplier: supplierLegalName,
+            supplierNif: supplierNif,
+            purchasePrice: itemUnitPrice,
+            marginPercent: itemMargin,
+            salePrice: itemSalePrice,
+            unitPrice: itemSalePrice,
+            isService: itemIsService,
+            lastPurchaseDate: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
+            workerMovementHistory: [],
+            purchaseHistory: [
+              {
+                id: `ph-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                date: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
+                docNumber: aiAuditResult.docNumber,
+                qty: itemQty,
+                unitPrice: itemUnitPrice,
+                supplierName: supplierLegalName
+              }
+            ]
+          };
+          updatedMaterials = [newMaterial, ...updatedMaterials];
+        }
+      });
+
+      setMaterials(updatedMaterials);
+      saveStoredMaterials(updatedMaterials);
+    }
 
     // 3. User Feedback Notification & Automatic Tab Switch
-    const createdSupplierName = aiAuditResult.supplier.name;
-    const createdNif = aiAuditResult.supplier.nif;
+    const createdSupplierName = supplierLegalName;
+    const createdNif = supplierNif;
     const itemsCount = aiAuditResult.items?.length || 0;
 
     setActiveTab('materials');
@@ -684,7 +827,11 @@ Return a single JSON object with this structure:
     setAiStep(1);
     setAiAuditResult(null);
 
-    alert(`✅ PROCESSAMENT COMPLETAT AMB ÈXIT!\n\n1. S'ha creat/actualitzat la fitxa del proveïdor "${createdSupplierName}" (NIF: ${createdNif}) amb la seva carpeta /documents/magatzem/proveidors/${createdNif}/.\n2. S'han afegit ${itemsCount} materials i s'ha actualitzat l'estoc del magatzem.`);
+    if (isInvoice) {
+      alert(`✅ FACTURA PROCESSADA I VINCULADA AMB ÈXIT!\n\n1. S'ha vinculat la Factura #${aiAuditResult.docNumber} al proveïdor "${createdSupplierName}".\n2. ${aiAuditResult.hasDiscrepancy ? '⚠️ ATENCIÓ: S\'ha generat una alerta de discrepància de preus per a rectificació.' : '✅ Conciliació conforme. L\'estoc no s\'ha duplicat.'}`);
+    } else {
+      alert(`✅ ALBARÀ PROCESSAT I MAGATZEM ACTUALITZAT!\n\n1. S'ha registrat l'Albarà #${aiAuditResult.docNumber} del proveïdor "${createdSupplierName}" (NIF: ${createdNif}).\n2. S'han afegit ${itemsCount} articles i s'ha SUMAT L'ESTOC al magatzem.`);
+    }
   };
 
   // Manual Creation Handlers
