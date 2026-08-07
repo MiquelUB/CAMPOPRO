@@ -251,266 +251,71 @@ Return a single JSON object with this structure:
 - If critical fields are illegible or missing, report this explicitly rather than proceeding`;
 
   // Dynamic Universal OCR & Text Extractor for ANY uploaded Albarà or Factura
-  const parseDocumentWithAI = (file: File) => {
+  const parseDocumentWithAI = async (file: File) => {
     setIsAiProcessing(true);
     setAiStep(2);
 
-    const processExtractedText = (rawText: string) => {
-      const fileNameLower = file.name.toLowerCase();
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/extract', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error del servidor: ${res.status}`);
+      }
+
+      const data = await res.json();
       
-      // 1. PDF Vector Stream Pre-processor
-      let cleanText = rawText;
-      if (fileNameLower.endsWith('.pdf')) {
-        const pdfTextBlocks = [];
-        // Extract text from (text) Tj
-        const tjRegex = /\((.*?)\)\s*T[jJ]/g;
-        let match;
-        while ((match = tjRegex.exec(rawText)) !== null) {
-          pdfTextBlocks.push(match[1].replace(/\\(.)/g, '$1'));
-        }
-        
-        // Extract hex text from <hex> Tj
-        const hexTjRegex = /<([0-9a-fA-F]+)>\s*T[jJ]/g;
-        while ((match = hexTjRegex.exec(rawText)) !== null) {
-          try {
-            const hex = match[1];
-            let str = '';
-            for (let i = 0; i < hex.length; i += 2) {
-              str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-            }
-            pdfTextBlocks.push(str);
-          } catch(e) {}
-        }
-        
-        if (pdfTextBlocks.length > 0) {
-          // If we found vector text, overwrite the raw stream with the clean text!
-          cleanText = pdfTextBlocks.join('  ');
-        }
-      }
-
-      const textLower = cleanText.toLowerCase();
-      const isInvoice = fileNameLower.includes('factura') || textLower.includes('factura') || fileNameLower.includes('fac');
-
-      // 2. Dynamic Extraction of Document Number (#ALB / #FAC)
-      let extractedDocNo = '';
-      const docMatch = cleanText.match(/(?:ALB|FAC|FACT|ALBARÀ|FACTURA|Nº|NUM|NÚMERO)[-:\s]*([A-Z0-9-/]{3,20})/i)
-                    || fileNameLower.match(/(?:ALB|FAC|FACT|ALBARÀ|FACTURA)[-_\s]*([A-Z0-9-/]{3,20})/i)
-                    || cleanText.match(/([A-Z]{2,4}-\d{4}-\d{3,5})/i);
+      const isInvoice = data.es_factura;
+      const extractedDocNo = data.num_document || `DOC-${Date.now().toString().slice(-4)}`;
+      const finalSupplierName = data.proveidor?.nom || 'Proveïdor Desconegut';
+      const extractedNif = data.proveidor?.nif || '';
+      const supplierEmail = data.proveidor?.email || 'info@proveidor.cat';
+      const supplierPhone = data.proveidor?.telefon || '93 000 00 00';
       
-      if (docMatch && docMatch[1]) {
-        extractedDocNo = docMatch[1].trim().toUpperCase();
-      } else {
-        extractedDocNo = isInvoice ? `FAC-${Date.now().toString().slice(-4)}` : `ALB-${Date.now().toString().slice(-4)}`;
-      }
-
-      // 2. Dynamic Extraction of NIF / CIF (Filtering out Client NIF B-87654321)
-      let extractedNif = '';
-      const nifMatches = cleanText.match(/(?:NIF|CIF):?\s*([A-Z0-9-]+)/gi) || cleanText.match(/[A-Z][-]?\d{7,8}[A-Z0-9]?/gi);
-      if (nifMatches && nifMatches.length > 0) {
-        const supplierNifMatch = nifMatches.find(n => !n.includes('B87654321') && !n.includes('B-87654321'));
-        if (supplierNifMatch) {
-          extractedNif = supplierNifMatch.replace(/^(?:NIF|CIF):?\s*/i, '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-          if (extractedNif.length === 9) {
-            extractedNif = `${extractedNif[0]}-${extractedNif.slice(1)}`;
-          }
-        }
-      }
-
-      // 3. Dynamic Supplier Profile Extraction
-      let finalSupplierName = '';
-      let supplierPhone = '93 123 45 67';
-      let supplierEmail = 'info@proveidor.cat';
-      let supplierAddress = 'Adreça Fiscal Proveïdor';
-
       // Check existing database first
-      const existingProvMatch = proveidors.find(p => 
+      const existingProv = proveidors.find(p => 
         (extractedNif && p.nif.replace(/[^A-Z0-9]/gi, '') === extractedNif.replace(/[^A-Z0-9]/gi, '')) ||
-        cleanText.toLowerCase().includes(p.name.toLowerCase())
+        (p.name && finalSupplierName && p.name.toLowerCase().includes(finalSupplierName.toLowerCase())) ||
+        (finalSupplierName && p.name && finalSupplierName.toLowerCase().includes(p.name.toLowerCase()))
       );
 
-      if (existingProvMatch) {
-        finalSupplierName = existingProvMatch.name;
-        extractedNif = existingProvMatch.nif;
-        supplierPhone = existingProvMatch.phone || '';
-        supplierEmail = existingProvMatch.email || '';
-        supplierAddress = existingProvMatch.address || '';
-      } else {
-        // Extract company line from text dynamically
-        const lines = cleanText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-        let foundCompany = '';
+      const isNewSupplier = !existingProv;
+      const finalNif = extractedNif || (existingProv ? existingProv.nif : 'Pendent de NIF');
+      const folderId = `/documents/magatzem/proveidors/${finalNif}/`;
 
-        for (let i = 0; i < lines.length; i++) {
-          const l = lines[i];
-          if (/emissora|proveïdor|supplier|vendedor|empresa:/i.test(l) && i + 1 < lines.length) {
-            foundCompany = lines[i + 1];
-            break;
-          }
-          if (/S\.A\.|S\.L\.|SL|SA|S\.C\.P\./i.test(l) && !l.includes('Campopro')) {
-            foundCompany = l;
-            break;
-          }
-        }
-
-        if (foundCompany) {
-          finalSupplierName = foundCompany.replace(/(?:Dades|Client|Campopro|NIF|Telèfon|Email|Emissora|Detalls).*/gi, '').trim();
-        } else {
-          let cleanName = file.name
-            .replace(/\.[^/.]+$/, "")
-            .replace(/(?:albar[àa]|factura|lliurament|document|ticket|nº|num|pdf|jpg|png|\d+)/gi, "")
-            .replace(/[-_]/g, " ")
-            .trim();
-          finalSupplierName = cleanName.length >= 3 ? `${cleanName} S.L.` : 'Subministraments Agrícoles S.L.';
-        }
-
-        const emailMatch = cleanText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-        if (emailMatch) supplierEmail = emailMatch[0];
-
-        const phoneMatch = cleanText.match(/(?:Telèfon|Tel|Phone|Mobil|Mòbil):?\s*([\d\s.-]{9,15})/i);
-        if (phoneMatch) supplierPhone = phoneMatch[1].trim();
-
-        const addrMatch = cleanText.match(/(?:C\/|Carrer|Av\.|Avinguda|Passeig|Polígon|Plaça)[^,\n]+/i);
-        if (addrMatch) supplierAddress = addrMatch[0].trim();
-      }
-
-      if (!extractedNif) {
-        extractedNif = `B${Math.floor(10000000 + Math.random() * 90000000)}`;
-      }
-
-      // 4. Dynamic Line Items Extraction (Handles ALL table layouts!)
-      let items: any[] = [];
-
-      // Line Regex 1: Spaced table with pipes or spaces e.g. "PROD-01 | Sac Terra Vegetal (50L) | 20 | 5,50 | 110,00"
-      const spacedTableRegex = /([A-Z0-9]{3,10}[-_][A-Z0-9]{2,8})\s*\|?\s*(.+?)\s*\|?\s*(\d+)\s*\|?\s*(\d+(?:[,.]\d{2})?)\s*\|?\s*(\d+(?:[,.]\d{2})?)/g;
-      let match;
-      while ((match = spacedTableRegex.exec(cleanText)) !== null) {
-        const code = match[1].trim();
-        const name = match[2].trim();
-        const qty = parseInt(match[3], 10);
-        const uPrice = parseFloat(match[4].replace(',', '.'));
-        const total = parseFloat(match[5].replace(',', '.'));
-
-        if (code && name && !isNaN(qty) && qty > 0 && !isNaN(uPrice)) {
-          const isService = code.startsWith('SRV') || /h|hores|poda|revisió|manteniment/i.test(name);
-          items.push({
-            code,
+      // Map Items
+      let mappedItems: any[] = [];
+      if (data.items && Array.isArray(data.items)) {
+        mappedItems = data.items.map((item: any) => {
+          const qty = item.quantitat || 1;
+          const uPrice = item.preu_unitari || 0;
+          const code = item.codi || `MAT-${Math.floor(100 + Math.random() * 900)}`;
+          return {
+            code: code,
             supplierSku: `REF-SUP-${code}`,
-            description: name,
-            name: name,
+            description: item.descripcio || 'Article sense descripció',
+            name: item.descripcio || 'Article',
             quantity: qty,
             qty: qty,
-            unitOfMeasure: isService ? 'h' : 'u',
-            unit: isService ? 'h' : 'u',
+            unitOfMeasure: 'u',
+            unit: 'u',
             unitPrice: uPrice,
             purchasePrice: uPrice,
             marginPercent: 30,
             salePrice: calculateSalePriceFromCommercialMargin(uPrice, 30),
-            itemTotal: total > 0 ? total : uPrice * qty,
-            total: total > 0 ? total : uPrice * qty,
-            isService
-          });
-        }
-      }
-
-      // Line Regex 2: Collapsed columns without spaces e.g. "PROD-01Sac Terra Vegetal (50L)205,50110,00"
-      if (items.length === 0) {
-        const collapsedRegex = /([A-Z0-9]{3,10}[-_][A-Z0-9]{2,8})([A-Za-zà-úÀ-Ú0-9\s()]+?)(\d{1,4})(\d+[,.]\d{2})(\d+[,.]\d{2})/g;
-        while ((match = collapsedRegex.exec(cleanText)) !== null) {
-          const code = match[1].trim();
-          const name = match[2].trim();
-          const qty = parseInt(match[3], 10);
-          const uPrice = parseFloat(match[4].replace(',', '.'));
-          const total = parseFloat(match[5].replace(',', '.'));
-
-          if (code && name && !isNaN(qty) && qty > 0 && !isNaN(uPrice)) {
-            const isService = code.startsWith('SRV') || /h|hores|poda|revisió|manteniment/i.test(name);
-            items.push({
-              code,
-              supplierSku: `REF-SUP-${code}`,
-              description: name,
-              name: name,
-              quantity: qty,
-              qty: qty,
-              unitOfMeasure: isService ? 'h' : 'u',
-              unit: isService ? 'h' : 'u',
-              unitPrice: uPrice,
-              purchasePrice: uPrice,
-              marginPercent: 30,
-              salePrice: calculateSalePriceFromCommercialMargin(uPrice, 30),
-              itemTotal: total > 0 ? total : uPrice * qty,
-              total: total > 0 ? total : uPrice * qty,
-              isService
-            });
-          }
-        }
-      }
-
-      // Line Regex 3: Generic description line with quantity and price
-      if (items.length === 0) {
-        const genericLineRegex = /(.+?)\s+(\d+)\s+u(?:nitat|sacs|h)?\s+(\d+[,.]\d{2})\s*€?/gi;
-        while ((match = genericLineRegex.exec(cleanText)) !== null) {
-          const name = match[1].trim();
-          const qty = parseInt(match[2], 10);
-          const uPrice = parseFloat(match[3].replace(',', '.'));
-
-          if (name && !isNaN(qty) && qty > 0 && !isNaN(uPrice)) {
-            const code = `MAT-${Math.floor(100 + Math.random() * 900)}`;
-            items.push({
-              code,
-              supplierSku: `REF-SUP-${code}`,
-              description: name,
-              name: name,
-              quantity: qty,
-              qty: qty,
-              unitOfMeasure: 'u',
-              unit: 'u',
-              unitPrice: uPrice,
-              purchasePrice: uPrice,
-              marginPercent: 30,
-              salePrice: calculateSalePriceFromCommercialMargin(uPrice, 30),
-              itemTotal: uPrice * qty,
-              total: uPrice * qty,
-              isService: false
-            });
-          }
-        }
-      }
-
-      // Fallback for binary PDF without OCR layer: extract title dynamically from filename
-      if (items.length === 0) {
-        const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        items = [
-          {
-            code: `MAT-${Math.floor(100 + Math.random() * 900)}`,
-            supplierSku: `REF-SUP-DYNAMIC`,
-            description: `Subministraments (${cleanTitle})`,
-            name: `Subministraments (${cleanTitle})`,
-            quantity: 10,
-            qty: 10,
-            unitOfMeasure: 'u',
-            unit: 'u',
-            unitPrice: 25.00,
-            purchasePrice: 25.00,
-            marginPercent: 30,
-            salePrice: 35.71,
-            itemTotal: 250.00,
-            total: 250.00,
+            itemTotal: qty * uPrice,
+            total: qty * uPrice,
             isService: false
-          }
-        ];
+          };
+        });
       }
 
-      const totalAmount = items.reduce((sum, item) => sum + (item.itemTotal || item.total), 0);
-
-      // Check if supplier exists in local proveidors database
-      const existingProv = proveidors.find(p => 
-        (extractedNif && p.nif.replace(/[^A-Z0-9]/gi, '') === extractedNif.replace(/[^A-Z0-9]/gi, '')) ||
-        p.name.toLowerCase().includes(finalSupplierName.toLowerCase()) ||
-        finalSupplierName.toLowerCase().includes(p.name.toLowerCase())
-      );
-
-      const isNewSupplier = !existingProv;
-      const finalNif = extractedNif || (existingProv ? existingProv.nif : 'A-12345678');
-      const folderId = `/documents/magatzem/proveidors/${finalNif}/`;
+      const totalAmount = mappedItems.reduce((sum: number, item: any) => sum + (item.itemTotal || item.total), 0);
 
       // Reconciliation & Duplicate Detection Logic
       let isDuplicateDoc = false;
@@ -546,73 +351,55 @@ Return a single JSON object with this structure:
         }
       }
 
-      setTimeout(() => {
-        // Exact JSON format specified by prompt
-        setAiAuditResult({
-          docType: isInvoice ? 'FACTURA COMERCIAL' : 'ALBARÀ DE LLIURAMENT',
-          docNumber: extractedDocNo,
-          emissionDate: new Date().toISOString().split('T')[0],
-          supplier: {
-            legalName: finalSupplierName,
-            nifCif: finalNif,
-            email: existingProv ? existingProv.email : supplierEmail,
-            phone: existingProv ? existingProv.phone : supplierPhone,
-            address: existingProv ? existingProv.address : supplierAddress,
-            // Aliases for compatibility
-            name: finalSupplierName,
-            nif: finalNif,
-            contact: existingProv ? existingProv.contact : 'Departament Comercial',
-            paymentMethod: existingProv ? existingProv.paymentMethod : 'Transferència a 30 dies'
-          },
-          items: items,
-          subtotal: totalAmount,
-          tax: 0.00,
-          totalAmount: totalAmount,
-          reconciliation: {
-            linkedDocuments: matchingDeliveryNote ? [matchingDeliveryNote.docNumber] : [],
-            status: hasDiscrepancy ? 'ALERTA DISCREPÀNCIA DE FACTURA' : 'CONFORME',
-            discrepancies: hasDiscrepancy ? [discrepancyMessage] : []
-          },
-          supplierAction: isNewSupplier ? 'NEW_SUPPLIER' : 'EXISTING',
-          extractionNotes: 'Document extracted and verified against CampoPro warehouse and supplier registry.',
-          
-          // Internal UI helper flags
-          fileName: file.name,
-          date: new Date().toLocaleDateString('ca-ES'),
-          isDuplicate: isDuplicateDoc,
-          duplicateSupplierName: matchedSupplierName,
-          isNewSupplier: isDuplicateDoc ? false : isNewSupplier,
-          isInvoice: isInvoice,
-          matchingDeliveryNote: matchingDeliveryNote,
-          hasDiscrepancy: hasDiscrepancy,
-          discrepancyMessage: discrepancyMessage,
-          folderId: folderId
-        });
+      setAiAuditResult({
+        docType: isInvoice ? 'FACTURA COMERCIAL' : 'ALBARÀ DE LLIURAMENT',
+        docNumber: extractedDocNo,
+        emissionDate: data.data_emissio || new Date().toISOString().split('T')[0],
+        supplier: {
+          legalName: finalSupplierName,
+          nifCif: finalNif,
+          email: existingProv ? existingProv.email : supplierEmail,
+          phone: existingProv ? existingProv.phone : supplierPhone,
+          address: existingProv ? existingProv.address : 'Adreça Fiscal',
+          // Aliases for compatibility
+          name: finalSupplierName,
+          nif: finalNif,
+          contact: existingProv ? existingProv.contact : 'Departament Comercial',
+          paymentMethod: existingProv ? existingProv.paymentMethod : 'Transferència a 30 dies'
+        },
+        items: mappedItems,
+        subtotal: totalAmount,
+        tax: 0.00,
+        totalAmount: totalAmount,
+        reconciliation: {
+          linkedDocuments: matchingDeliveryNote ? [matchingDeliveryNote.docNumber] : [],
+          status: hasDiscrepancy ? 'ALERTA DISCREPÀNCIA DE FACTURA' : 'CONFORME',
+          discrepancies: hasDiscrepancy ? [discrepancyMessage] : []
+        },
+        supplierAction: isNewSupplier ? 'NEW_SUPPLIER' : 'EXISTING',
+        extractionNotes: 'Document extret de forma segura amb Gemini 2.5 Flash de Google IA.',
+        
+        // Internal UI helper flags
+        fileName: file.name,
+        date: new Date().toLocaleDateString('ca-ES'),
+        isDuplicate: isDuplicateDoc,
+        duplicateSupplierName: matchedSupplierName,
+        isNewSupplier: isDuplicateDoc ? false : isNewSupplier,
+        isInvoice: isInvoice,
+        matchingDeliveryNote: matchingDeliveryNote,
+        hasDiscrepancy: hasDiscrepancy,
+        discrepancyMessage: discrepancyMessage,
+        folderId: folderId
+      });
 
-        setIsAiProcessing(false);
-        setAiStep(3);
-      }, 1800);
-    };
-
-    // Universal Binary PDF & Text File Stream Reader
-    if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const buffer = e.target?.result as ArrayBuffer;
-        const decoder = new TextDecoder('latin1');
-        const rawPdfText = decoder.decode(buffer);
-        processExtractedText(rawPdfText);
-      };
-      reader.readAsArrayBuffer(file);
-    } else if (file.type.includes('text') || file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const textContent = e.target?.result as string || '';
-        processExtractedText(textContent);
-      };
-      reader.readAsText(file);
-    } else {
-      processExtractedText(file.name);
+      setIsAiProcessing(false);
+      setAiStep(3);
+    } catch (err) {
+      console.error("Error processant amb Gemini:", err);
+      // Fail gracefully or show alert
+      setIsAiProcessing(false);
+      setAiStep(0);
+      alert("S'ha produït un error al processar el document amb IA. Si us plau, reviseu que la clau GEMINI_API_KEY estigui configurada i el servei respongui.");
     }
   };
 
