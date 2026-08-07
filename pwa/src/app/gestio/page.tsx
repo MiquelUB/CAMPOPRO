@@ -149,7 +149,7 @@ export default function Page() {
               </div>
               <h3 className="font-label-caps text-on-surface-variant mb-xs">OPERARIS ACTIUS</h3>
               <div className="flex items-baseline gap-xs">
-                <span className="font-display-lg text-display-lg text-on-surface">12</span>
+                <span className="font-display-lg text-display-lg text-on-surface">0</span>
                 <span className="text-on-surface-variant font-body-base">al camp</span>
               </div>
             </div>
@@ -187,7 +187,7 @@ export default function Page() {
               </div>
               <h3 className="font-label-caps text-on-surface-variant mb-xs">FACTURACIÓ MES</h3>
               <div className="flex items-baseline gap-xs">
-                <span className="font-display-lg text-display-lg text-on-surface">12.450 €</span>
+                <span className="font-display-lg text-display-lg text-on-surface">0 €</span>
               </div>
             </div>
           </section>

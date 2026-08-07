@@ -67,7 +67,7 @@ export default function Page() {
           <div className="bg-surface-container-lowest p-lg rounded-xl shadow-sm border-l-4 border-primary flex items-center justify-between">
             <div>
               <span className="text-xs font-label-caps text-on-surface-variant">PROVEÏDORS ACTIUS</span>
-              <p className="text-2xl font-display-lg text-primary mt-1">3 Empresa/s</p>
+              <p className="text-2xl font-display-lg text-primary mt-1">{suppliersDb.length} Empresa/s</p>
             </div>
             <span className="p-2 bg-primary/10 text-primary rounded-lg">
               <span className="material-symbols-outlined text-2xl">storefront</span>
@@ -77,7 +77,7 @@ export default function Page() {
           <div className="bg-surface-container-lowest p-lg rounded-xl shadow-sm border-l-4 border-orange-500 flex items-center justify-between">
             <div>
               <span className="text-xs font-label-caps text-on-surface-variant">COMPRES MES EN CURS</span>
-              <p className="text-2xl font-display-lg text-orange-700 mt-1">1.875,50 €</p>
+              <p className="text-2xl font-display-lg text-orange-700 mt-1">0,00 €</p>
             </div>
             <span className="p-2 bg-orange-50 text-orange-600 rounded-lg">
               <span className="material-symbols-outlined text-2xl">shopping_bag</span>
@@ -87,7 +87,7 @@ export default function Page() {
           <div className="bg-surface-container-lowest p-lg rounded-xl shadow-sm border-l-4 border-emerald-500 flex items-center justify-between">
             <div>
               <span className="text-xs font-label-caps text-on-surface-variant">COMPRES ACUMULADES 2026</span>
-              <p className="text-2xl font-display-lg text-emerald-700 mt-1">27.400,00 €</p>
+              <p className="text-2xl font-display-lg text-emerald-700 mt-1">0,00 €</p>
             </div>
             <span className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
               <span className="material-symbols-outlined text-2xl">payments</span>

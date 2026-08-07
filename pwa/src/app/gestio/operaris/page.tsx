@@ -194,7 +194,7 @@ export default function OperarisDashboardPage() {
           </div>
           <div>
             <span className="text-xs text-neutral-500 font-semibold block uppercase">Valoració Mitjana</span>
-            <span className="text-xl font-extrabold text-neutral-900">4.9 / 5.0 ⭐</span>
+            <span className="text-xl font-extrabold text-neutral-900">—</span>
           </div>
         </div>
 
@@ -204,7 +204,7 @@ export default function OperarisDashboardPage() {
           </div>
           <div>
             <span className="text-xs text-neutral-500 font-semibold block uppercase">Control Horari Llei</span>
-            <span className="text-xl font-extrabold text-emerald-800">100% Validat</span>
+            <span className="text-xl font-extrabold text-emerald-800">0%</span>
           </div>
         </div>
 
@@ -214,7 +214,7 @@ export default function OperarisDashboardPage() {
           </div>
           <div>
             <span className="text-xs text-neutral-500 font-semibold block uppercase">Km Conduïts Flota</span>
-            <span className="text-xl font-extrabold text-neutral-900">4.460 km</span>
+            <span className="text-xl font-extrabold text-neutral-900">0 km</span>
           </div>
         </div>
 
@@ -224,7 +224,7 @@ export default function OperarisDashboardPage() {
           </div>
           <div>
             <span className="text-xs text-neutral-500 font-semibold block uppercase">Eines Assignades</span>
-            <span className="text-xl font-extrabold text-neutral-900">6 En Ús</span>
+            <span className="text-xl font-extrabold text-neutral-900">0 En Ús</span>
           </div>
         </div>
       </div>

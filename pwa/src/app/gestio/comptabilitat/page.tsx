@@ -98,10 +98,10 @@ export default function Page() {
                   <span className="material-symbols-outlined text-[20px]">bar_chart</span>
                 </span>
               </div>
-              <p className="text-2xl font-display-lg text-emerald-700 mt-2">12.450,00 €</p>
+              <p className="text-2xl font-display-lg text-emerald-700 mt-2">0,00 €</p>
             </div>
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-outline-variant/10 text-xs">
-              <span className="text-emerald-600 font-bold">4 factures • 92% cobrat</span>
+              <span className="text-emerald-600 font-bold">{clientInvoices.length} factures</span>
               <span className="text-primary font-bold flex items-center gap-0.5 group-hover:underline">
                 Gràfica Barres <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </span>
@@ -121,10 +121,10 @@ export default function Page() {
                   <span className="material-symbols-outlined text-[20px]">equalizer</span>
                 </span>
               </div>
-              <p className="text-2xl font-display-lg text-orange-700 mt-2">1.875,50 €</p>
+              <p className="text-2xl font-display-lg text-orange-700 mt-2">0,00 €</p>
             </div>
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-outline-variant/10 text-xs">
-              <span className="text-orange-600 font-bold">3 factures rebudes</span>
+              <span className="text-orange-600 font-bold">{supplierInvoices.length} factures rebudes</span>
               <span className="text-primary font-bold flex items-center gap-0.5 group-hover:underline">
                 Gràfica Proveïdors <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </span>
@@ -144,10 +144,10 @@ export default function Page() {
                   <span className="material-symbols-outlined text-[20px]">pie_chart</span>
                 </span>
               </div>
-              <p className="text-2xl font-display-lg text-blue-700 mt-2">238,80 €</p>
+              <p className="text-2xl font-display-lg text-blue-700 mt-2">0,00 €</p>
             </div>
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-outline-variant/10 text-xs">
-              <span className="text-blue-600 font-bold">4 tiquets d'equip</span>
+              <span className="text-blue-600 font-bold">{allOperatorTickets.length} tiquets d'equip</span>
               <span className="text-primary font-bold flex items-center gap-0.5 group-hover:underline">
                 Gràfica Despeses <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </span>
@@ -167,10 +167,10 @@ export default function Page() {
                   <span className="material-symbols-outlined text-[20px]">show_chart</span>
                 </span>
               </div>
-              <p className="text-2xl font-display-lg text-purple-700 mt-2">10.335,70 €</p>
+              <p className="text-2xl font-display-lg text-purple-700 mt-2">0,00 €</p>
             </div>
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-outline-variant/10 text-xs">
-              <span className="text-purple-600 font-bold">Marge net: 82,9%</span>
+              <span className="text-purple-600 font-bold">Marge net: 0%</span>
               <span className="text-primary font-bold flex items-center gap-0.5 group-hover:underline">
                 Gràfica Línies <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </span>
@@ -469,19 +469,19 @@ export default function Page() {
                   <div className="space-y-sm text-sm">
                     <div className="flex justify-between items-center p-sm bg-surface rounded-lg">
                       <span className="text-on-surface-variant font-body-strong">Ingressos Brut (Facturació Clients)</span>
-                      <span className="font-bold text-emerald-700 font-mono">+12.450,00 €</span>
+                      <span className="font-bold text-emerald-700 font-mono">+0,00 €</span>
                     </div>
                     <div className="flex justify-between items-center p-sm bg-surface rounded-lg">
                       <span className="text-on-surface-variant font-body-strong">Despeses Proveïdors & Materials</span>
-                      <span className="font-bold text-orange-700 font-mono">-1.875,50 €</span>
+                      <span className="font-bold text-orange-700 font-mono">-0,00 €</span>
                     </div>
                     <div className="flex justify-between items-center p-sm bg-surface rounded-lg">
                       <span className="text-on-surface-variant font-body-strong">Despeses Operaris & Targetes</span>
-                      <span className="font-bold text-blue-700 font-mono">-238,80 €</span>
+                      <span className="font-bold text-blue-700 font-mono">-0,00 €</span>
                     </div>
                     <div className="flex justify-between items-center p-md bg-emerald-50 rounded-lg border border-emerald-200">
                       <span className="font-bold text-emerald-900">RESULTAT NET ABANS D'IMPOSTOS</span>
-                      <span className="font-bold text-emerald-800 text-lg font-mono">+10.335,70 €</span>
+                      <span className="font-bold text-emerald-800 text-lg font-mono">+0,00 €</span>
                     </div>
                   </div>
                 </div>
@@ -724,7 +724,7 @@ export default function Page() {
                 </svg>
                 <div className="absolute text-center">
                   <span className="text-xl font-bold font-mono text-primary block">
-                    {timeFilter === 'setmanal' ? '142,50 €' : timeFilter === 'anual' ? '2.860,00 €' : '238,80 €'}
+                    0,00 €
                   </span>
                   <span className="text-[10px] text-on-surface-variant uppercase font-bold">Total Despeses</span>
                 </div>
@@ -937,15 +937,15 @@ export default function Page() {
               <div className="grid grid-cols-3 gap-md pt-md border-t border-outline-variant/20 text-xs text-center font-body-strong">
                 <div className="flex items-center justify-center gap-2 p-2 bg-emerald-50 text-emerald-800 rounded-lg">
                   <span className="w-3.5 h-1 bg-emerald-500 rounded-full"></span>
-                  <span>Benefici Net ({timeFilter === 'setmanal' ? '2.140 €' : timeFilter === 'anual' ? '124.500 €' : '10.335 €'})</span>
+                  <span>Benefici Net (0 €)</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 p-2 bg-orange-50 text-orange-800 rounded-lg">
                   <span className="w-3.5 h-1 bg-orange-500 rounded-full"></span>
-                  <span>Costos & Despeses ({timeFilter === 'setmanal' ? '410 €' : timeFilter === 'anual' ? '24.800 €' : '2.114 €'})</span>
+                  <span>Costos & Despeses (0 €)</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 p-2 bg-blue-50 text-blue-800 rounded-lg">
                   <span className="w-3.5 h-1 bg-blue-500 rounded-full"></span>
-                  <span>IVA Liquidació ({timeFilter === 'setmanal' ? '320 €' : timeFilter === 'anual' ? '18.400 €' : '1.835 €'})</span>
+                  <span>IVA Liquidació (0 €)</span>
                 </div>
               </div>
             </div>
