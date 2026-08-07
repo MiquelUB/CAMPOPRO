@@ -967,13 +967,13 @@ Total Factura: 530,00 €`;
       unitType: newVeh.unitType,
       counterValue: Number(newVeh.counterValue) || 0,
       itvDate: newVeh.itvDate || '15/11/2026',
-      insuranceCompany: newVeh.insuranceCompany.trim() || 'Mapfre Assegurances',
-      insurancePolicy: newVeh.insurancePolicy.trim() || 'POL-998800',
-      insuranceDate: newVeh.insuranceDate || '01/09/2026',
+      insuranceCompany: newVeh.insuranceCompany.trim() || '',
+      insurancePolicy: newVeh.insurancePolicy.trim() || '',
+      insuranceDate: newVeh.insuranceDate || '',
       lastOilChangeDate: newVeh.lastOilChangeDate || new Date().toLocaleDateString('ca-ES'),
       lastOilChangeCounter: Number(newVeh.lastOilChangeCounter) || Number(newVeh.counterValue) || 0,
-      mechanicName: newVeh.mechanicName || 'Taller Mecànic Pons & Fills',
-      mechanicContact: newVeh.mechanicContact || '938 11 22 33',
+      mechanicName: newVeh.mechanicName || '',
+      mechanicContact: newVeh.mechanicContact || '',
       status: 'OK',
       maintenanceHistory: []
     };
@@ -2025,7 +2025,7 @@ Total Factura: 530,00 €`;
                         <div key={idx} className={`p-3 text-xs flex justify-between items-center ${isUnmatched ? 'bg-red-50/70 border-l-4 border-red-500' : 'bg-white'}`}>
                           <div>
                             <p className="font-bold text-neutral-900 flex items-center gap-2">
-                              {mov.worker} • Ordre #{mov.workOrderId || 'OT-402'}
+                              {mov.worker} • Ordre #{mov.workOrderId || 'N/A'}
                               {isUnmatched && (
                                 <span className="px-2 py-0.5 bg-red-100 text-red-800 font-bold rounded-full text-[10px] flex items-center gap-1">
                                   <AlertTriangle size={10} /> Material No Previst a l'OT!

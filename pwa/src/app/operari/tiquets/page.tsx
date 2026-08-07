@@ -100,8 +100,7 @@ export default function OperariTiquetsPage() {
                 onChange={(e) => setSelectedCard(e.target.value)}
                 className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-bold text-primary outline-none"
               >
-                <option value="Targeta Jordi Soler (**** 4122)">Targeta Jordi Soler (**** 4122) — Cap de Grup</option>
-                <option value="Targeta Pau Ribas (**** 8821)">Targeta Pau Ribas (**** 8821) — Maquinista</option>
+                <option value="">-- Selecciona targeta --</option>
               </select>
             </div>
 

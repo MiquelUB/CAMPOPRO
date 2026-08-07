@@ -324,7 +324,7 @@ function CreateJobForm() {
         { name: 'Connector Rapid Inox 2 polzades', qty: '2u', unitPrice: 42.00, code: 'MAT-006' },
         { name: 'Cinta de Teflon Professional', qty: '2u', unitPrice: 2.10, code: 'MAT-003' }
       ];
-      requiredTools = ['Trepant Bosch GSR-18', 'Joc de Claus Stillson Heavy-Duty'];
+      requiredTools = [];
       requiresTractor = queryLower.includes('finca') || queryLower.includes('parcella');
       recommendedWorkerObj = FIELD_WORKERS_DB[0];
     }
@@ -1034,8 +1034,11 @@ function CreateJobForm() {
                   onChange={(e) => setAssignedVehicle(e.target.value)}
                   className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary outline-none cursor-pointer text-sm"
                 >
-                  <option value="Furgoneta Ford Transit Custom (1234-BCD)">Furgoneta Ford Transit Custom (1234-BCD) — 🟢 Operatiu</option>
-                  <option value="Tractor John Deere 6120M (TRACTOR-01)">Tractor John Deere 6120M — 🛠️ En Revisió al Taller</option>
+                  {VEHICLES_FLOTA_DB.length > 0 ? VEHICLES_FLOTA_DB.map(v => (
+                    <option key={v.plate} value={`${v.name} (${v.plate})`}>{v.name} ({v.plate}) — {v.status === 'OPERATIU' ? '🟢 Operatiu' : '🛠️ En Revisió'}</option>
+                  )) : (
+                    <option value="">-- Cap vehicle disponible --</option>
+                  )}
                 </select>
               </div>
 
