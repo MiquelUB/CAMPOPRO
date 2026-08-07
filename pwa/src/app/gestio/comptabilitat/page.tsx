@@ -35,11 +35,11 @@ export default function Page() {
   const [allOperatorTickets] = useState<any[]>([]);
 
   // Client Bar Data depending on Time Filter
-  const getClientChartData = () => {
+  const getClientChartData = (): Array<{ name: string; amount: string; height: string }> => {
     return [];
   };
 
-  const getSupplierChartData = () => {
+  const getSupplierChartData = (): Array<{ name: string; amount: string; height: string }> => {
     return [];
   };
 

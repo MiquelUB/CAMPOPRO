@@ -188,7 +188,7 @@ export default function GestioIncidenciesPage() {
                         <div>
                           <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Materials Identificats</h4>
                           <ul className="list-disc pl-4 text-sm text-gray-700 space-y-1">
-                            {selectedIncident.memondum.materials_necessaris.map((mat, i) => (
+                            {selectedIncident.memondum.materials_necessaris.map((mat: any, i: number) => (
                               <li key={i}>{mat}</li>
                             ))}
                           </ul>

@@ -331,9 +331,9 @@ Return a single JSON object with this structure:
       if (existingProvMatch) {
         finalSupplierName = existingProvMatch.name;
         extractedNif = existingProvMatch.nif;
-        supplierPhone = existingProvMatch.phone;
-        supplierEmail = existingProvMatch.email;
-        supplierAddress = existingProvMatch.address;
+        supplierPhone = existingProvMatch.phone || '';
+        supplierEmail = existingProvMatch.email || '';
+        supplierAddress = existingProvMatch.address || '';
       } else {
         // Extract company line from text dynamically
         const lines = cleanText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);

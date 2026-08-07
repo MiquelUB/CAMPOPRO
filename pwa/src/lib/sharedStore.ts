@@ -39,6 +39,7 @@ export interface MaterialItem {
   unit: string;
   location: string; // Ubicació magatzem
   supplier: string;
+  supplierNif?: string;
   unitPrice: number; // Default price
   purchasePrice?: number; // Preu de compra
   marginPercent?: number; // % Marge de benefici sobre preu de compra

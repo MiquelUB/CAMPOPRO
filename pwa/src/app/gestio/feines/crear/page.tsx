@@ -295,7 +295,7 @@ function CreateJobForm() {
       };
 
       calculatedHours = matchedHistoryFile.hores_reals_pwa;
-      requiredMaterials = matchedHistoryFile.materials_usats.map((m, idx) => ({
+      requiredMaterials = matchedHistoryFile.materials_usats.map((m: any, idx: number) => ({
         name: m.name,
         qty: m.qty,
         unitPrice: m.unitPrice,
@@ -397,9 +397,9 @@ function CreateJobForm() {
       proposedStartDateFormatted: hasVehicleAlert ? 'Dijous 06/08/2026 (Disponibilitat de maquinària)' : 'Avui mateix',
       fullBudgetLines: copilotBudgetLines,
       calculatedBudget: `${totalCalc.toFixed(2)} €`,
-      lat: selectedClient.lat,
-      lng: selectedClient.lng,
-      locationName: selectedClient.parcelPresets[0]?.name || '📍 Finca Principal'
+      lat: selectedClient?.lat || 41.5,
+      lng: selectedClient?.lng || 2.0,
+      locationName: selectedClient?.parcelPresets[0]?.name || '📍 Finca Principal'
     };
 
     setTimeout(() => {
@@ -678,7 +678,7 @@ function CreateJobForm() {
               <div>
                 <label className="font-label-caps text-xs text-on-surface-variant block mb-2">PUNTS I SECTORS DESTACATS DE LA FINCA (SELECCIÓ RÀPIDA):</label>
                 <div className="flex flex-wrap gap-2">
-                  {activeClient.parcelPresets.map((preset, i) => (
+                  {activeClient?.parcelPresets.map((preset, i) => (
                     <button
                       key={i}
                       type="button"

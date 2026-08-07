@@ -113,7 +113,8 @@ export default function OperariJornadaPage() {
           </div>
 
           <div className="flex justify-between items-center text-xs text-emerald-300 font-mono pt-1">
-              <MapPin size={14} className="text-emerald-400" /> GPS: 
+            <span className="flex items-center gap-1">
+              <MapPin size={14} className="text-emerald-400" /> GPS
             </span>
             <span className="font-bold text-white">Registre 100% Legal</span>
           </div>

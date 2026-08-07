@@ -93,14 +93,14 @@ function MapInvalidator() {
 
 export interface CrewLocation {
   id: string;
-  initials: string;
+  initials?: string;
   lat: number;
   lng: number;
   name: string;
-  task: string;
-  vehicle: string;
-  status: string;
-  colorHex: string;
+  task?: string;
+  vehicle?: string;
+  status?: string;
+  colorHex?: string;
 }
 
 interface MapProps {
@@ -165,7 +165,7 @@ export default function Map({
 
         {/* Render Crew Markers */}
         {locations.map((loc) => {
-          const icon = createCustomIcon(loc.colorHex, loc.initials);
+          const icon = createCustomIcon(loc.colorHex || '#16a34a', loc.initials || loc.name.substring(0, 2).toUpperCase());
 
           return (
             <Marker
