@@ -88,91 +88,11 @@ const DASHBOARD_TICKETS_DB: ExpenseTicketDashboard[] = [
   }
 ];
 
-const INITIAL_CARDS: CorporateCard[] = [
-  { id: 'c1', cardNumber: '**** **** **** 4122', holderName: 'Jordi Soler', holderRole: 'Cap de Grup de Camp', monthlyLimit: 1000, bankName: 'CaixaBank', status: 'ACTIVA' },
-  { id: 'c2', cardNumber: '**** **** **** 8821', holderName: 'Pau Ribas', holderRole: 'Operari Agrícola & Maquinista', monthlyLimit: 800, bankName: 'CaixaBank', status: 'ACTIVA' },
-  { id: 'c3', cardNumber: '**** **** **** 9012', holderName: 'Marc Solsona', holderRole: 'Enginyer Supervisor', monthlyLimit: 1500, bankName: 'BBVA', status: 'ACTIVA' }
-];
+const INITIAL_CARDS: CorporateCard[] = [];
 
-const INITIAL_BANKS: BankAccount[] = [
-  { id: 'b1', bankName: 'CaixaBank (Compte Principal)', iban: 'ES91 2100 0418 4502 0005 4321', type: 'COBRAMENTS_CLIENTS', bic: 'CAIXESBBXXX' },
-  { id: 'b2', bankName: 'BBVA (Compte Operatiu Proveïdors)', iban: 'ES12 0182 3344 5501 2345 6789', type: 'PAGAMENTS_PROVEIDORS', bic: 'BBVAESMMXXX' }
-];
+const INITIAL_BANKS: BankAccount[] = [];
 
-const INITIAL_STAFF_DATABASE: StaffUser[] = [
-  {
-    id: 'usr-1',
-    name: 'Marc Solsona',
-    nif: '47889911A',
-    email: 'marc.solsona@campopro.cat',
-    role: 'ENGINYER_SUPERVISOR',
-    roleLabel: 'Enginyer Agrònom Supervisor',
-    accessType: 'DASHBOARD_WEB',
-    lastLogin: 'Avui 11:45 (IP: 83.34.12.9)',
-    phone: '600 00 11 22',
-    status: 'ACTIU'
-  },
-  {
-    id: 'usr-2',
-    name: 'Carles Puig',
-    nif: '38112233B',
-    email: 'carles.puig@campopro.cat',
-    role: 'CAP_PERSONAL',
-    roleLabel: 'Cap de Personal & RRHH',
-    accessType: 'DASHBOARD_WEB',
-    lastLogin: 'Ieri 18:30 (IP: 83.34.12.9)',
-    phone: '600 00 33 44',
-    status: 'ACTIU'
-  },
-  {
-    id: 'usr-5',
-    name: 'Marta Font',
-    nif: '52994411C',
-    email: 'marta.font@campopro.cat',
-    role: 'COMPTABILITAT',
-    roleLabel: 'Comptabilitat & Facturació',
-    accessType: 'DASHBOARD_WEB',
-    lastLogin: 'Avui 09:15 (IP: 83.34.12.9)',
-    phone: '600 44 55 66',
-    status: 'ACTIU'
-  },
-  {
-    id: 'usr-6',
-    name: 'Núria Casals',
-    nif: '41223344D',
-    email: 'nuria.casals@campopro.cat',
-    role: 'SECRETARI',
-    roleLabel: 'Secretaria & Atenció Clients',
-    accessType: 'DASHBOARD_WEB',
-    lastLogin: 'Avui 10:00 (IP: 83.34.12.9)',
-    phone: '600 77 88 99',
-    status: 'ACTIU'
-  },
-  {
-    id: 'usr-3',
-    name: 'Jordi Soler',
-    nif: '47881122K',
-    email: 'jordi.soler@campopro.cat',
-    role: 'CAP_GRUP_OPERARI',
-    roleLabel: 'Cap de Grup (Només PWA Mòbil)',
-    accessType: 'PWA_MOBIL',
-    lastLogin: 'Avui 08:02 (App PWA Mòbil)',
-    phone: '600 12 34 56',
-    status: 'ACTIU'
-  },
-  {
-    id: 'usr-4',
-    name: 'Pau Ribas',
-    nif: '38992211L',
-    email: 'pau.ribas@campopro.cat',
-    role: 'OPERARI_PWA',
-    roleLabel: 'Operari de Camp (Només PWA Mòbil)',
-    accessType: 'PWA_MOBIL',
-    lastLogin: 'Avui 08:05 (App PWA Mòbil)',
-    phone: '600 98 76 54',
-    status: 'ACTIU'
-  }
-];
+const INITIAL_STAFF_DATABASE: StaffUser[] = [];
 
 export default function ConfiguracioPage() {
   const [users, setUsers] = useState<StaffUser[]>(INITIAL_STAFF_DATABASE);

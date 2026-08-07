@@ -5,56 +5,7 @@ import { Search, Filter, AlertTriangle, Play, Pause, FileText, CheckCircle2, Clo
 import Link from 'next/link';
 
 // Mock data for the dashboard
-const MOCK_INCIDENTS = [
-  {
-    id: 'INC-2024-089',
-    operari: 'Joan R.',
-    categoria: 'Maquinària',
-    data: 'Fa 10 minuts',
-    estat: 'pendent',
-    prioritat: 'Alta',
-    audioUrl: 'mock-audio.mp3',
-    memondum: {
-      resum: 'El tractor John Deere 5075E fa un soroll metàl·lic fort al motor quan passa de 1500 RPM i perd potència. També s\'encén l\'avís de temperatura.',
-      decisio: 'ATURADA IMMEDIATA',
-      accio: 'S\'ha de portar el tractor al taller oficial per revisar la junta de culata i el sistema de refrigeració. Risc d\'avaria greu.',
-      cost_estimat: '800€ - 1500€',
-      materials_necessaris: ['Grua per remolcar', 'Junta culata', 'Refrigerant']
-    }
-  },
-  {
-    id: 'INC-2024-088',
-    operari: 'Maria C.',
-    categoria: 'Aigua / Reg',
-    data: 'Fa 2 hores',
-    estat: 'processat',
-    prioritat: 'Mitjana',
-    audioUrl: 'mock-audio2.mp3',
-    memondum: {
-      resum: 'Fuita d\'aigua a la canonada principal del sector 4 (Pomeres). Aproximadament perd 5 litres per minut.',
-      decisio: 'REPARACIÓ PROGRAMADA',
-      accio: 'Tancar la clau de pas del sector 4. Enviar equip de manteniment amb tub de PVC de 50mm i adhesiu.',
-      cost_estimat: '45€',
-      materials_necessaris: ['Tub PVC 50mm', 'Adhesiu PVC', 'Serra']
-    }
-  },
-  {
-    id: 'INC-2024-087',
-    operari: 'Marc T.',
-    categoria: 'Eines',
-    data: 'Ahir',
-    estat: 'resolt',
-    prioritat: 'Baixa',
-    audioUrl: 'mock-audio3.mp3',
-    memondum: {
-      resum: 'Tisores d\'esporgar elèctriques bateria 2 no carreguen correctament. La llum parpelleja en vermell.',
-      decisio: 'REEMPLAÇAMENT',
-      accio: 'Canviar la bateria de recanvi. Enviar la defectuosa a garantia.',
-      cost_estimat: '0€ (Garantia)',
-      materials_necessaris: ['Bateria recanvi Felco']
-    }
-  }
-];
+const MOCK_INCIDENTS: any[] = [];
 
 export default function GestioIncidenciesPage() {
   const [selectedIncident, setSelectedIncident] = useState<typeof MOCK_INCIDENTS[0] | null>(null);

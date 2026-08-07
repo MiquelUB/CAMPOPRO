@@ -19,38 +19,7 @@ interface ExpenseReceipt {
   status: 'SINCRONITZAT' | 'PENDENT_APROVACIO';
 }
 
-const INITIAL_EXPENSES: ExpenseReceipt[] = [
-  {
-    id: 'exp-1',
-    concept: 'Repostatge Benzina Furgoneta 1234-BCD',
-    amount: '65,40 €',
-    category: 'BENZINA',
-    date: '03/08/2026 08:30',
-    cardAssigned: 'Targeta Jordi Soler (**** 4122)',
-    photoUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
-    status: 'SINCRONITZAT'
-  },
-  {
-    id: 'exp-2',
-    concept: 'Compra d\'Emergència: Fittings PE 50mm i Tefló',
-    amount: '42,80 €',
-    category: 'MATERIAL',
-    date: '02/08/2026 16:45',
-    cardAssigned: 'Targeta Jordi Soler (**** 4122)',
-    photoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-    status: 'SINCRONITZAT'
-  },
-  {
-    id: 'exp-3',
-    concept: 'Dinar de la Colla (Menú del Dia)',
-    amount: '32,00 €',
-    category: 'DIETES',
-    date: '02/08/2026 14:15',
-    cardAssigned: 'Targeta Jordi Soler (**** 4122)',
-    photoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80',
-    status: 'SINCRONITZAT'
-  }
-];
+const INITIAL_EXPENSES: ExpenseReceipt[] = [];
 
 export default function OperariTiquetsPage() {
   const router = useRouter();

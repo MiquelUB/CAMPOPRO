@@ -5,12 +5,7 @@ import Link from "next/link";
 import DynamicMap from "@/components/map/DynamicMap";
 import { Search, MapPin, Plus, MoreVertical } from "lucide-react";
 
-// Mock data for initial development
-const MOCK_CLIENTS = [
-  { id: "1", name: "Agro Riera SL", contact: "Miquel Riera", email: "miquel@agroriera.cat", phone: "600111222", lat: 41.6521, lng: 1.8322 },
-  { id: "2", name: "Finca Valles", contact: "Anna Valles", email: "anna@valles.cat", phone: "600333444", lat: 41.5233, lng: 2.1121 },
-  { id: "3", name: "Horta del Llobregat", contact: "Joan Llobregat", email: "joan@horta.cat", phone: "600555666", lat: 41.3411, lng: 2.0511 },
-];
+const MOCK_CLIENTS: any[] = [];
 
 export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");

@@ -1,15 +1,9 @@
 import React from 'react';
 
 // Mock data to demonstrate functionality
-const cars = [
-  { id: 1, plate: '1234 ABC', model: 'Ford Transit', itvDeadline: '2026-10-15', insuranceDeadline: '2027-01-20' },
-  { id: 2, plate: '5678 DEF', model: 'Peugeot Partner', itvDeadline: '2026-08-01', insuranceDeadline: '2026-12-10' },
-];
+const cars: any[] = [];
 
-const tools = [
-  { id: 1, name: 'Taladre Hilti', currentHolder: 'Joan Perez' },
-  { id: 2, name: 'Generador Honda', currentHolder: 'Maria Garcia' },
-];
+const tools: any[] = [];
 
 export default function FlotaDashboard() {
   return (

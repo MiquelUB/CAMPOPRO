@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Add libc6-compat for Next.js SWC support on Alpine
 RUN apk add --no-cache libc6-compat
