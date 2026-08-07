@@ -76,84 +76,10 @@ export default function MagatzemDashboard() {
   };
 
   // Database 2: Eines
-  const [eines, setEines] = useState([
-    { 
-      id: 'e1', 
-      code: 'EIN-101', 
-      name: 'Trepant Bosch GSR-18', 
-      brand: 'Bosch Professional', 
-      serial: 'SN-99882', 
-      assignedTo: 'Jordi Soler', 
-      location: 'Furgoneta 01',
-      returnConditionStatus: 'OPERATIVA', 
-      returnedAtEndOfDay: false, 
-      returnStatusText: 'A la Furgoneta 01 (Operativa)',
-      lastWorkerReport: 'Jordi Soler • Retornat en perfecte estat',
-      warrantyUntil: '15/06/2027', 
-      supplier: 'Subministraments Industrials Manresa',
-      repairHistory: [
-        { id: 'r1', date: '15/01/2026', reason: 'Canvi d\'escobetes i greixatge', mechanic: 'Taller Oficial Bosch Manresa', cost: '35,00 €', status: 'COMPLETAT' }
-      ]
-    },
-    { 
-      id: 'e2', 
-      code: 'EIN-102', 
-      name: 'Radial Makita 125mm', 
-      brand: 'Makita', 
-      serial: 'MK-44102', 
-      assignedTo: 'Magatzem Central', 
-      location: 'Taller Reparació',
-      returnConditionStatus: 'REPARACIO', 
-      returnedAtEndOfDay: true,
-      returnStatusText: 'Retornat al Magatzem (Avaria reportada per operari)',
-      lastWorkerReport: 'Marc Andreu • Cable tallat i rodaments sorollosos',
-      warrantyUntil: '10/10/2025',
-      supplier: 'AgroSubministres Ponent SL',
-      repairHistory: [
-        { id: 'r2', date: '28/04/2026', reason: 'Substitució de rodaments i cable tallat', mechanic: 'Taller Central CampoPro', cost: '62,00 €', status: 'EN_CURS' }
-      ]
-    },
-    { 
-      id: 'e3', 
-      code: 'EIN-103', 
-      name: 'Nivell Làser Topcon RL-H5A', 
-      brand: 'Topcon', 
-      serial: 'TP-77890', 
-      assignedTo: 'Pau Ribas', 
-      location: 'No trobat al camp',
-      returnConditionStatus: 'PERDUDA', 
-      returnedAtEndOfDay: false,
-      returnStatusText: '⚠️ PERDUDA AL CAMP (No retornat per l\'operari)',
-      lastWorkerReport: 'Pau Ribas • Caigut o oblidat al sector Nord de la finca Agro Riera',
-      warrantyUntil: '01/03/2028',
-      supplier: 'Subministraments Industrials Manresa',
-      repairHistory: []
-    },
-  ]);
+  const [eines, setEines] = useState<any[]>([]);
 
   // Database 3: Vehicles
-  const [vehicles, setVehicles] = useState([
-    { 
-      id: 'v1', 
-      plate: '1234-BCD', 
-      name: 'Ford Transit Custom 2.0', 
-      type: 'Furgoneta', 
-      unitType: 'Km', 
-      counterValue: 124500, 
-      itvDate: '15/11/2026', 
-      insuranceCompany: 'Mapfre Assegurances',
-      insurancePolicy: 'POL-9988112-F',
-      insuranceDate: '01/09/2026',
-      lastOilChangeDate: '10/03/2026',
-      lastOilChangeCounter: 120000,
-      mechanicName: 'Taller Mecànic Pons & Fills',
-      mechanicContact: '938 11 22 33 (Pere Pons)',
-      status: 'OK',
-      maintenanceHistory: [
-        { id: 'vh1', date: '10/03/2026', counter: '120.000 Km', service: 'Canvi d\'oli 5W30, filtre d\'oli i filtre d\'aire', mechanic: 'Taller Mecànic Pons & Fills', cost: '185,00 €' }
-      ]
-    }
-  ]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
 
   // Manual Form States
   const [newMat, setNewMat] = useState({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '', supplier: '', unitPrice: '', isService: false });
