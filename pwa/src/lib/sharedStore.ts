@@ -60,19 +60,12 @@ export function getStoredProveidors(): SupplierItem[] {
   if (typeof window === 'undefined') return INITIAL_PROVEIDORS;
   try {
     const raw = localStorage.getItem('campopro_proveidors');
-    if (!raw) {
-      localStorage.setItem('campopro_proveidors', JSON.stringify(INITIAL_PROVEIDORS));
-      return INITIAL_PROVEIDORS;
-    }
+    if (!raw) return [];
     const parsed: SupplierItem[] = JSON.parse(raw);
-    // Sanitize: Purge any corrupted suppliers named after document titles (Albarà 1, Albarà 2, Factura, etc.)
     const clean = parsed.filter(p => p.name && !/(?:albar[àa]|lliurament|factura|document|pdf|jpg|png|\.pdf)/i.test(p.name));
-    if (clean.length !== parsed.length) {
-      localStorage.setItem('campopro_proveidors', JSON.stringify(clean.length > 0 ? clean : INITIAL_PROVEIDORS));
-    }
-    return clean.length > 0 ? clean : INITIAL_PROVEIDORS;
+    return clean;
   } catch (e) {
-    return INITIAL_PROVEIDORS;
+    return [];
   }
 }
 
@@ -91,23 +84,16 @@ export function getStoredMaterials(): MaterialItem[] {
   if (typeof window === 'undefined') return INITIAL_MATERIALS;
   try {
     const raw = localStorage.getItem('campopro_materials');
-    if (!raw) {
-      localStorage.setItem('campopro_materials', JSON.stringify(INITIAL_MATERIALS));
-      return INITIAL_MATERIALS;
-    }
+    if (!raw) return [];
     const parsed: MaterialItem[] = JSON.parse(raw);
-    // Sanitize: Purge any corrupted materials named after documents or containing Albarà
     const clean = parsed.filter(m => 
       m.name && 
       !/(?:albar[àa]|lliurament|factura|document|material de subministrament)/i.test(m.name) && 
       !/(?:albar[àa]|lliurament|factura|document)/i.test(m.supplier)
     );
-    if (clean.length !== parsed.length) {
-      localStorage.setItem('campopro_materials', JSON.stringify(clean.length > 0 ? clean : INITIAL_MATERIALS));
-    }
-    return clean.length > 0 ? clean : INITIAL_MATERIALS;
+    return clean;
   } catch (e) {
-    return INITIAL_MATERIALS;
+    return [];
   }
 }
 
