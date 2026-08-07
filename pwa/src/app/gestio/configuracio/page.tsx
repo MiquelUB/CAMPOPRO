@@ -20,6 +20,7 @@ interface StaffUser {
   lastLogin: string;
   phone: string;
   status: 'ACTIU' | 'REVOCAT' | 'PENDENT';
+  photoUrl?: string;
 }
 
 interface CorporateCard {
@@ -93,6 +94,30 @@ export default function ConfiguracioPage() {
   const [newNif, setNewNif] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState<StaffUser['role']>('ENGINYER_SUPERVISOR');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPhoto, setNewPhoto] = useState<File | null>(null);
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*+?';
+    let pwd = '';
+    const array = new Uint32Array(12);
+    window.crypto.getRandomValues(array);
+    for (let i = 0; i < 12; i++) {
+      pwd += chars[array[i] % chars.length];
+    }
+    setNewPassword(pwd);
+  };
+
+  const handleOpenAddModal = () => {
+    setNewName('');
+    setNewEmail('');
+    setNewNif('');
+    setNewPhone('');
+    setNewRole('ENGINYER_SUPERVISOR');
+    setNewPhoto(null);
+    generatePassword();
+    setShowAddModal(true);
+  };
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,16 +143,13 @@ export default function ConfiguracioPage() {
       accessType: computedAccess,
       lastLogin: 'Mai registrat',
       phone: newPhone || '600 00 00 00',
-      status: 'ACTIU'
+      status: 'ACTIU',
+      photoUrl: newPhoto ? URL.createObjectURL(newPhoto) : undefined
     };
 
     setUsers([...users, newUserObj]);
     setShowAddModal(false);
-    setNewName('');
-    setNewEmail('');
-    setNewNif('');
-    setNewPhone('');
-    alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText}. Accés: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}.`);
+    alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText}.\n\nAccés: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}\n\nLliureu aquestes credencials al treballador:\n📧 Email: ${newEmail}\n🔑 Contrasenya: ${newPassword}`);
   };
 
   const handleSaveCompanySettings = (e: React.FormEvent) => {
@@ -167,7 +189,7 @@ export default function ConfiguracioPage() {
         </div>
 
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={handleOpenAddModal}
           className="px-5 py-3 bg-primary text-white rounded-xl font-bold text-xs shadow-md hover:bg-primary/90 transition-all flex items-center gap-2 shrink-0"
         >
           <UserPlus size={18} />
@@ -221,9 +243,13 @@ export default function ConfiguracioPage() {
               {users.map((u) => (
                 <div key={u.id} className="p-4 grid grid-cols-12 items-center hover:bg-neutral-50/80 transition-colors text-xs">
                   <div className="col-span-3 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary font-bold flex items-center justify-center text-sm shadow-inner shrink-0">
-                      {u.name.slice(0, 2).toUpperCase()}
-                    </div>
+                    {u.photoUrl ? (
+                      <img src={u.photoUrl} alt={u.name} className="w-10 h-10 rounded-2xl object-cover shadow-inner shrink-0 border border-neutral-200" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary font-bold flex items-center justify-center text-sm shadow-inner shrink-0">
+                        {u.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-bold text-neutral-900 text-sm">{u.name}</h4>
                       <span className="font-mono text-neutral-400 text-[11px]">NIF: {u.nif}</span>
@@ -657,8 +683,43 @@ export default function ConfiguracioPage() {
               </div>
 
               <div>
-                <label className="font-bold text-neutral-700 block mb-1">Correu Corporatiu *</label>
+                <label className="font-bold text-neutral-700 block mb-1">Correu Corporatiu (Usuari d'accés) *</label>
                 <input required type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="laura.fonts@campopro.cat" className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-medium outline-none focus:border-primary" />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="font-bold text-neutral-700 block">Clau d'Autenticació (Contrasenya) *</label>
+                  <button type="button" onClick={generatePassword} className="text-[10px] text-primary hover:underline font-bold flex items-center gap-1">
+                    <RefreshCw size={10} /> Generar nova clau
+                  </button>
+                </div>
+                <input required type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Contrasenya" className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-mono text-primary font-bold outline-none focus:border-primary" />
+              </div>
+
+              <div>
+                <label className="font-bold text-neutral-700 block mb-1">Foto del Treballador (Opcional)</label>
+                <div className="flex items-center gap-4 p-3 bg-neutral-50 border border-neutral-200 rounded-xl">
+                  {newPhoto ? (
+                    <img src={URL.createObjectURL(newPhoto)} alt="Preview" className="w-12 h-12 rounded-xl object-cover shadow-inner border border-neutral-300 shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-neutral-200 flex items-center justify-center text-neutral-400 shrink-0">
+                      <Image size={20} />
+                    </div>
+                  )}
+                  <div className="w-full">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setNewPhoto(e.target.files[0]);
+                        }
+                      }}
+                      className="w-full text-xs text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
