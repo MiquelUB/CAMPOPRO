@@ -206,8 +206,8 @@ Return a single JSON object with this structure:
   "docNumber": "ALB-2026-001",
   "emissionDate": "2026-08-01",
   "supplier": {
-    "legalName": "Jardineria Verda, S.A.",
-    "nifCif": "A-12345678",
+    "legalName": "Empresa Proveïdora S.L.",
+    "nifCif": "B-00000000",
     "email": "contact@jardineria.cat",
     "phone": "+34 93 123 4567",
     "address": "Carrer Principal 123, 08100 Mollet del Vallès, Barcelona"
@@ -616,75 +616,7 @@ Return a single JSON object with this structure:
     }
   };
 
-  // Preset Trigger for Demo Buttons
-  const startAIAudit = (scenario: 'JARDINS_VERDS' | 'FAC_CONFORME' | 'FAC_DISCREPANT' | 'NEW_SUPPLIER') => {
-    let mockFile: File;
-    if (scenario === 'JARDINS_VERDS') {
-      const albaraText = `ALBARÀ DE LLIURAMENT
-Dades de l'Empresa Emissora:
-Jardineria Verda, S.A.
-C/ de les Flors, 45
-08001 Barcelona
-NIF: A-12345678
-Telèfon: 93 123 45 67
-Email: info@jardineriaverda.cat
 
-Dades del Client:
-Campopro, S.L.
-Av. de la Pagesia, 120
-25001 Lleida
-NIF: B-87654321
-
-Detalls de l'Albarà:
-Número d'Albarà: ALB-2026-001
-Data d'Emissió: 01 d'Agost de 2026
-
-PROD-01 Sac Terra Vegetal (50L) 20 5,50 110,00
-PROD-02 Test Terracota Gran 10 12,00 120,00
-PROD-03 Fertilitzant Orgànic (1L) 15 8,20 123,00
-PROD-04 Tisores de Podar Professionals 5 25,00 125,00
-
-Subtotal: 478,00 €`;
-      mockFile = new File([albaraText], 'Albarà de Lliurament Jardineria Verda.pdf', { type: 'application/pdf' });
-    } else if (scenario === 'FAC_CONFORME') {
-      const facConformeText = `FACTURA COMERCIAL
-Dades de l'Empresa Emissora:
-Jardineria Verda, S.A.
-NIF: A-12345678
-Email: info@jardineriaverda.cat
-
-Número de Factura: FAC-2026-001
-Albarà Vinculat: ALB-2026-001
-
-PROD-01 Sac Terra Vegetal (50L) 20 5,50 110,00
-PROD-02 Test Terracota Gran 10 12,00 120,00
-PROD-03 Fertilitzant Orgànic (1L) 15 8,20 123,00
-PROD-04 Tisores de Podar Professionals 5 25,00 125,00
-
-Total Factura: 478,00 €`;
-      mockFile = new File([facConformeText], 'Factura_Jardineria_Verda_Conforme.pdf', { type: 'application/pdf' });
-    } else if (scenario === 'FAC_DISCREPANT') {
-      const facDiscrepantText = `FACTURA COMERCIAL
-Dades de l'Empresa Emissora:
-Jardineria Verda, S.A.
-NIF: A-12345678
-
-Número de Factura: FAC-2026-9911
-Albarà Vinculat: ALB-2026-001
-
-PROD-01 Sac Terra Vegetal (50L) 20 6,50 130,00
-PROD-02 Test Terracota Gran 10 13,00 130,00
-PROD-03 Fertilitzant Orgànic (1L) 15 9,00 135,00
-PROD-04 Tisores de Podar Professionals 5 27,00 135,00
-
-Total Factura: 530,00 €`;
-      mockFile = new File([facDiscrepantText], 'Factura_Jardineria_Verda_Discrepant.pdf', { type: 'application/pdf' });
-    } else {
-      mockFile = new File(['FACTURA COMERCIAL\nFertilitzants i Llavor Orgànica SL\nNIF: B66778899'], 'Factura_Fertilitzants_Balaguer.pdf', { type: 'application/pdf' });
-    }
-    setAiInvoiceFile(mockFile);
-    parseDocumentWithAI(mockFile);
-  };
 
   const applyAIAuditToDatabase = () => {
     if (!aiAuditResult) return;
@@ -1541,60 +1473,7 @@ Total Factura: 530,00 €`;
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">Proves Automàtiques d'Albarà, Factura i Conciliació:</span>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        clearUploadedDocumentsStore();
-                        setMaterials(getStoredMaterials());
-                        setProveidors(getStoredProveidors());
-                        setShowAIModal(false);
-                        setAiAuditResult(null);
-                        alert('🧹 S\'han esborrat tots els albarans i factures pujats per tornar a provar des de zero!');
-                      }}
-                      className="px-2.5 py-1 bg-red-50 text-red-700 hover:bg-red-100 font-bold text-[11px] rounded-lg border border-red-200 flex items-center gap-1 cursor-pointer"
-                    >
-                      <RotateCcw size={12} /> Netejar Albarans/Factures (Prova Net)
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <button 
-                      onClick={() => startAIAudit('JARDINS_VERDS')}
-                      className="p-3 bg-emerald-50/80 border-2 border-emerald-500 hover:border-emerald-700 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-0.5 group cursor-pointer"
-                    >
-                      <span className="text-xs font-bold text-emerald-800 flex items-center gap-1 group-hover:underline">
-                        <FileCheck size={14} /> 1. Albarà Jardineria Verda
-                      </span>
-                      <p className="text-xs font-semibold text-neutral-900">Jardineria Verda, S.A.</p>
-                      <p className="text-[10px] text-neutral-600">NIF A-12345678 • #ALB-2026-001 • 478,00 €</p>
-                    </button>
 
-                    <button 
-                      onClick={() => startAIAudit('FAC_CONFORME')}
-                      className="p-3 bg-blue-50/80 border-2 border-blue-400 hover:border-blue-600 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-0.5 group cursor-pointer"
-                    >
-                      <span className="text-xs font-bold text-blue-800 flex items-center gap-1 group-hover:underline">
-                        <FileCheck size={14} /> 2. Factura Conforme
-                      </span>
-                      <p className="text-xs font-semibold text-neutral-900">Jardineria Verda, S.A.</p>
-                      <p className="text-[10px] text-blue-700 font-bold">#FAC-2026-001 • 478,00 € (OK)</p>
-                    </button>
-
-                    <button 
-                      onClick={() => startAIAudit('FAC_DISCREPANT')}
-                      className="p-3 bg-red-50/80 border-2 border-red-400 hover:border-red-600 rounded-xl text-left transition-all hover:shadow-md flex flex-col gap-0.5 group cursor-pointer"
-                    >
-                      <span className="text-xs font-bold text-red-800 flex items-center gap-1 group-hover:underline">
-                        <AlertTriangle size={14} /> 3. Factura Discrepant
-                      </span>
-                      <p className="text-xs font-semibold text-neutral-900">Jardins Verds S.L.</p>
-                      <p className="text-[10px] text-red-700 font-bold">#FAC-2026-9911 • 650,00 € (Alerta!)</p>
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
