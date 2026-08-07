@@ -52,41 +52,7 @@ interface ExpenseTicketDashboard {
   status: 'APROVAT' | 'SINCRONITZAT';
 }
 
-const DASHBOARD_TICKETS_DB: ExpenseTicketDashboard[] = [
-  {
-    id: 'exp-1',
-    workerName: 'Jordi Soler (Cap de Grup)',
-    concept: 'Repostatge Benzina Furgoneta 1234-BCD',
-    amount: '65,40 €',
-    category: 'BENZINA',
-    date: '03/08/2026 08:30',
-    cardAssigned: 'Targeta **** 4122',
-    photoUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
-    status: 'APROVAT'
-  },
-  {
-    id: 'exp-2',
-    workerName: 'Jordi Soler (Cap de Grup)',
-    concept: 'Compra d\'Emergència: Fittings PE 50mm i Tefló',
-    amount: '42,80 €',
-    category: 'MATERIAL',
-    date: '02/08/2026 16:45',
-    cardAssigned: 'Targeta **** 4122',
-    photoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-    status: 'SINCRONITZAT'
-  },
-  {
-    id: 'exp-3',
-    workerName: 'Pau Ribas (Maquinista)',
-    concept: 'Filtre de Recanvi i Oli Tractor John Deere',
-    amount: '88,50 €',
-    category: 'MATERIAL',
-    date: '01/08/2026 11:20',
-    cardAssigned: 'Targeta **** 8821',
-    photoUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
-    status: 'APROVAT'
-  }
-];
+const DASHBOARD_TICKETS_DB: ExpenseTicketDashboard[] = [];
 
 const INITIAL_CARDS: CorporateCard[] = [];
 
@@ -105,19 +71,19 @@ export default function ConfiguracioPage() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Company Parameters & Bizum State
-  const [companyName, setCompanyName] = useState('CampoPro Serveis Agrícoles SL');
-  const [companyNif, setCompanyNif] = useState('B-65498712');
-  const [companyPhone, setCompanyPhone] = useState('938 77 00 11');
-  const [companyEmail, setCompanyEmail] = useState('facturacio@campopro.cat');
-  const [companyAddress, setCompanyAddress] = useState('Polígon Industrial Els Dolors, Nau 12, 08243 Manresa');
+  const [companyName, setCompanyName] = useState('');
+  const [companyNif, setCompanyNif] = useState('');
+  const [companyPhone, setCompanyPhone] = useState('');
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
   
   // Treasury & Bizum Settings
-  const [bizumPhone, setBizumPhone] = useState('600 00 11 22');
-  const [bizumMerchantId, setBizumMerchantId] = useState('CAMPOPRO-BIZUM-88');
+  const [bizumPhone, setBizumPhone] = useState('');
+  const [bizumMerchantId, setBizumMerchantId] = useState('');
 
   // Telegram Bot State
-  const [telegramBotToken, setTelegramBotToken] = useState('7123984712:AAH9fklmN389f_xK923uJz8s');
-  const [telegramChatId, setTelegramChatId] = useState('-100192837465');
+  const [telegramBotToken, setTelegramBotToken] = useState('');
+  const [telegramChatId, setTelegramChatId] = useState('');
   const [telegramStatus, setTelegramStatus] = useState<'OPERATIU' | 'PROVANT'>('OPERATIU');
   const [botLogMessage, setBotLogMessage] = useState<string | null>(null);
 

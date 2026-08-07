@@ -30,7 +30,7 @@ export default function OperariJornadaPage() {
     setIniciHora(timeToSet);
     setFinalHora(null);
     setShiftStatus('EN_JORNADA');
-    setFeedbackMsg(`🟢 INICI DE JORNADA MANUALLY FITXAT A LES ${timeToSet}. Registrat amb GPS 41.6521° N, 1.8322° E.`);
+    setFeedbackMsg(`🟢 INICI DE JORNADA MANUALLY FITXAT A LES ${timeToSet}.`);
   };
 
   // MANUALLY REGISTER FINAL JORNADA (SORTIDA)
@@ -113,8 +113,7 @@ export default function OperariJornadaPage() {
           </div>
 
           <div className="flex justify-between items-center text-xs text-emerald-300 font-mono pt-1">
-            <span className="flex items-center gap-1">
-              <MapPin size={14} className="text-emerald-400" /> GPS: 41.6521° N, 1.8322° E
+              <MapPin size={14} className="text-emerald-400" /> GPS: 
             </span>
             <span className="font-bold text-white">Registre 100% Legal</span>
           </div>

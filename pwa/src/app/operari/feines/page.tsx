@@ -66,11 +66,8 @@ export default function Page() {
                 <div>
                   <span className="text-[11px] text-emerald-300 block font-medium">Estat de la Jornada Avui:</span>
                   <span className="font-extrabold text-sm text-white flex items-center gap-1.5 mt-0.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    🟢 EN JORNADA (Entrada: 08:02)
                   </span>
                   <span className="text-[10px] text-emerald-400 font-mono block mt-1">
-                    📍 GPS: 41.6521° N, 1.8322° E (Clica per obrir el fitxatge manual)
                   </span>
                 </div>
 
@@ -105,63 +102,7 @@ export default function Page() {
 
           {/* Job List */}
           <div className="flex flex-col gap-stack-md px-margin-mobile pb-32">
-            {/* Card 1: Priority High */}
-            <div 
-              onClick={() => router.push('/operari/feines/1')}
-              className="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer"
-            >
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
-              <div className="flex flex-col flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-1">
-                  <h2 className="font-headline-md text-[18px] text-primary truncate">Manteniment reg Parc Central</h2>
-                  <span className="bg-error-container text-on-error-container font-label-bold text-[10px] px-2 py-0.5 rounded-full uppercase">Urgent</span>
-                </div>
-                <p className="font-body-md text-on-surface-variant mb-1">Ajuntament de Vilanova</p>
-                <div className="flex items-center gap-1 text-outline mb-4">
-                  <span className="material-symbols-outlined text-[18px]">location_on</span>
-                  <span className="font-body-md text-[14px] truncate">Av. del Parc, 15</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-[18px]">schedule</span>
-                    <span className="font-label-bold text-label-bold">08:30</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-[18px]">near_me</span>
-                    <span className="font-label-bold text-label-bold">2.3 km</span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Card 2: Normal Status */}
-            <div 
-              onClick={() => router.push('/operari/feines/2')}
-              className="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer"
-            >
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-secondary-container"></div>
-              <div className="flex flex-col flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-1">
-                  <h2 className="font-headline-md text-[18px] text-primary truncate">Revisió quadre elèctric</h2>
-                  <span className="bg-surface-container text-on-surface-variant font-label-bold text-[10px] px-2 py-0.5 rounded-full uppercase">Pendent</span>
-                </div>
-                <p className="font-body-md text-on-surface-variant mb-1">Indústries del Garraf S.A.</p>
-                <div className="flex items-center gap-1 text-outline mb-4">
-                  <span className="material-symbols-outlined text-[18px]">location_on</span>
-                  <span className="font-body-md text-[14px] truncate">Pol. Ind. Les Roquetes, Nau 4</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-[18px]">schedule</span>
-                    <span className="font-label-bold text-label-bold">10:45</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg">
-                    <span className="material-symbols-outlined text-[18px]">near_me</span>
-                    <span className="font-label-bold text-label-bold">4.1 km</span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Empty State / Footer Illustration */}
             <div className="mt-8 flex flex-col items-center opacity-40">

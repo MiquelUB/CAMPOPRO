@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 export default function Page() {
   const router = useRouter();
-  const [seconds, setSeconds] = useState(4985); // 01:23:05
+  const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,7 +54,7 @@ export default function Page() {
                 <span className="w-2 h-2 rounded-full bg-secondary-container mr-2 animate-pulse"></span>
                 EN CURS
               </span>
-              <span className="text-label-bold text-on-surface-variant">ID: #44920</span>
+              <span className="text-label-bold text-on-surface-variant">ID: </span>
             </div>
           </div>
 
@@ -71,7 +71,7 @@ export default function Page() {
               <div className="w-full h-48 bg-cover bg-center" style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDChljmI-ZeMl5gVzDZE9S7oq_toKxoWAMKPhudX-9JPkv1i39qhwOBtbZ-fEDGEb8elBNPAaX_1D4nx9K5yGJyxsVzcI9G0ULcvqIvzd3371DZQ9eaZWUrW9paF4N2LztHGbQYzo4Qsqw5pQ1Wq7x8-Wm7wz9JT8o9znXyvJatnV3WtQwnwkPKFFR3cn2GmtNvgcYvBJup7HkUdq_VlOyU9G9JFTbQ3dSizDagY_alMiX2MKKacjV3')` }}></div>
               <div className="p-3 bg-surface-container-highest flex items-center gap-2 text-on-surface-variant">
                 <span className="material-symbols-outlined text-[20px]">location_on</span>
-                <p className="text-label-bold">Carrer de Balmes, 129, Barcelona</p>
+                <p className="text-label-bold"></p>
               </div>
             </details>
           </div>

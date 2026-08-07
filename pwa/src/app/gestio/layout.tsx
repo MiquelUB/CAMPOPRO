@@ -17,23 +17,9 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Notification state
-  const [notifications, setNotifications] = useState([
-    { id: 'n1', title: "Nova Incidència: Finca Sud", desc: "L'operari Jordi S. ha enviat una nota de veu.", link: "/gestio/incidencies", muted: false, resolved: false, type: "error" },
-    { id: 'n2', title: "Alerta Flota: ITV John Deere 6R", desc: "Caduca en 2 dies — 6 d'Agost.", link: "/gestio/flota", muted: false, resolved: false, type: "warning" },
-    { id: 'n3', title: "Estoc Baix: Fertilitzant N-12", desc: "Queden 0 unitats al magatzem central.", link: "/gestio/magatzem", muted: false, resolved: false, type: "info" }
-  ]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
-  const searchableItems = [
-    { id: 's1', title: "Adobat de finques 'La Vall'", category: "Feina", link: "/gestio/feines/mapa", details: "Pendent • Sector 4" },
-    { id: 's2', title: "Revisió sistemes de reg", category: "Feina", link: "/gestio/feines/mapa", details: "Programat • Zona Nord" },
-    { id: 's3', title: "Tractament fitosanitari", category: "Feina", link: "/gestio/feines/completades", details: "En espera • Masia Vella" },
-    { id: 's4', title: "Jordi S. (Operari)", category: "Operari", link: "/gestio/operaris", details: "En camp • Tractor 04" },
-    { id: 's5', title: "Carles T. (Operari)", category: "Operari", link: "/gestio/operaris", details: "En camp • Manteniment" },
-    { id: 's6', title: "AgroServei Ponent", category: "Client", link: "/gestio/clients", details: "3 finques meves" },
-    { id: 's7', title: "Cooperativa d'Ivars", category: "Client", link: "/gestio/clients", details: "Contracte de manteniment" },
-    { id: 's8', title: "Fertilitzant N-12", category: "Magatzem", link: "/gestio/magatzem", details: "Estoc baix" },
-    { id: 's9', title: "Tractor John Deere 6R", category: "Flota", link: "/gestio/flota", details: "ITV pendent" },
-  ];
+  const searchableItems: any[] = [];
 
   const filteredResults = searchQuery.trim() === '' 
     ? [] 

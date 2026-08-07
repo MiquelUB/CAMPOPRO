@@ -7,17 +7,12 @@ import { useRouter } from 'next/navigation';
 export default function Page() {
   const router = useRouter();
   const [unit, setUnit] = useState<'km' | 'hores'>('km');
-  const [plate, setPlate] = useState('B-1234-CD');
-  const [reading, setReading] = useState('145.832');
+  const [plate, setPlate] = useState('');
+  const [reading, setReading] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [customPlate, setCustomPlate] = useState(false);
 
-  const availableVehicles = [
-    { plate: 'B-1234-CD', name: 'Ford Transit • Flota Nord', defaultUnit: 'km' },
-    { plate: 'TRACTOR-04', name: 'John Deere 6R • Maquinària Agrícola', defaultUnit: 'hores' },
-    { plate: '3341-KLM', name: 'Toyota Hilux • Camp 02', defaultUnit: 'km' },
-    { plate: 'EXCAV-01', name: 'Caterpillar 320 • Obra Civil', defaultUnit: 'hores' },
-  ];
+  const availableVehicles: any[] = [];
 
   const handleVehicleChange = (selectedPlate: string) => {
     setPlate(selectedPlate);

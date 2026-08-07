@@ -31,12 +31,7 @@ export default function Page() {
     setToolStatuses((prev) => ({ ...prev, [id]: status }));
   };
 
-  const returnedTools = [
-    { id: 't1', name: 'Trepant Bosch GSR-18', code: 'EIN-0142' },
-    { id: 't2', name: 'Radial Makita 125mm', code: 'EIN-0089' },
-    { id: 't3', name: 'Joc de Claus Stillson', code: 'EIN-0012' },
-    { id: 't4', name: 'Detector de Metalls i Cables', code: 'EIN-0419' },
-  ];
+  const returnedTools: any[] = [];
 
   return (
     <>

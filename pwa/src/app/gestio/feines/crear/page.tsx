@@ -53,128 +53,17 @@ interface WorkerItem {
   avatar: string;
 }
 
-// Active Field Workers Database
-const FIELD_WORKERS_DB: WorkerItem[] = [
-  { id: 'op1', name: 'Jordi Soler', role: 'Cap d\'Equip & Especialista en Reg', phone: '600 12 34 56', status: 'DISPONIBLE', avatar: '👨‍🌾' },
-  { id: 'op2', name: 'Pau Ribas', role: 'Operari Agrícola & Maquinista', phone: '600 98 76 54', status: 'DISPONIBLE', avatar: '🚜' },
-  { id: 'op3', name: 'Marc Andreu', role: 'Tècnic Electricista & IOT', phone: '600 55 44 33', status: 'DISPONIBLE', avatar: '⚡' },
-  { id: 'op4', name: 'Joan Martí', role: 'Operari de Manteniment General', phone: '600 11 22 33', status: 'DISPONIBLE', avatar: '🛠️' }
-];
+const FIELD_WORKERS_DB: WorkerItem[] = [];
 
-// Real Grounded History Folder DB (/backend/app/data/historial/*.json)
-const HISTORIAL_CARPETA_FILES_DB = [
-  {
-    id: 'OT-2025-089',
-    file: 'backend/app/data/historial/OT-2025-089_fuga_reg.json',
-    titol: 'Reparació de fuga d\'aigua en tub principal PE-90 Camp 3',
-    ambit: 'Sistema de Reg i Hidràulica',
-    element_principal: 'Canonada PE 90mm',
-    abast_magnitud: 'Reparació puntual de fuga (12 metres de tub sanetjat)',
-    hores_estimades_pressupost: 4.0,
-    hores_reals_pwa: 4.2,
-    operari_principal: 'Jordi Soler',
-    materials_usats: [
-      { name: 'Tub PE 50mm High-Density', qty: '12m', unitPrice: 8.50 },
-      { name: 'Valvula de Tall 1 polzada Inox', qty: '2u', unitPrice: 18.20 },
-      { name: 'Cinta de Teflon Professional', qty: '2u', unitPrice: 2.10 }
-    ],
-    eines_usades: ['Trepant Bosch GSR-18', 'Radial Makita 125mm', 'Joc de Claus Stillson Heavy-Duty'],
-    vehicle_usat: 'Tractor John Deere 6120M',
-    lat: 41.6580,
-    lng: 1.8390,
-    locationPresetName: 'Camp 3 (Sector Nord-Est)'
-  },
-  {
-    id: 'OT-2025-104',
-    file: 'backend/app/data/historial/OT-2025-104_bomba_pressio.json',
-    titol: 'Reparació i manteniment de bomba de reg a l\'estació central',
-    ambit: 'Estació de Bombeig i Pressurització',
-    element_principal: 'Bomba de Reg i Filtres de Pressió',
-    abast_magnitud: 'Substitució de junta, vàlvules de tall i 2 filtres de malla d\'alta pressió',
-    hores_estimades_pressupost: 5.0,
-    hores_reals_pwa: 5.5,
-    operari_principal: 'Joan Martí',
-    materials_usats: [
-      { name: 'Filtre de Malla 2 polzades High-Pressure', qty: '2u', unitPrice: 82.50 },
-      { name: 'Connector Rapid Inox 2 polzades', qty: '4u', unitPrice: 42.00 },
-      { name: 'Valvula de Tall 1 polzada Inox', qty: '1u', unitPrice: 18.20 }
-    ],
-    eines_usades: ['Joc de Claus Stillson Heavy-Duty', 'Trepant Bosch GSR-18'],
-    vehicle_usat: 'Furgoneta Ford Transit 1234-BCD',
-    lat: 41.6540,
-    lng: 1.8350,
-    locationPresetName: 'Caseta de Bombes & Reg'
-  },
-  {
-    id: 'OT-2025-112',
-    file: 'backend/app/data/historial/OT-2025-112_quadre_electric.json',
-    titol: 'Revisió de quadre elèctric i instal·lació de sensor de humitat IOT',
-    ambit: 'Instal·lació Elèctrica i Sensorització IOT',
-    element_principal: 'Quadre Elèctric & Sensor IOT',
-    abast_magnitud: 'Substitució de diferencial tripolar i calibració de 1 sensor IOT 40cm',
-    hores_estimades_pressupost: 3.5,
-    hores_reals_pwa: 3.8,
-    operari_principal: 'Marc Andreu',
-    materials_usats: [
-      { name: 'Sensor de Humitat IOT 40cm', qty: '1u', unitPrice: 180.00 },
-      { name: 'Plafo Solar i Bateria Liti 12V', qty: '1u', unitPrice: 95.00 },
-      { name: 'Cable Manguera de Purí 3x2.5mm', qty: '15m', unitPrice: 3.20 }
-    ],
-    eines_usades: ['Detector de Metalls i Cables Subterrani', 'Trepant Bosch GSR-18'],
-    vehicle_usat: 'Furgoneta Ford Transit 1234-BCD',
-    lat: 41.6510,
-    lng: 1.8310,
-    locationPresetName: 'Sector Sud (Estació de Reg)'
-  },
-  {
-    id: 'OT-2026-003',
-    file: 'backend/app/data/historial/OT-2026-003_adobat_tractor.json',
-    titol: 'Adobat foliar i llaurada de preparació al Camp 5 amb tractor',
-    ambit: 'Treballs Agrícoles i Moviment de Terres',
-    element_principal: 'Adobat Foliar & Tractor Pala',
-    abast_magnitud: 'Tractament de 4 hectàrees amb adobat nitrogenat i passada de cultivador',
-    hores_estimades_pressupost: 6.0,
-    hores_reals_pwa: 6.0,
-    operari_principal: 'Pau Ribas',
-    materials_usats: [
-      { name: 'Adobat Foliar Nitrogenat 25kg', qty: '4 sacs', unitPrice: 32.50 },
-      { name: 'Filtre de Malla 2 polzades High-Pressure', qty: '1u', unitPrice: 82.50 }
-    ],
-    eines_usades: ['Nivell Laser Topcon RL-H5A', 'Radial Makita 125mm'],
-    vehicle_usat: 'Tractor John Deere 6120M',
-    lat: 41.6490,
-    lng: 1.8280,
-    locationPresetName: 'Camp 12 (Sector Sud - Vinyes)'
-  }
-];
+const HISTORIAL_CARPETA_FILES_DB: any[] = [];
 
-// Real Warehouse Stock DB
-const WAREHOUSE_MATERIALS_DB: WarehouseMaterialItem[] = [
-  { id: 'wm1', code: 'MAT-001', name: 'Tub PE 25mm High-Density', defaultUnit: 'm', stock: 120, location: 'Prestatgeria A-1', unitPrice: 4.50 },
-  { id: 'wm2', code: 'MAT-002', name: 'Valvula de Tall 1 polzada Inox', defaultUnit: 'u', stock: 4, location: 'Caixa B-4', unitPrice: 18.20 },
-  { id: 'wm3', code: 'MAT-003', name: 'Cinta de Teflon Professional', defaultUnit: 'u', stock: 25, location: 'Caixa B-2', unitPrice: 2.10 },
-  { id: 'wm4', code: 'MAT-004', name: 'Adobat Foliar Nitrogenat 25kg', defaultUnit: 'sacs', stock: 2, location: 'Palet N-3', unitPrice: 32.50 },
-  { id: 'wm5', code: 'MAT-005', name: 'Filtre de Malla 2 polzades High-Pressure', defaultUnit: 'u', stock: 8, location: 'Prestatgeria C-2', unitPrice: 82.50 },
-  { id: 'wm6', code: 'MAT-006', name: 'Connector Rapid Inox 2 polzades', defaultUnit: 'u', stock: 30, location: 'Caixa A-3', unitPrice: 42.00 },
-  { id: 'wm7', code: 'MAT-007', name: 'Tub PE 50mm High-Density', defaultUnit: 'm', stock: 45, location: 'Prestatgeria A-2', unitPrice: 8.50 }
-];
+const WAREHOUSE_MATERIALS_DB: WarehouseMaterialItem[] = [];
 
-const WAREHOUSE_TOOLS_DB: WarehouseToolItem[] = [
-  { id: 'wt1', code: 'EIN-101', name: 'Trepant Bosch GSR-18', brand: 'Bosch Pro', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
-  { id: 'wt2', code: 'EIN-102', name: 'Radial Makita 125mm', brand: 'Makita', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
-  { id: 'wt3', code: 'EIN-103', name: 'Nivell Laser Topcon RL-H5A', brand: 'Topcon', status: 'OPERATIVA', assignedTo: 'Pau Ribas' },
-  { id: 'wt4', code: 'EIN-104', name: 'Joc de Claus Stillson Heavy-Duty', brand: 'Palmera', status: 'OPERATIVA', assignedTo: 'Magatzem Central' },
-  { id: 'wt5', code: 'EIN-105', name: 'Detector de Metalls i Cables Subterrani', brand: 'Bosch Pro', status: 'OPERATIVA', assignedTo: 'Magatzem Central' }
-];
+const WAREHOUSE_TOOLS_DB: WarehouseToolItem[] = [];
 
-const VEHICLES_FLOTA_DB: VehicleItem[] = [
-  { id: 'v1', plate: '1234-BCD', name: 'Furgoneta Ford Transit Custom', type: 'Furgoneta', status: 'OPERATIU', availableDate: 'Avui mateix' },
-  { id: 'v2', plate: 'TRACTOR-01', name: 'Tractor John Deere 6120M', type: 'Tractor Agrícola', status: 'REVISIO_TALLER', availableDate: 'Dijous 06/08/2026' }
-];
+const VEHICLES_FLOTA_DB: VehicleItem[] = [];
 
-const INCIDENCIES_DB = [
-  { id: 'inc-1', code: 'INC-8812', title: 'Fuga d\'aigua detectada al Camp 3', operari: 'Jordi Soler', date: '02/08/2026 18:30', audioNote: 'Nota de veu: canonada principal de 50mm rebentada pel sector Nord del Camp 3.' }
-];
+const INCIDENCIES_DB: any[] = [];
 
 function CreateJobForm() {
   const router = useRouter();
@@ -192,48 +81,7 @@ function CreateJobForm() {
     lat: number; 
     lng: number;
     parcelPresets: Array<{ name: string; lat: number; lng: number }>
-  }> = {
-    '1': { 
-      name: 'Agro Riera SL', 
-      nif: 'B12345678', 
-      phone: '600111222', 
-      contact: 'Miquel Riera', 
-      address: 'Camí Ral s/n, 08240 Manresa', 
-      lat: 41.6521, 
-      lng: 1.8322,
-      parcelPresets: [
-        { name: '📍 Oficina / Finca Principal (Entrada)', lat: 41.6521, lng: 1.8322 },
-        { name: '📍 Camp 3 (Sector Nord - Fuga Aigua)', lat: 41.6580, lng: 1.8390 },
-        { name: '📍 Caseta de Bombes & Reg', lat: 41.6540, lng: 1.8350 },
-        { name: '📍 Camp 12 (Sector Sud - Vinyes)', lat: 41.6490, lng: 1.8280 }
-      ]
-    },
-    '2': { 
-      name: 'Finca Valles', 
-      nif: 'A87654321', 
-      phone: '600333444', 
-      contact: 'Anna Valles', 
-      address: 'Av. les Valls 45, Granollers', 
-      lat: 41.5233, 
-      lng: 2.1121,
-      parcelPresets: [
-        { name: '📍 Masia Principal', lat: 41.5233, lng: 2.1121 },
-        { name: '📍 Invernacle Sector A', lat: 41.5260, lng: 2.1150 }
-      ]
-    },
-    '3': { 
-      name: 'Horta del Llobregat', 
-      nif: 'B99887766', 
-      phone: '600555666', 
-      contact: 'Joan Llobregat', 
-      address: 'Partida Nord 12, Sant Boi', 
-      lat: 41.3411, 
-      lng: 2.0511,
-      parcelPresets: [
-        { name: '📍 Horta Central', lat: 41.3411, lng: 2.0511 }
-      ]
-    },
-  };
+  }> = {};
 
   const isFromClientFile = Boolean(rawClientIdParam && clientsDb[rawClientIdParam]);
   const initialClientId = isFromClientFile ? rawClientIdParam : '';
@@ -247,7 +95,7 @@ function CreateJobForm() {
   const [estimatedHours, setEstimatedHours] = useState<string>('4');
   const [hasBlueprint, setHasBlueprint] = useState<boolean>(false);
   const [blueprintName, setBlueprintName] = useState<string>('');
-  const [assignedVehicle, setAssignedVehicle] = useState<string>('Furgoneta Ford Transit Custom (1234-BCD)');
+  const [assignedVehicle, setAssignedVehicle] = useState<string>('');
   const [proposedStartDate, setProposedStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   // GPS Coordinates
@@ -255,21 +103,11 @@ function CreateJobForm() {
   const [jobLng, setJobLng] = useState<number>(selectedClient ? selectedClient.lng : 1.8322);
   const [jobLocationName, setJobLocationName] = useState<string>(selectedClient ? '📍 Finca Principal (Entrada)' : '');
 
-  // Assigned Materials & Tools (Clean if no client parameter)
-  const [materials, setMaterials] = useState<Array<{ id: string; name: string; qty: string }>>(
-    isFromClientFile ? [
-      { id: '1', name: 'Tub PE 25mm High-Density', qty: '6m' },
-      { id: '2', name: 'Valvula de Tall 1 polzada Inox', qty: '1u' },
-    ] : []
-  );
+  const [materials, setMaterials] = useState<Array<{ id: string; name: string; qty: string }>>([]);
   const [newMaterial, setNewMaterial] = useState<string>('');
   const [newMaterialQty, setNewMaterialQty] = useState<string>('');
 
-  const [tools, setTools] = useState<string[]>([
-    'Trepant Bosch GSR-18',
-    'Radial Makita 125mm',
-    'Joc de Claus Stillson Heavy-Duty',
-  ]);
+  const [tools, setTools] = useState<string[]>([]);
   const [newTool, setNewTool] = useState<string>('');
 
   // FULL ITEMIZED COMPREHENSIVE BUDGET TABLE (Reflecteix la TOTALITAT del pressupost: Materials + Eines + Mà d'Obra + Vehicle + Desplaçament)

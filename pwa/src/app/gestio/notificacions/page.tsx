@@ -4,12 +4,7 @@ import { useState } from "react";
 import { Send, Bot, User, Phone } from "lucide-react";
 
 // Mock data
-const MOCK_MESSAGES = [
-  { id: "1", sender: "bot", text: "Pressupost #4521 generat i enviat al client.", time: "10:00", type: "system" },
-  { id: "2", sender: "client", text: "He rebut el pressupost, em sembla bé.", time: "10:15", type: "telegram" },
-  { id: "3", sender: "engineer", text: "Perfecte, doncs procedim a planificar la feina.", time: "10:20", type: "pwa" },
-  { id: "4", sender: "bot", text: "S'ha confirmat la visita per demà a les 10h.", time: "10:25", type: "system" },
-];
+const MOCK_MESSAGES: any[] = [];
 
 export default function NotificacionsPage() {
   const [messages, setMessages] = useState(MOCK_MESSAGES);

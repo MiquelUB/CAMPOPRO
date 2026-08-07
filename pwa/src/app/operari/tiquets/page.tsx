@@ -27,7 +27,7 @@ export default function OperariTiquetsPage() {
   const [concept, setConcept] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseReceipt['category']>('BENZINA');
-  const [selectedCard, setSelectedCard] = useState('Targeta Jordi Soler (**** 4122)');
+  const [selectedCard, setSelectedCard] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 

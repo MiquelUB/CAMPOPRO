@@ -8,7 +8,7 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Selected Crew State (Highlights marker and zooms canvas)
-  const [selectedCrewId, setSelectedCrewId] = useState<string | null>('js');
+  const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
   const [mapZoom, setMapZoom] = useState<number>(1);
 
   // Live Mobile GPS State
@@ -16,72 +16,22 @@ export default function Page() {
   const [isGpsActive, setIsGpsActive] = useState(false);
 
   // Active Crews Dataset with Map Coordinates
-  const crews = [
-    {
-      id: 'js',
-      initials: 'JS',
-      name: 'Jordi Soler',
-      task: 'Parcel·la 42 - Sega',
-      status: 'TREBALLANT',
-      vehicle: 'Tractor John Deere 6R',
-      time: '2 min',
-      top: 32,
-      left: 45,
-      lat: 41.6521,
-      lng: 1.8322,
-      avatarClass: 'bg-emerald-50 border-2 border-emerald-600 text-emerald-700',
-      badgeClass: 'bg-emerald-500 text-white font-bold',
-      markerClass: 'bg-emerald-600'
-    },
-    {
-      id: 'ma',
-      initials: 'MA',
-      name: 'Marc Andreu',
-      task: 'Ruta: Sector Nord',
-      status: 'EN TRÀNSIT',
-      vehicle: 'Ford Transit B-1234-CD',
-      time: 'Ara mateix',
-      top: 60,
-      left: 25,
-      lat: 41.6710,
-      lng: 1.8150,
-      avatarClass: 'bg-blue-50 border-2 border-blue-600 text-blue-700',
-      badgeClass: 'bg-blue-600 text-white font-bold',
-      markerClass: 'bg-blue-600'
-    },
-    {
-      id: 'pr',
-      initials: 'PR',
-      name: 'Pau Ribas',
-      task: 'Avaria: Tractor T-12',
-      status: 'INCIDÈNCIES',
-      vehicle: 'Toyota Hilux 3341-KLM',
-      time: 'ALERTA',
-      top: 45,
-      left: 75,
-      lat: 41.6400,
-      lng: 1.8600,
-      avatarClass: 'bg-rose-50 border-2 border-rose-600 text-rose-700',
-      badgeClass: 'bg-rose-600 text-white font-bold',
-      markerClass: 'bg-rose-600'
-    },
-    {
-      id: 'lc',
-      initials: 'LC',
-      name: 'Laia Costa',
-      task: 'Magatzem Central',
-      status: 'INACTIU',
-      vehicle: 'Furgoneta Magatzem 02',
-      time: '15 min',
-      top: 75,
-      left: 52,
-      lat: 41.6300,
-      lng: 1.8400,
-      avatarClass: 'bg-slate-100 border-2 border-slate-400 text-slate-600',
-      badgeClass: 'bg-slate-500 text-white font-bold',
-      markerClass: 'bg-slate-500'
-    }
-  ];
+  const crews: Array<{
+    id: string;
+    initials: string;
+    name: string;
+    task: string;
+    status: string;
+    vehicle: string;
+    time: string;
+    top: number;
+    left: number;
+    lat: number;
+    lng: number;
+    avatarClass: string;
+    badgeClass: string;
+    markerClass: string;
+  }> = [];
 
   // Mobile GPS Geolocation Listener
   useEffect(() => {

@@ -17,78 +17,13 @@ export default function Page() {
   });
 
   // Unified Kanban & Upcoming Tasks State (Structured by Date)
-  const [kanbanTasks, setKanbanTasks] = useState([
-    { 
-      id: 'kt-1', 
-      code: '#OT-440', 
-      title: "Adobat de finques 'La Vall'", 
-      location: "Sector 4 - Polígon 12", 
-      operator: "Jordi S.", 
-      status: "PENDENT", 
-      priority: "Alta", 
-      dateOffset: 0,
-      hasIncident: false,
-      billed: false 
-    },
-    { 
-      id: 'kt-2', 
-      code: '#OT-441', 
-      title: "Revisió sistemes de reg", 
-      location: "Zona Nord - Bassa 2", 
-      operator: "Carles T.", 
-      status: "EN_CURS", 
-      priority: "Mitjana", 
-      dateOffset: 1,
-      hasIncident: false,
-      billed: false 
-    },
-    { 
-      id: 'kt-3', 
-      code: '#OT-443', 
-      title: "Sembrat i anivellat de terra", 
-      location: "Sector B4 - Camp Sud", 
-      operator: "Marc M.", 
-      status: "EN_CURS", 
-      priority: "Alta", 
-      dateOffset: 1,
-      hasIncident: false,
-      billed: false 
-    },
-    { 
-      id: 'kt-4', 
-      code: '#OT-442', 
-      title: "Tractament fitosanitari", 
-      location: "Finca Masia Vella", 
-      operator: "Maria P.", 
-      status: "COMPLETAT", 
-      priority: "Normal", 
-      dateOffset: 2,
-      hasIncident: true, // Has incident -> Needs review before billing
-      billed: false 
-    },
-    { 
-      id: 'kt-5', 
-      code: '#OT-439', 
-      title: "Neteja de canals de reg", 
-      location: "Sector C-12", 
-      operator: "Jordi S.", 
-      status: "COMPLETAT", 
-      priority: "Normal", 
-      dateOffset: -1,
-      hasIncident: false, // No incident -> Automatically passed to billing
-      billed: true 
-    }
-  ]);
+  const [kanbanTasks, setKanbanTasks] = useState<any[]>([]);
 
   // View toggle for jobs: Kanban vs Llista
   const [activeView, setActiveView] = useState<'kanban' | 'llista'>('kanban');
 
   // Maintenance Alerts State (3 Critical with "Resolt" button)
-  const [maintenanceAlerts, setMaintenanceAlerts] = useState([
-    { id: 'm1', title: "Caducitat ITV: John Deere 6R", detail: "Falten 2 dies — Requerit urgent", icon: "directions_car", link: "/gestio/flota", actionText: "RESERVAR" },
-    { id: 'm2', title: "Nivell Oli Motor Crític: Fendt 724", detail: "Sensor GPS: Pressió d'oli sota el mínim permès", icon: "build", link: "/gestio/flota", actionText: "REVISAR" },
-    { id: 'm3', title: "Estoc buit: Fertilitzant N-12", detail: "Queden 0 unitats al magatzem central", icon: "inventory_2", link: "/gestio/magatzem", actionText: "DISSENYAR ORDRE" }
-  ]);
+  const [maintenanceAlerts, setMaintenanceAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     const now = new Date();

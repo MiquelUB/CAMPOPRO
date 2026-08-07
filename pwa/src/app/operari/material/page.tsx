@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 
 export default function Page() {
   const router = useRouter();
-  const [tubQty, setTubQty] = useState(45);
-  const [valvQty, setValvQty] = useState(2);
+  const [tubQty, setTubQty] = useState(0);
+  const [valvQty, setValvQty] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
@@ -59,57 +59,6 @@ export default function Page() {
 
             {/* Inventory Cards */}
             <div className="flex flex-col gap-stack-md">
-              {/* Item 1 */}
-              <div className="bg-surface-container-low rounded-xl p-4 flex flex-col gap-3 transition-all active:scale-[0.98]">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <h3 className="font-headline-md text-headline-md text-primary">Tub PE 25mm</h3>
-                    <p className="font-body-md text-body-md text-on-surface-variant">Canonada polietilè d'alta densitat</p>
-                  </div>
-                  <span className="material-symbols-outlined text-primary/30">water_drop</span>
-                </div>
-                <div className="flex items-center gap-4 mt-2">
-                  <div className="flex-1 bg-surface-container-highest h-3 rounded-full overflow-hidden">
-                    <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${Math.min(tubQty, 100)}%` }}></div>
-                  </div>
-                  <span className="font-label-bold text-label-bold text-primary">{tubQty} / 100m</span>
-                </div>
-                <div className="flex items-center justify-between bg-surface-container-lowest rounded-lg p-2 mt-2">
-                  <button onClick={() => setTubQty(Math.max(0, tubQty - 1))} className="w-12 h-12 flex items-center justify-center bg-surface-container-high rounded-lg active:bg-outline-variant transition-colors">
-                    <span className="material-symbols-outlined">remove</span>
-                  </button>
-                  <div className="flex flex-col items-center">
-                    <span className="font-headline-lg text-headline-lg text-primary">{tubQty}</span>
-                    <span className="font-label-bold text-[10px] text-on-surface-variant uppercase">Metres</span>
-                  </div>
-                  <button onClick={() => setTubQty(tubQty + 1)} className="w-12 h-12 flex items-center justify-center bg-surface-container-high rounded-lg active:bg-outline-variant transition-colors">
-                    <span className="material-symbols-outlined">add</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Item 2 */}
-              <div className="bg-surface-container-low rounded-xl p-4 flex flex-col gap-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <h3 className="font-headline-md text-headline-md text-primary">Vàlvula Esfera 1"</h3>
-                    <p className="font-body-md text-body-md text-on-surface-variant">Pas total llautó</p>
-                  </div>
-                  <span className="material-symbols-outlined text-primary/30">settings_input_component</span>
-                </div>
-                <div className="flex items-center justify-between bg-surface-container-lowest rounded-lg p-2 mt-2">
-                  <button onClick={() => setValvQty(Math.max(0, valvQty - 1))} className="w-12 h-12 flex items-center justify-center bg-surface-container-high rounded-lg active:bg-outline-variant transition-colors">
-                    <span className="material-symbols-outlined">remove</span>
-                  </button>
-                  <div className="flex flex-col items-center">
-                    <span className="font-headline-lg text-headline-lg text-primary">{valvQty}</span>
-                    <span className="font-label-bold text-[10px] text-on-surface-variant uppercase">Unitats</span>
-                  </div>
-                  <button onClick={() => setValvQty(valvQty + 1)} className="w-12 h-12 flex items-center justify-center bg-surface-container-high rounded-lg active:bg-outline-variant transition-colors">
-                    <span className="material-symbols-outlined">add</span>
-                  </button>
-                </div>
-              </div>
             </div>
 
             {/* Add Material Button */}

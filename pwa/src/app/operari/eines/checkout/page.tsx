@@ -35,13 +35,7 @@ export default function Page() {
     }
   };
 
-  const assignedTools = [
-    { id: 't1', name: 'Trepant Bosch GSR-18', code: 'EIN-0142', category: 'Elèctrica' },
-    { id: 't2', name: 'Radial Makita 125mm', code: 'EIN-0089', category: 'Elèctrica' },
-    { id: 't3', name: 'Nivell Làser DeWalt', code: 'EIN-0301', category: 'Medició' },
-    { id: 't4', name: 'Joc de Claus Stillson', code: 'EIN-0012', category: 'Manual' },
-    { id: 't5', name: 'Detector de Metalls i Cables', code: 'EIN-0419', category: 'Diagnòstic' },
-  ];
+  const assignedTools: any[] = [];
 
   const totalTaken = Object.values(toolsState).filter((s) => s === 'agafada').length + extraTools.length;
 
