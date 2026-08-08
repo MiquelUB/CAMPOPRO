@@ -23,3 +23,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Insert default company if it doesn't exist
+INSERT INTO empreses (id, nom, nif)
+SELECT '00000000-0000-0000-0000-000000000000', 'Empresa Demo', '00000000T'
+WHERE NOT EXISTS (
+    SELECT 1 FROM empreses WHERE id = '00000000-0000-0000-0000-000000000000'
+);

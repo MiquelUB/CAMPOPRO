@@ -16,9 +16,11 @@ redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
+from uuid import UUID
+
 class TokenPayload(BaseModel):
-    sub: str
-    empresa_id: Optional[str] = None
+    sub: UUID
+    empresa_id: Optional[UUID] = None
     rol: str
     session_type: str
     exp: datetime

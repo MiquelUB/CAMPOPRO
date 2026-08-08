@@ -49,7 +49,7 @@ async def crear_client(
             empresa_id, nom, telefon, email, nif, adreca, lat, lng, 
             tipus, municipi_id, preferencies, notes, actiu
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13)
         RETURNING *
     """
     try:
@@ -102,15 +102,16 @@ async def actualitzar_client(
     if not update_data:
         raise HTTPException(status_code=400, detail="Cap camp per actualitzar proporcionat")
         
-    if 'preferencies' in update_data:
-        update_data['preferencies'] = json.dumps(update_data['preferencies'])
-        
     set_clauses = []
     args = [item_id, current_user.empresa_id]
     arg_idx = 3
     
     for key, value in update_data.items():
-        set_clauses.append(f"{key} = ${arg_idx}")
+        if key == 'preferencies':
+            value = json.dumps(value)
+            set_clauses.append(f"{key} = ${arg_idx}::jsonb")
+        else:
+            set_clauses.append(f"{key} = ${arg_idx}")
         args.append(value)
         arg_idx += 1
         
