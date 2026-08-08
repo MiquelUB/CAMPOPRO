@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Settings, Users, Shield, Lock, Key, UserPlus, ShieldCheck, ShieldAlert, Check, 
@@ -71,6 +71,23 @@ export default function ConfiguracioPage() {
   const [activeTab, setActiveTab] = useState<'personal' | 'auth' | 'empresa'>('personal');
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Load users from localStorage on mount
+  useEffect(() => {
+    const savedUsers = localStorage.getItem('campopro_staff');
+    if (savedUsers) {
+      try {
+        setUsers(JSON.parse(savedUsers));
+      } catch (e) {
+        console.error("Error loading staff from local storage", e);
+      }
+    }
+  }, []);
+
+  // Save users to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('campopro_staff', JSON.stringify(users));
+  }, [users]);
+
   // Company Parameters & Bizum State
   const [companyName, setCompanyName] = useState('');
   const [companyNif, setCompanyNif] = useState('');
@@ -97,15 +114,27 @@ export default function ConfiguracioPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newPhoto, setNewPhoto] = useState<File | null>(null);
 
-  const generatePassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*+?';
-    let pwd = '';
-    const array = new Uint32Array(12);
-    window.crypto.getRandomValues(array);
-    for (let i = 0; i < 12; i++) {
-      pwd += chars[array[i] % chars.length];
+  const generatePassword = (role: StaffUser['role'] = newRole) => {
+    if (role === 'CAP_GRUP_OPERARI' || role === 'OPERARI_PWA') {
+      // 6-digit numeric PIN for PWA access
+      let pin = '';
+      const array = new Uint32Array(6);
+      window.crypto.getRandomValues(array);
+      for (let i = 0; i < 6; i++) {
+        pin += (array[i] % 10).toString();
+      }
+      setNewPassword(pin);
+    } else {
+      // 12-char alphanumeric for Web Dashboard
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*+?';
+      let pwd = '';
+      const array = new Uint32Array(12);
+      window.crypto.getRandomValues(array);
+      for (let i = 0; i < 12; i++) {
+        pwd += chars[array[i] % chars.length];
+      }
+      setNewPassword(pwd);
     }
-    setNewPassword(pwd);
   };
 
   const handleOpenAddModal = () => {
@@ -115,7 +144,7 @@ export default function ConfiguracioPage() {
     setNewPhone('');
     setNewRole('ENGINYER_SUPERVISOR');
     setNewPhoto(null);
-    generatePassword();
+    generatePassword('ENGINYER_SUPERVISOR');
     setShowAddModal(true);
   };
 
@@ -289,6 +318,17 @@ export default function ConfiguracioPage() {
                       title="Reset Contrasenya"
                     >
                       <Key size={14} />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (confirm(`Estàs segur que vols eliminar l'usuari ${u.name}?`)) {
+                          setUsers(users.filter(user => user.id !== u.id));
+                        }
+                      }}
+                      className="p-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-bold transition-colors"
+                      title="Eliminar Usuari"
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -689,12 +729,14 @@ export default function ConfiguracioPage() {
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="font-bold text-neutral-700 block">Clau d'Autenticació (Contrasenya) *</label>
-                  <button type="button" onClick={generatePassword} className="text-[10px] text-primary hover:underline font-bold flex items-center gap-1">
+                  <label className="font-bold text-neutral-700 block">
+                    {newRole === 'CAP_GRUP_OPERARI' || newRole === 'OPERARI_PWA' ? "Codi PIN d'Accés PWA (6 dígits) *" : "Clau d'Autenticació (Contrasenya) *"}
+                  </label>
+                  <button type="button" onClick={() => generatePassword(newRole)} className="text-[10px] text-primary hover:underline font-bold flex items-center gap-1">
                     <RefreshCw size={10} /> Generar nova clau
                   </button>
                 </div>
-                <input required type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Contrasenya" className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-mono text-primary font-bold outline-none focus:border-primary" />
+                <input required type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={newRole === 'CAP_GRUP_OPERARI' || newRole === 'OPERARI_PWA' ? "123456" : "Contrasenya"} className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-mono text-primary font-bold outline-none focus:border-primary tracking-widest" />
               </div>
 
               <div>
@@ -724,7 +766,15 @@ export default function ConfiguracioPage() {
 
               <div>
                 <label className="font-bold text-neutral-700 block mb-1">Rol d'Empresa *</label>
-                <select value={newRole} onChange={(e) => setNewRole(e.target.value as any)} className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-bold text-primary outline-none">
+                <select 
+                  value={newRole} 
+                  onChange={(e) => {
+                    const role = e.target.value as StaffUser['role'];
+                    setNewRole(role);
+                    generatePassword(role);
+                  }} 
+                  className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-bold text-primary outline-none"
+                >
                   <option value="ENGINYER_SUPERVISOR">Enginyer Agrònom Supervisor (Accés Dashboard Web)</option>
                   <option value="CAP_PERSONAL">Cap de Personal & RRHH (Accés Dashboard Web)</option>
                   <option value="COMPTABILITAT">Comptabilitat & Facturació (Accés Dashboard Web)</option>
