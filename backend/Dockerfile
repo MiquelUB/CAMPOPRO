@@ -4,6 +4,7 @@ FROM python:3.12-slim as builder
 WORKDIR /app
 
 # Install system dependencies
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -27,6 +28,7 @@ RUN addgroup --system appgroup && adduser --system --group appuser
 WORKDIR /app
 
 # Install runtime dependencies (e.g., libpq for asyncpg)
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
