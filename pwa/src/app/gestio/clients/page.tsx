@@ -233,8 +233,6 @@ export default function ClientsPage() {
                   </div>
                 </div>
 
-                </div>
-
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-neutral-600 uppercase">NIF / CIF</label>
                   <div className="relative">
