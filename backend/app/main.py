@@ -12,10 +12,27 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
+import os
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: connect to database
     await db_pool.connect()
+    
+    # Run migrations
+    try:
+        init_file = os.path.join(os.path.dirname(__file__), "db_init.sql")
+        if os.path.exists(init_file):
+            logger.info("Running database migrations...")
+            with open(init_file, "r") as f:
+                sql = f.read()
+            # asyncpg execute can run multiple statements separated by semicolons
+            async with db_pool.pool.acquire() as conn:
+                await conn.execute(sql)
+            logger.info("Database migrations completed successfully.")
+    except Exception as e:
+        logger.error(f"Error running database migrations: {e}")
+        
     yield
     # Shutdown: disconnect from database
     await db_pool.disconnect()
