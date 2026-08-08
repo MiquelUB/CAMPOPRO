@@ -142,7 +142,7 @@ async def update_anchor_points(
         """UPDATE planols SET bounds_json = $1
            WHERE id = $2 AND empresa_id = $3
            RETURNING *""",
-        json.dumps(bounds_json), id, current_user.empresa_id
+        bounds_json, id, current_user.empresa_id
     )
     if not record:
         raise HTTPException(status_code=404, detail="Plànol no trobat")

@@ -86,7 +86,7 @@ async def evaluate_incidencia(
         """UPDATE incidencies 
            SET memondum = $1, requires_budget = $2 
            WHERE id = $3""",
-        json.dumps(memondum_result),
+        memondum_result,
         memondum_result["decisio_financera"]["requires_budget"],
         incidencia_id
     )

@@ -63,9 +63,7 @@ async def obtenir_feines_avui(
     result = []
     for r in rows:
         r_dict = dict(r)
-        if r_dict.get('material_assignat'):
-            r_dict['material_assignat'] = json.loads(r_dict['material_assignat'])
-        else:
+        if not r_dict.get('material_assignat'):
             r_dict['material_assignat'] = []
             
         # Parse dates/times properly for JSON
@@ -180,7 +178,7 @@ async def sync_batch(
                 
                 elif tipus == "consum_material":
                     feina_id = UUID(dades["feina_id"])
-                    materials = json.dumps(dades.get("materials", []))
+                    materials = dades.get("materials", [])
                     await db.execute(
                         "UPDATE feines SET material_consumit = $1::jsonb, updated_at = now() WHERE id = $2",
                         materials, feina_id
