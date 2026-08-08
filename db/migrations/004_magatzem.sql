@@ -3,7 +3,7 @@
 -- Taula de Categories de Producte
 CREATE TABLE IF NOT EXISTS public.categoria_producte (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    empresa_id UUID NOT NULL REFERENCES public.empresa(id) ON DELETE CASCADE,
+    empresa_id UUID NOT NULL REFERENCES empreses(id) ON DELETE CASCADE,
     nom VARCHAR(100) NOT NULL,
     descripcio TEXT,
     creat_a TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.categoria_producte (
 -- Taula de Productes
 CREATE TABLE IF NOT EXISTS public.producte (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    empresa_id UUID NOT NULL REFERENCES public.empresa(id) ON DELETE CASCADE,
+    empresa_id UUID NOT NULL REFERENCES empreses(id) ON DELETE CASCADE,
     categoria_id UUID REFERENCES public.categoria_producte(id) ON DELETE SET NULL,
     nom VARCHAR(100) NOT NULL,
     codi_barres VARCHAR(50),
@@ -31,12 +31,12 @@ CREATE TABLE IF NOT EXISTS public.producte (
 -- Taula de Moviments de Magatzem
 CREATE TABLE IF NOT EXISTS public.moviment_magatzem (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    empresa_id UUID NOT NULL REFERENCES public.empresa(id) ON DELETE CASCADE,
+    empresa_id UUID NOT NULL REFERENCES empreses(id) ON DELETE CASCADE,
     producte_id UUID NOT NULL REFERENCES public.producte(id) ON DELETE RESTRICT,
     tipus VARCHAR(20) NOT NULL CHECK (tipus IN ('ENTRADA', 'SORTIDA', 'AJUST')),
     quantitat DECIMAL(10, 2) NOT NULL,
     motiu TEXT,
-    usuari_id UUID NOT NULL REFERENCES public.usuari(id) ON DELETE RESTRICT,
+    usuari_id UUID NOT NULL REFERENCES usuaris(id) ON DELETE RESTRICT,
     data_moviment TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
