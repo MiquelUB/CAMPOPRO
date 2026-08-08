@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -127,16 +127,27 @@ interface WorkerProfile {
   }>;
 }
 
-const OPERARIS_DATABASE: WorkerProfile[] = [];
-
 export default function OperarisDashboardPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const [workers, setWorkers] = useState<WorkerProfile[]>([]);
   const [selectedWorker, setSelectedWorker] = useState<WorkerProfile | null>(null);
   const [selectedJobModal, setSelectedJobModal] = useState<CompletedJobDetail | null>(null);
   const [profileTab, setProfileTab] = useState<'info' | 'shifts' | 'crew' | 'jobs' | 'reviews' | 'vehicles' | 'tools' | 'incidents'>('info');
 
-  const filteredWorkers = OPERARIS_DATABASE.filter(w => 
+  useEffect(() => {
+    const saved = localStorage.getItem('campopro_workers');
+    if (saved) {
+      setWorkers(JSON.parse(saved));
+    }
+  }, []);
+
+  const saveWorkers = (newWorkers: WorkerProfile[]) => {
+    setWorkers(newWorkers);
+    localStorage.setItem('campopro_workers', JSON.stringify(newWorkers));
+  };
+
+  const filteredWorkers = workers.filter(w => 
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     w.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
     w.specialty.toLowerCase().includes(searchTerm.toLowerCase())
@@ -164,15 +175,52 @@ export default function OperarisDashboardPage() {
         </div>
 
         {/* Global Search Bar */}
-        <div className="relative w-full sm:w-72">
-          <input 
-            type="text"
-            placeholder="Cercar operari per nom o especialitat..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary font-medium"
-          />
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <input 
+              type="text"
+              placeholder="Cercar operari per nom o especialitat..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm outline-none focus:border-primary font-medium"
+            />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          </div>
+          <button 
+            onClick={() => {
+              const newWorker = {
+                id: `op_${Date.now()}`,
+                name: 'Nou Operari',
+                nif: '',
+                role: 'Oficial 1a',
+                specialty: 'General',
+                phone: '',
+                email: '',
+                status: 'DISPONIBLE' as const,
+                isTeamLeader: false,
+                avatar: `https://i.pravatar.cc/150?u=${Date.now()}`,
+                joiningDate: new Date().toISOString().split('T')[0],
+                drivingLicense: 'B',
+                assignedVehicle: 'Cap',
+                stats: { completedJobs: 0, hoursLoggedThisMonth: 0, kmDrivenThisMonth: 0, clientRatingAverage: 0, incidentsReported: 0, toolIncidentsCount: 0 },
+                ratingBreakdown: { professionalism: 0, punctuality: 0, customerTreatment: 0 },
+                workShiftHistory: [],
+                clientReviews: [],
+                completedJobsHistory: [],
+                assignedTools: [],
+                toolIncidentsHistory: [],
+                vehicleKmHistory: [],
+                reportedFieldIncidents: []
+              };
+              saveWorkers([...workers, newWorker]);
+              setSelectedWorker(newWorker);
+              setProfileTab('info');
+            }}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+          >
+            <UserPlus size={18} />
+            Donar d'Alta
+          </button>
         </div>
       </div>
 
@@ -184,7 +232,7 @@ export default function OperarisDashboardPage() {
           </div>
           <div>
             <span className="text-xs text-neutral-500 font-semibold block uppercase">Total Operaris</span>
-            <span className="text-xl font-extrabold text-neutral-900">{OPERARIS_DATABASE.length} En Plantilla</span>
+            <span className="text-xl font-extrabold text-neutral-900">{workers.length} En Plantilla</span>
           </div>
         </div>
 

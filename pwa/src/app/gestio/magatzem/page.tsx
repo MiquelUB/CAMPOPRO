@@ -635,6 +635,8 @@ Return a single JSON object with this structure:
       location: newMat.location.trim() || 'Magatzem Central',
       supplier: newMat.supplier.trim() || 'CampoPro Serveis SL',
       unitPrice: Number(newMat.unitPrice) || 0,
+      salePrice: Number(newMat.unitPrice) || 0,
+      purchasePrice: Number((newMat as any).purchasePrice) || 0,
       isService: newMat.isService,
       lastPurchaseDate: new Date().toLocaleDateString('ca-ES'),
       workerMovementHistory: [],
@@ -1184,18 +1186,22 @@ Return a single JSON object with this structure:
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase mb-1">Codi / SKU</label>
-                  <input type="text" placeholder="SERV-006" value={newMat.code} onChange={(e) => setNewMat({ ...newMat, code: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
+                  <input type="text" placeholder="MAT-001 o SERV-001" value={newMat.code} onChange={(e) => setNewMat({ ...newMat, code: e.target.value })} className="w-full p-3 border rounded-xl text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase mb-1">Preu Unitari (€)</label>
-                  <input type="number" step="0.50" required placeholder="35.00" value={newMat.unitPrice} onChange={(e) => setNewMat({ ...newMat, unitPrice: e.target.value })} className="w-full p-3 border rounded-xl text-sm font-bold" />
+                  <label className="block text-xs font-semibold uppercase mb-1">Cost / Preu Compra (€)</label>
+                  <input type="number" step="0.50" placeholder="15.00" value={(newMat as any).purchasePrice || ''} onChange={(e) => setNewMat({ ...newMat, purchasePrice: e.target.value } as any)} className="w-full p-3 border rounded-xl text-sm font-bold text-neutral-600" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase mb-1">PVP / Preu Venda al Públic (€)</label>
+                <input type="number" step="0.50" required placeholder="35.00" value={newMat.unitPrice} onChange={(e) => setNewMat({ ...newMat, unitPrice: e.target.value })} className="w-full p-3 border rounded-xl text-sm font-bold text-primary bg-primary/5" />
               </div>
               <div className="flex items-center gap-2 pt-2">
                 <input type="checkbox" id="isServiceCheck" checked={newMat.isService} onChange={(e) => setNewMat({ ...newMat, isService: e.target.checked })} className="w-4 h-4 text-primary rounded" />
-                <label htmlFor="isServiceCheck" className="text-xs font-bold text-neutral-800">Marcar com a Article de Tarifa / Servei per a Pressupostos</label>
+                <label htmlFor="isServiceCheck" className="text-xs font-bold text-neutral-800">És una tarifa de servei (Mà d'obra, Desplaçament, etc.)</label>
               </div>
-              <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold mt-2">Guardar Article a Magatzem</button>
+              <button type="submit" className="w-full py-3.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold mt-2 transition-colors">Guardar a Magatzem / Tarifes</button>
             </form>
           </div>
         </div>

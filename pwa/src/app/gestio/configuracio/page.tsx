@@ -178,6 +178,37 @@ export default function ConfiguracioPage() {
 
     setUsers([...users, newUserObj]);
     setShowAddModal(false);
+
+    // AIXÒ ÉS EL FIX: Si és un Operari, l'afegim també a campopro_workers perquè aparegui a /gestio/operaris
+    if (isMobileOnlyRole) {
+      const savedWorkersStr = localStorage.getItem('campopro_workers');
+      const savedWorkers = savedWorkersStr ? JSON.parse(savedWorkersStr) : [];
+      const newWorker = {
+        id: `op_${Date.now()}`,
+        name: newName,
+        nif: newNif || '00000000X',
+        role: newRole === 'CAP_GRUP_OPERARI' ? 'Cap de Grup' : 'Oficial',
+        specialty: 'General',
+        phone: newPhone || '600 00 00 00',
+        email: newEmail,
+        status: 'DISPONIBLE' as const,
+        isTeamLeader: newRole === 'CAP_GRUP_OPERARI',
+        avatar: newPhoto ? URL.createObjectURL(newPhoto) : `https://i.pravatar.cc/150?u=${Date.now()}`,
+        joiningDate: new Date().toISOString().split('T')[0],
+        drivingLicense: 'B',
+        assignedVehicle: 'Cap',
+        stats: { completedJobs: 0, hoursLoggedThisMonth: 0, kmDrivenThisMonth: 0, clientRatingAverage: 0, incidentsReported: 0, toolIncidentsCount: 0 },
+        ratingBreakdown: { professionalism: 0, punctuality: 0, customerTreatment: 0 },
+        workShiftHistory: [],
+        clientReviews: [],
+        completedJobsHistory: [],
+        assignedTools: [],
+        toolIncidentsHistory: [],
+        vehicleKmHistory: [],
+        reportedFieldIncidents: []
+      };
+      localStorage.setItem('campopro_workers', JSON.stringify([...savedWorkers, newWorker]));
+    }
     alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText}.\n\nAccés: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}\n\nLliureu aquestes credencials al treballador:\n📧 Email: ${newEmail}\n🔑 Contrasenya: ${newPassword}`);
   };
 

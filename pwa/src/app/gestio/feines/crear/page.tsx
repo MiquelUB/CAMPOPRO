@@ -1079,15 +1079,9 @@ function CreateJobForm() {
 
                         <span className="text-emerald-400 text-xs">x</span>
 
-                        {/* Price Edit */}
-                        <div className="flex items-center gap-1 bg-emerald-950 px-2 py-1 rounded-lg border border-emerald-700">
-                          <input 
-                            type="number" 
-                            step="1" 
-                            value={item.unitPrice} 
-                            onChange={(e) => handleUpdateBudgetLine(item.id, 'unitPrice', e.target.value)} 
-                            className="w-14 bg-transparent text-center font-bold text-emerald-300 text-xs outline-none"
-                          />
+                        {/* Price ReadOnly */}
+                        <div className="flex items-center justify-center gap-1 bg-emerald-950 px-2 py-1 rounded-lg border border-emerald-700 w-16">
+                          <span className="font-bold text-emerald-300 text-xs">{item.unitPrice.toFixed(2)}</span>
                           <span className="text-[10px] text-emerald-400">€</span>
                         </div>
 
@@ -1103,14 +1097,27 @@ function CreateJobForm() {
               </div>
 
               {/* Total Budget Summary & Invoice Recovery Badge */}
-              <div className="flex justify-between items-end pt-3 border-t border-emerald-800">
-                <div>
-                  <span className="text-xs text-emerald-300 block font-semibold uppercase">TOTAL PRESSUPOSTAT (IVA no inclòs)</span>
-                  <span className="text-3xl font-extrabold text-white">{calculateTotalComprehensiveBudget().toFixed(2)} €</span>
+              <div className="flex flex-col gap-2 pt-3 border-t border-emerald-800 text-right">
+                <div className="flex justify-between items-center text-xs text-emerald-300">
+                  <span>Base Imposable (Sense IVA):</span>
+                  <span>{calculateTotalComprehensiveBudget().toFixed(2)} €</span>
                 </div>
-                <div className="text-right">
-                  <span className="text-[11px] font-bold text-emerald-300 bg-emerald-900 border border-emerald-700 px-3 py-1.5 rounded-xl flex items-center gap-1 shadow">
-                    <FileCheck size={14} className="text-emerald-400" /> Generar Factura en 1-Clic
+                {activeClient?.discountValue && (
+                  <div className="flex justify-between items-center text-xs text-amber-300 font-bold">
+                    <span>Descompte Client ({activeClient.discountValue}):</span>
+                    <span>-{(calculateTotalComprehensiveBudget() * (parseFloat(String(activeClient.discountValue).replace('%', '')) / 100)).toFixed(2)} €</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-xs text-emerald-300">
+                  <span>IVA (21%):</span>
+                  <span>
+                    {((calculateTotalComprehensiveBudget() - (activeClient?.discountValue ? calculateTotalComprehensiveBudget() * (parseFloat(String(activeClient.discountValue).replace('%', '')) / 100) : 0)) * 0.21).toFixed(2)} €
+                  </span>
+                </div>
+                <div className="flex justify-between items-end mt-2 pt-2 border-t border-emerald-800/50">
+                  <span className="text-xs text-emerald-200 block font-semibold uppercase">TOTAL PRESSUPOSTAT (Amb IVA inclòs)</span>
+                  <span className="text-3xl font-extrabold text-white">
+                    {((calculateTotalComprehensiveBudget() - (activeClient?.discountValue ? calculateTotalComprehensiveBudget() * (parseFloat(String(activeClient.discountValue).replace('%', '')) / 100) : 0)) * 1.21).toFixed(2)} €
                   </span>
                 </div>
               </div>
