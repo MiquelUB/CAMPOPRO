@@ -63,16 +63,25 @@ CREATE POLICY moviment_magatzem_empresa_policy ON public.moviment_magatzem
     USING (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID)
     WITH CHECK (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID);
 
--- Triggers per actualitzat_a (si es requereix la funció update_updated_at_column)
+-- Funció específica per actualitzat_a (magatzem usa aquest nom de columna)
+CREATE OR REPLACE FUNCTION update_actualitzat_a_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.actualitzat_a = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Triggers per actualitzat_a
 CREATE TRIGGER update_categoria_producte_modtime
     BEFORE UPDATE ON public.categoria_producte
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION update_actualitzat_a_column();
 
 CREATE TRIGGER update_producte_modtime
     BEFORE UPDATE ON public.producte
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION update_actualitzat_a_column();
 
 -- Índexs
 CREATE INDEX idx_categoria_producte_empresa ON public.categoria_producte(empresa_id);
