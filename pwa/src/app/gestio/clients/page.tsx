@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import DynamicMap from "@/components/map/DynamicMap";
-import { Search, MapPin, Plus, MoreVertical, X, Save, Building, User, Mail, Phone, Map } from "lucide-react";
+import { Search, MapPin, Plus, MoreVertical, X, Save, Building, User, Mail, Phone, Map, Trash2 } from "lucide-react";
 
 export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,20 +28,7 @@ export default function ClientsPage() {
     if (saved) {
       setClients(JSON.parse(saved));
     } else {
-      // Dummy inicial si està buit per ensenyar l'UI
-      const dummy = [{
-        id: 'c1',
-        name: 'Finca Mas d\'en Bosc',
-        contact: 'Joan Prats',
-        email: 'joan@masdenbosc.com',
-        phone: '600123456',
-        address: 'Carretera C-12, km 42, Lleida',
-        lat: 41.6176,
-        lng: 0.6200,
-        parcelPresets: [{ name: 'Sector Nord (Pomers)', lat: 41.618, lng: 0.621 }]
-      }];
-      setClients(dummy);
-      localStorage.setItem('campopro_clients', JSON.stringify(dummy));
+      setClients([]);
     }
   }, []);
 
@@ -56,6 +43,14 @@ export default function ClientsPage() {
     localStorage.setItem('campopro_clients', JSON.stringify(updated));
     setShowAddModal(false);
     setNewClient({ name: '', contact: '', email: '', phone: '', address: '', lat: 41.6, lng: 1.5 });
+  };
+
+  const handleDeleteClient = (id: string) => {
+    if (confirm("Estàs segur que vols eliminar aquest client? Aquesta acció no es pot desfer.")) {
+      const updated = clients.filter(c => c.id !== id);
+      setClients(updated);
+      localStorage.setItem('campopro_clients', JSON.stringify(updated));
+    }
   };
 
   const filteredClients = clients.filter(c => 
@@ -128,8 +123,12 @@ export default function ClientsPage() {
                     <td className="px-6 py-4 text-neutral-600">{client.email}</td>
                     <td className="px-6 py-4 text-neutral-600">{client.phone}</td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-neutral-400 hover:text-neutral-900 p-1 rounded">
-                        <MoreVertical size={16} />
+                      <button 
+                        onClick={() => handleDeleteClient(client.id)}
+                        title="Eliminar client"
+                        className="text-neutral-400 hover:text-red-600 p-1 rounded transition-colors"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
