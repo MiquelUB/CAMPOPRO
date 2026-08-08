@@ -5,6 +5,22 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import json
+
+async def init_connection(conn):
+    await conn.set_type_codec(
+        'json',
+        encoder=json.dumps,
+        decoder=json.loads,
+        schema='pg_catalog'
+    )
+    await conn.set_type_codec(
+        'jsonb',
+        encoder=json.dumps,
+        decoder=json.loads,
+        schema='pg_catalog'
+    )
+
 class DatabasePool:
     def __init__(self):
         self.pool: Optional[asyncpg.Pool] = None
@@ -20,6 +36,7 @@ class DatabasePool:
                 min_size=2,
                 max_size=20,
                 command_timeout=60,
+                init=init_connection
             )
             logger.info("asyncpg connection pool initialized successfully.")
         except Exception as e:

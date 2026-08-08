@@ -65,7 +65,7 @@ async def crear_client(
             item.lng,
             item.tipus,
             item.municipi_id,
-            json.dumps(item.preferencies) if item.preferencies else '{}',
+            item.preferencies or {},
             item.notes,
             item.actiu
         )
@@ -111,7 +111,6 @@ async def actualitzar_client(
     
     for key, value in update_data.items():
         if key == 'preferencies':
-            value = json.dumps(value)
             set_clauses.append(f"{key} = ${arg_idx}::jsonb")
         else:
             set_clauses.append(f"{key} = ${arg_idx}")
