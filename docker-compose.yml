@@ -13,7 +13,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d
     ports:
-      - "127.0.0.1:5432:5432" # Només exposat a localhost
+      - "127.0.0.1:5433:5432" # Port 5433 extern per evitar conflicte amb PostgreSQL del sistema
     security_opt:
       - no-new-privileges:true
     read_only: true
