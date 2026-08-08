@@ -9,7 +9,7 @@ from app.schemas.clients import ClientCreate, ClientUpdate, ClientResponse
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
-@router.get("/", response_model=List[ClientResponse])
+@router.get("", response_model=List[ClientResponse])
 async def llistar_clients(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -38,7 +38,7 @@ async def llistar_clients(
     records = await db.fetch(query, *args)
     return [dict(r) for r in records]
 
-@router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 async def crear_client(
     item: ClientCreate,
     db: asyncpg.Connection = Depends(get_db),
