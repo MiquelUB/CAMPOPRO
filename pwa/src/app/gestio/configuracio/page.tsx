@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { apiClient } from '@/lib/apiClient';
 import { 
   Settings, Users, Shield, Lock, Key, UserPlus, ShieldCheck, ShieldAlert, Check, 
   X, Edit3, Trash2, Smartphone, Mail, Phone, RefreshCw, Server, Bot, CheckCircle2,
@@ -71,22 +72,35 @@ export default function ConfiguracioPage() {
   const [activeTab, setActiveTab] = useState<'personal' | 'auth' | 'empresa'>('personal');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Load users from localStorage on mount
+  // Load users from backend API on mount
   useEffect(() => {
-    const savedUsers = localStorage.getItem('campopro_staff');
-    if (savedUsers) {
+    const fetchUsers = async () => {
       try {
-        setUsers(JSON.parse(savedUsers));
+        const dbUsers = await apiClient.get('/users');
+        if (dbUsers && Array.isArray(dbUsers)) {
+          const mappedUsers = dbUsers.map((u: any) => ({
+            id: u.id,
+            name: u.nom,
+            nif: '00000000X', // TODO: backend camp nif
+            email: u.email || '',
+            role: u.rol,
+            roleLabel: u.rol, // Fallback, could map from role
+            accessType: (u.rol === 'CAP_GRUP_OPERARI' || u.rol === 'OPERARI_PWA') ? 'PWA_MOBIL' : 'DASHBOARD_WEB',
+            lastLogin: 'Mai registrat',
+            phone: u.telefon || '',
+            status: u.actiu ? 'ACTIU' : 'INACTIU',
+            photoUrl: undefined
+          }));
+          setUsers(mappedUsers);
+        }
       } catch (e) {
-        console.error("Error loading staff from local storage", e);
+        console.error("Error loading staff from backend", e);
       }
-    }
+    };
+    fetchUsers();
   }, []);
 
-  // Save users to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('campopro_staff', JSON.stringify(users));
-  }, [users]);
+
 
   // Company Parameters & Bizum State
   const [companyName, setCompanyName] = useState('');
@@ -150,7 +164,7 @@ export default function ConfiguracioPage() {
     setShowAddModal(true);
   };
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newEmail) return;
 
@@ -164,56 +178,41 @@ export default function ConfiguracioPage() {
     else if (newRole === 'CAP_GRUP_OPERARI') roleLabelText = 'Cap de Grup (Només PWA Mòbil)';
     else if (newRole === 'OPERARI_PWA') roleLabelText = 'Operari de Camp (Només PWA Mòbil)';
 
-    const newUserObj: StaffUser = {
-      id: `usr-${Date.now()}`,
-      name: newName,
-      nif: newNif || '00000000X',
-      email: newEmail,
-      role: newRole,
-      roleLabel: roleLabelText,
-      accessType: computedAccess,
-      lastLogin: 'Mai registrat',
-      phone: newPhone || '600 00 00 00',
-      status: 'ACTIU',
-      photoUrl: newPhoto ? URL.createObjectURL(newPhoto) : undefined
-    };
-
-    const updatedUsers = [...users, newUserObj];
-    setUsers(updatedUsers);
-    localStorage.setItem('campopro_staff', JSON.stringify(updatedUsers));
-    setShowAddModal(false);
-
-    // AIXÒ ÉS EL FIX: Si és un Operari, l'afegim també a campopro_workers perquè aparegui a /gestio/operaris
-    if (isMobileOnlyRole) {
-      const savedWorkersStr = localStorage.getItem('campopro_workers');
-      const savedWorkers = savedWorkersStr ? JSON.parse(savedWorkersStr) : [];
-      const newWorker = {
-        id: `op_${Date.now()}`,
-        name: newName,
-        nif: newNif || '00000000X',
-        role: newRole === 'CAP_GRUP_OPERARI' ? 'Cap de Grup' : 'Oficial',
-        specialty: 'General',
-        phone: newPhone || '600 00 00 00',
+    try {
+      // POST al backend (Base de dades PostgreSQL)
+      const nouUsuari = await apiClient.post('/users', {
+        nom: newName,
+        rol: newRole,
         email: newEmail,
-        status: 'DISPONIBLE' as const,
-        isTeamLeader: newRole === 'CAP_GRUP_OPERARI',
-        avatar: newPhoto ? URL.createObjectURL(newPhoto) : undefined,
-        joiningDate: new Date().toISOString().split('T')[0],
-        drivingLicense: newDrivingLicense,
-        assignedVehicle: 'Cap',
-        stats: { completedJobs: 0, hoursLoggedThisMonth: 0, kmDrivenThisMonth: 0, clientRatingAverage: 0, incidentsReported: 0, toolIncidentsCount: 0 },
-        ratingBreakdown: { professionalism: 0, punctuality: 0, customerTreatment: 0 },
-        workShiftHistory: [],
-        clientReviews: [],
-        completedJobsHistory: [],
-        assignedTools: [],
-        toolIncidentsHistory: [],
-        vehicleKmHistory: [],
-        reportedFieldIncidents: []
+        telefon: newPhone || '600 00 00 00',
+        vehicle_assignat: isMobileOnlyRole ? 'Cap' : undefined,
+        actiu: true,
+        password: newPassword,
+        pin: newPassword // Per simplificar el PIN
+      });
+
+      const newUserObj: StaffUser = {
+        id: nouUsuari.id,
+        name: nouUsuari.nom,
+        nif: newNif || '00000000X',
+        email: nouUsuari.email,
+        role: nouUsuari.rol,
+        roleLabel: roleLabelText,
+        accessType: computedAccess,
+        lastLogin: 'Mai registrat',
+        phone: nouUsuari.telefon,
+        status: nouUsuari.actiu ? 'ACTIU' : 'INACTIU',
+        photoUrl: undefined
       };
-      localStorage.setItem('campopro_workers', JSON.stringify([...savedWorkers, newWorker]));
+
+      setUsers([...users, newUserObj]);
+      setShowAddModal(false);
+
+      alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText} a la base de dades.\n\nAccés: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}\n\nLliureu aquestes credencials al treballador:\n📧 Email: ${newEmail}\n🔑 Contrasenya: ${newPassword}`);
+    } catch (e) {
+      console.error("Error creating user in backend", e);
+      alert("Error guardant l'usuari a la base de dades.");
     }
-    alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText}.\n\nAccés: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}\n\nLliureu aquestes credencials al treballador:\n📧 Email: ${newEmail}\n🔑 Contrasenya: ${newPassword}`);
   };
 
   const handleSaveCompanySettings = (e: React.FormEvent) => {
@@ -355,18 +354,15 @@ export default function ConfiguracioPage() {
                       <Key size={14} />
                     </button>
                     <button 
-                      onClick={() => {
+                      onClick={async () => {
                         if (confirm(`Estàs segur que vols eliminar l'usuari ${u.name}?`)) {
-                          const updatedUsers = users.filter(user => user.id !== u.id);
-                          setUsers(updatedUsers);
-                          localStorage.setItem('campopro_staff', JSON.stringify(updatedUsers));
-                          
-                          // Eliminar de campopro_workers si existeix
-                          const savedWorkersStr = localStorage.getItem('campopro_workers');
-                          if (savedWorkersStr) {
-                            const savedWorkers = JSON.parse(savedWorkersStr);
-                            const updatedWorkers = savedWorkers.filter((w: any) => w.name !== u.name);
-                            localStorage.setItem('campopro_workers', JSON.stringify(updatedWorkers));
+                          try {
+                            await apiClient.delete(`/users/${u.id}`);
+                            const updatedUsers = users.filter(user => user.id !== u.id);
+                            setUsers(updatedUsers);
+                          } catch (e) {
+                            console.error("Error deleting user from backend", e);
+                            alert("No s'ha pogut esborrar l'usuari de la base de dades.");
                           }
                         }
                       }}

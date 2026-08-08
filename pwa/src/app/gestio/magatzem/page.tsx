@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Package, PenTool, Truck, Building2, Plus, Search, AlertTriangle, CheckCircle2, Trash2, X, History, ExternalLink, Phone, Mail, User, ShieldCheck, Wrench, Calendar, Gauge, FileText, CreditCard, Percent, DollarSign, Bot, Sparkles, Upload, FileUp, Loader2, ArrowRight, ShieldAlert, FileCheck, RefreshCw, UserPlus, Folder, ArrowDownRight, ArrowUpRight, ShoppingCart, Send, Copy, Check, Download, Eye, Filter, Tag, RotateCcw } from 'lucide-react';
-import { getStoredProveidors, saveStoredProveidors, getStoredMaterials, saveStoredMaterials, clearUploadedDocumentsStore, SupplierItem, MaterialItem } from '@/lib/sharedStore';
+import { clearUploadedDocumentsStore, SupplierItem, MaterialItem } from '@/lib/sharedStore';
+import { apiClient } from '@/lib/apiClient';
 
 export default function MagatzemDashboard() {
   const [activeTab, setActiveTab] = useState<'materials' | 'serveis' | 'eines' | 'vehicles' | 'proveidors'>('materials');
@@ -26,14 +27,57 @@ export default function MagatzemDashboard() {
   const [proveidors, setProveidors] = useState<SupplierItem[]>([]);
 
   useEffect(() => {
-    const syncData = () => {
-      setMaterials(getStoredMaterials());
-      setProveidors(getStoredProveidors());
-    };
-    syncData();
+    const fetchData = async () => {
+      try {
+        const dbProducts = await apiClient.get('/magatzem/productes');
+        if (dbProducts && Array.isArray(dbProducts)) {
+          const mappedMaterials = dbProducts.map((p: any) => ({
+            id: p.id,
+            code: p.codi_barres || '',
+            name: p.nom,
+            stockTotal: p.estoc_actual || 0,
+            stockCheckedOut: 0,
+            stock: p.estoc_actual || 0,
+            minStock: p.estoc_minim || 0,
+            unit: p.unitat_mesura || 'u',
+            location: 'Magatzem Central',
+            supplier: 'Sense Assignar',
+            unitPrice: p.preu_unitari || 0,
+            isService: false,
+            lastPurchaseDate: p.creat_a ? p.creat_a.split('T')[0] : '',
+            workerMovementHistory: [],
+            purchaseHistory: []
+          }));
+          setMaterials(mappedMaterials);
+        }
 
-    window.addEventListener('campopro_store_updated', syncData);
-    return () => window.removeEventListener('campopro_store_updated', syncData);
+        const dbSuppliers = await apiClient.get('/proveidors');
+        if (dbSuppliers && Array.isArray(dbSuppliers)) {
+          const mappedSuppliers = dbSuppliers.map((s: any) => ({
+            id: s.id,
+            nif: s.nif || '',
+            name: s.nom,
+            category: s.categoria || '',
+            contactPerson: s.contacte || '',
+            phone: s.telefon || '',
+            email: s.email || '',
+            address: s.adreca || '',
+            products: s.productes || '',
+            discountValue: s.descompte || '0%',
+            paymentMethod: s.forma_pagament || '',
+            paymentTerms: s.condicions_pagament || '',
+            iban: s.iban || '',
+            digitizedDocs: [],
+            supplierHistory: [],
+            recentOrders: []
+          }));
+          setProveidors(mappedSuppliers);
+        }
+      } catch (e) {
+        console.error("Error fetching magatzem data", e);
+      }
+    };
+    fetchData();
   }, []);
 
   // AI Purchase Order Generator State
@@ -512,6 +556,9 @@ Return a single JSON object with this structure:
       });
     }
 
+      // Lògica modificada: no guarda els camps dummy generats amb IA
+      alert('Tiquet assignat i analitzat, però les analítiques encara no s\'estan desant a la base de dades!');
+
     setProveidors(updatedProveidors);
     saveStoredProveidors(updatedProveidors);
 
@@ -596,6 +643,8 @@ Return a single JSON object with this structure:
         }
       });
 
+      // API backend call pending
+      alert("Comanda finalitzada. Falta integrar la gravació de stock directament a la API!");
       setMaterials(updatedMaterials);
       saveStoredMaterials(updatedMaterials);
     }
@@ -645,7 +694,7 @@ Return a single JSON object with this structure:
 
     const updated = [item, ...materials];
     setMaterials(updated);
-    saveStoredMaterials(updated);
+    // TODO: Falta implementar apiClient.delete pel producte i proveidor
     setNewMat({ name: '', code: '', stock: '', minStock: '', unit: 'u', location: '', supplier: '', unitPrice: '', isService: false });
     setShowAddModal(false);
   };
@@ -733,6 +782,8 @@ Return a single JSON object with this structure:
       supplierHistory: []
     };
 
+    // TODO: Falta implementar apiClient.post/patch pel proveidor
+    setNewSupplier({ nif: '', name: '', category: '', contactPerson: '', phone: '', email: '', address: '', products: '', discountValue: '0%', paymentMethod: 'Transferència', paymentTerms: '30 dies', iban: '' });
     const updated = [item, ...proveidors];
     setProveidors(updated);
     saveStoredProveidors(updated);
@@ -745,7 +796,7 @@ Return a single JSON object with this structure:
     e.stopPropagation();
     const updated = materials.filter((m) => m.id !== id);
     setMaterials(updated);
-    saveStoredMaterials(updated);
+    // TODO: Falta implementar apiClient.post per Material
   };
   const deleteEina = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1732,7 +1783,7 @@ Return a single JSON object with this structure:
                 onClick={() => {
                   const updated = materials.map(m => m.id === editingProductModal.id ? editingProductModal : m);
                   setMaterials(updated);
-                  saveStoredMaterials(updated);
+                  // API Client delete call pending
                   setEditingProductModal(null);
                 }}
                 className="px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl hover:bg-primary/90 shadow-md flex items-center gap-1.5 cursor-pointer"

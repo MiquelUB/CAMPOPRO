@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/apiClient';
 import { 
   Users, UserCheck, User, Star, Clock, Truck, Wrench, AlertTriangle, Search, Phone, Mail, 
   MapPin, ShieldCheck, CheckCircle2, FileText, ChevronRight, X, Calendar, Camera, 
@@ -136,15 +137,49 @@ export default function OperarisDashboardPage() {
   const [profileTab, setProfileTab] = useState<'info' | 'shifts' | 'crew' | 'jobs' | 'reviews' | 'vehicles' | 'tools' | 'incidents'>('info');
 
   useEffect(() => {
-    const saved = localStorage.getItem('campopro_workers');
-    if (saved) {
-      setWorkers(JSON.parse(saved));
-    }
+    const fetchOperaris = async () => {
+      try {
+        const dbUsers = await apiClient.get('/users');
+        if (dbUsers && Array.isArray(dbUsers)) {
+          const mappedOperaris = dbUsers
+            .filter((u: any) => u.rol === 'CAP_GRUP_OPERARI' || u.rol === 'OPERARI_PWA')
+            .map((u: any) => ({
+              id: u.id,
+              name: u.nom,
+              nif: '00000000X',
+              role: u.rol === 'CAP_GRUP_OPERARI' ? 'Cap de Grup' : 'Oficial',
+              specialty: 'General',
+              phone: u.telefon || '600 00 00 00',
+              email: u.email || '',
+              status: u.actiu ? 'DISPONIBLE' : 'BAIXA',
+              isTeamLeader: u.rol === 'CAP_GRUP_OPERARI',
+              avatar: undefined,
+              joiningDate: u.created_at.split('T')[0],
+              drivingLicense: 'B',
+              assignedVehicle: u.vehicle_assignat || 'Cap',
+              stats: { completedJobs: 0, hoursLoggedThisMonth: 0, kmDrivenThisMonth: 0, clientRatingAverage: 0, incidentsReported: 0, toolIncidentsCount: 0 },
+              ratingBreakdown: { professionalism: 0, punctuality: 0, customerTreatment: 0 },
+              workShiftHistory: [],
+              clientReviews: [],
+              completedJobsHistory: [],
+              assignedTools: [],
+              toolIncidentsHistory: [],
+              vehicleKmHistory: [],
+              reportedFieldIncidents: []
+            }));
+          setWorkers(mappedOperaris);
+        }
+      } catch (e) {
+        console.error("Error loading operaris from backend", e);
+      }
+    };
+    fetchOperaris();
   }, []);
 
   const saveWorkers = (newWorkers: WorkerProfile[]) => {
     setWorkers(newWorkers);
-    localStorage.setItem('campopro_workers', JSON.stringify(newWorkers));
+    // Deprecated: No guardem els analytics estatics en local de moment
+    // S'haurien de guardar al backend si són reals
   };
 
   const filteredWorkers = workers.filter(w => 

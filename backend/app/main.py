@@ -43,8 +43,12 @@ from app.api.v1.incidencies import router as incidencies_router
 from app.api.v1.pressupostos import router as pressupostos_router
 from app.api.v1.ai_evaluator import router as ai_evaluator_router
 from app.api.v1.notificacions import router as notificacions_router
+from app.api.v1.users import router as users_router
+from app.api.v1.proveidors import router as proveidors_router
 
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+app.include_router(proveidors_router, prefix=f"{settings.API_V1_STR}/proveidors", tags=["proveidors"])
 app.include_router(clients_router, prefix=f"{settings.API_V1_STR}")
 app.include_router(municipis_router, prefix=f"{settings.API_V1_STR}")
 app.include_router(equipament_router, prefix=f"{settings.API_V1_STR}")

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import DynamicMap from "@/components/map/DynamicMap";
 import { Search, MapPin, Plus, MoreVertical, X, Save, Building, User, Mail, Phone, Map, Trash2, FileText, CreditCard, Loader2 } from "lucide-react";
+import { apiClient } from "@/lib/apiClient";
 
 export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,32 +53,71 @@ export default function ClientsPage() {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem('campopro_clients');
-    if (saved) {
-      setClients(JSON.parse(saved));
-    } else {
-      setClients([]);
-    }
+    const fetchClients = async () => {
+      try {
+        const dbClients = await apiClient.get('/clients');
+        if (dbClients && Array.isArray(dbClients)) {
+          const mappedClients = dbClients.map((c: any) => ({
+            id: c.id,
+            name: c.nom,
+            nif: c.nif || '',
+            contact: c.tipus || 'particular',
+            email: c.email || '',
+            phone: c.telefon || '',
+            address: c.adreca || '',
+            notes: c.notes || '',
+            lat: c.lat || '',
+            lng: c.lng || '',
+            parcelPresets: (c.lat && c.lng) ? [{ name: 'Principal', lat: c.lat, lng: c.lng }] : []
+          }));
+          setClients(mappedClients);
+        }
+      } catch (e) {
+        console.error("Error fetching clients", e);
+      }
+    };
+    fetchClients();
   }, []);
 
-  const handleSaveClient = () => {
-    const clientToSave = {
-      ...newClient,
-      id: `c_${Date.now()}`,
-      parcelPresets: newClient.lat && newClient.lng ? [{ name: 'Entrada Principal', lat: Number(newClient.lat), lng: Number(newClient.lng) }] : []
-    };
-    const updated = [...clients, clientToSave];
-    setClients(updated);
-    localStorage.setItem('campopro_clients', JSON.stringify(updated));
-    setShowAddModal(false);
-    setNewClient({ name: '', nif: '', contact: '', email: '', phone: '', address: '', notes: '', lat: '', lng: '' });
+  const handleSaveClient = async () => {
+    try {
+      const savedClient = await apiClient.post('/clients', {
+        nom: newClient.name,
+        telefon: newClient.phone || '000000000',
+        email: newClient.email || undefined,
+        nif: newClient.nif || undefined,
+        adreca: newClient.address || undefined,
+        lat: newClient.lat ? parseFloat(newClient.lat) : undefined,
+        lng: newClient.lng ? parseFloat(newClient.lng) : undefined,
+        notes: newClient.notes || undefined,
+        tipus: newClient.contact || 'particular',
+        actiu: true
+      });
+
+      const clientToSave = {
+        ...newClient,
+        id: savedClient.id,
+        parcelPresets: savedClient.lat && savedClient.lng ? [{ name: 'Entrada Principal', lat: savedClient.lat, lng: savedClient.lng }] : []
+      };
+      
+      setClients([...clients, clientToSave]);
+      setShowAddModal(false);
+      setNewClient({ name: '', nif: '', contact: '', email: '', phone: '', address: '', notes: '', lat: '', lng: '' });
+    } catch (e) {
+      console.error("Error creating client", e);
+      alert("Error guardant el client al servidor.");
+    }
   };
 
-  const handleDeleteClient = (id: string) => {
+  const handleDeleteClient = async (id: string) => {
     if (confirm("Estàs segur que vols eliminar aquest client? Aquesta acció no es pot desfer.")) {
-      const updated = clients.filter(c => c.id !== id);
-      setClients(updated);
-      localStorage.setItem('campopro_clients', JSON.stringify(updated));
+      try {
+        await apiClient.delete(`/clients/${id}`);
+        setClients(clients.filter(c => c.id !== id));
+      } catch (e) {
+        console.error("Error deleting client", e);
+        alert("Error esborrant el client del servidor.");
+      }
     }
   };
 
