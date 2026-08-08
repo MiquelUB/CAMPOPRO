@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Building, User, Phone, Send, CheckCircle2, Clock, Plus, FileText, Eye, Download, Image, PenTool, TrendingUp, AlertTriangle, X, Check, FileCheck, Package, Wrench, ShieldCheck } from "lucide-react";
 import DynamicMap from "@/components/map/DynamicMap";
@@ -32,41 +32,61 @@ interface TaskRecord {
 }
 
 // Client Database Dictionary indexed strictly by Client ID
-const CLIENTS_DATABASE: Record<string, {
-  id: string;
-  name: string;
-  contact: string;
-  email: string;
-  phone: string;
-  nif: string;
-  telegramChatId: string;
-  address: string;
-  lat: number;
-  lng: number;
-  assignedTasks: Array<TaskRecord>;
-  telegramLogs: Array<{ id: string; date: string; message: string; status: string }>;
-}> = {};
+// Client Database Dictionary indexed strictly by Client ID
+const CLIENTS_DATABASE: Record<string, any> = {};
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
-  // Retrieve specific client data or fallback dynamically with unique realistic tasks
-  const client = CLIENTS_DATABASE[params.id] || {
-    id: params.id,
-    name: `Client #${params.id}`,
-    contact: "Contacte Assignat",
-    email: `client${params.id}@campopro.cat`,
-    phone: "600000000",
-    nif: `B00000${params.id}`,
-    telegramChatId: `@Client${params.id}Bot`,
-    address: "Ubicació de la finca",
-    lat: 41.5 + (Number(params.id) || 0) * 0.05,
-    lng: 2.0 + (Number(params.id) || 0) * 0.05,
-    assignedTasks: [],
-    telegramLogs: []
-  };
+  const [client, setClient] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [telegramChatId, setTelegramChatId] = useState(client.telegramChatId);
+  // Retrieve specific client data or fallback dynamically with unique realistic tasks
+  useEffect(() => {
+    const savedClients = localStorage.getItem('campopro_clients');
+    const savedTasksStr = localStorage.getItem('campopro_mock_tasks') || '[]';
+    
+    let clientData: any = null;
+
+    if (savedClients) {
+      const parsed = JSON.parse(savedClients);
+      clientData = parsed.find((c: any) => c.id === params.id);
+    }
+
+    if (!clientData) {
+      // Fallback
+      clientData = {
+        id: params.id,
+        name: `Client #${params.id}`,
+        contact: "Contacte Assignat",
+        email: `client${params.id}@campopro.cat`,
+        phone: "600000000",
+        nif: `B00000${params.id}`,
+        telegramChatId: `@Client${params.id}Bot`,
+        address: "Ubicació de la finca",
+        lat: 41.5 + (Number(params.id) || 0) * 0.05,
+        lng: 2.0 + (Number(params.id) || 0) * 0.05,
+        telegramLogs: []
+      };
+    }
+
+    // Load their history of tasks
+    try {
+      const allTasks = JSON.parse(savedTasksStr);
+      // Since tasks currently saved in localStorage don't have clientId yet, we just set it to empty array.
+      // In a real DB, we would filter tasks by clientId.
+      clientData.assignedTasks = [];
+    } catch(e) {
+      clientData.assignedTasks = [];
+    }
+
+    setClient(clientData);
+    setTelegramChatId(clientData.telegramChatId || '');
+    setLogs(clientData.telegramLogs || []);
+    setLoading(false);
+  }, [params.id]);
+
+  const [telegramChatId, setTelegramChatId] = useState("");
   const [telegramMessage, setTelegramMessage] = useState("");
-  const [logs, setLogs] = useState(client.telegramLogs);
+  const [logs, setLogs] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
 
   // Selected Task Archive Modal State (Transferred from /gestio/feines/completades)
@@ -90,6 +110,10 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     }, 600);
   };
 
+  if (loading) {
+    return <div className="p-12 text-center mt-20 font-bold text-primary">Carregant fitxa del client...</div>;
+  }
+
   return (
     <div className="p-6 pt-32 max-w-7xl mx-auto flex flex-col gap-6">
       {/* Header with Direct Action to Create Job for THIS Client */}
@@ -100,7 +124,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{client.name}</h1>
-            <p className="text-sm text-neutral-500">ID Client: #{client.id} • NIF: {client.nif} • Contacte: {client.contact}</p>
+            <p className="text-sm text-neutral-500">ID Client: #{client.id} • NIF: {client.nif || 'No informat'} • Contacte: {client.contact || 'No informat'}</p>
           </div>
         </div>
 
@@ -163,7 +187,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
             {client.assignedTasks.length > 0 ? (
               <div className="space-y-3">
-                {client.assignedTasks.map((task) => (
+                {client.assignedTasks.map((task: any) => (
                   <div 
                     key={task.id} 
                     onClick={() => setSelectedTaskArchive(task)}
@@ -262,7 +286,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">Historial Telegram de {client.name}</h3>
               {logs.length > 0 ? (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {logs.map((log) => (
+                  {logs.map((log: any) => (
                     <div key={log.id} className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/60 text-xs flex justify-between items-start">
                       <div className="flex flex-col">
                         <span className="text-neutral-800 font-medium">{log.message}</span>
