@@ -69,7 +69,10 @@ async def crear_client(
             item.notes,
             item.actiu
         )
-    except asyncpg.exceptions.ForeignKeyViolationError:
+    except asyncpg.exceptions.ForeignKeyViolationError as e:
+        error_msg = str(e).lower()
+        if 'empresa_id' in error_msg:
+            raise HTTPException(status_code=400, detail="No hi ha cap empresa configurada per aquest usuari. No pots crear el client (ZERO DADES FICTÍCIES).")
         raise HTTPException(status_code=400, detail="Municipi invàlid")
 
     return dict(record)
