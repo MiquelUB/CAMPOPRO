@@ -63,10 +63,43 @@ const WAREHOUSE_TOOLS_DB: WarehouseToolItem[] = [];
 
 const VEHICLES_FLOTA_DB: VehicleItem[] = [];
 
+const MOCK_AVATARS = ['👨‍🌾', '👷‍♂️', '🚜', '🔧', '🦺'];
+
 const INCIDENCIES_DB: any[] = [];
 
 function CreateJobForm() {
   const router = useRouter();
+  
+  const [FIELD_WORKERS_DB, setFieldWorkersDB] = useState<WorkerItem[]>([]);
+
+  // Carregar els operaris de la base de dades local (Creats a Configuració)
+  useEffect(() => {
+    const saved = localStorage.getItem('campopro_staff');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const mappedWorkers = parsed.map((u: any, idx: number) => ({
+          id: u.id,
+          name: u.name,
+          role: u.roleLabel || u.role,
+          status: u.status,
+          avatar: u.photoUrl ? (
+            <img src={u.photoUrl} alt={u.name} className="w-full h-full object-cover rounded-2xl" />
+          ) : MOCK_AVATARS[idx % MOCK_AVATARS.length],
+          phone: u.phone
+        }));
+        setFieldWorkersDB(mappedWorkers);
+      } catch(e) {
+        console.error(e);
+      }
+    } else {
+      // Dummy worker fallback if no workers were created
+      setFieldWorkersDB([
+        { id: 'w1', name: 'Operari PWA (Test)', role: 'Operari', status: 'DISPONIBLE', avatar: '👨‍🌾', phone: '600000000' }
+      ]);
+    }
+  }, []);
+
   const searchParams = useSearchParams();
 
   // Only pre-fill if explicitly passed via query parameter (e.g. from client detail page: /gestio/feines/crear?clientId=1)
@@ -220,7 +253,7 @@ function CreateJobForm() {
   };
 
   const activeClient = selectedClientId ? clientsDb[selectedClientId] : null;
-  const activeWorker = FIELD_WORKERS_DB.find(w => w.id === selectedWorkerId) || FIELD_WORKERS_DB[0];
+  const activeWorker = FIELD_WORKERS_DB.find(w => w.id === selectedWorkerId) || (FIELD_WORKERS_DB.length > 0 ? FIELD_WORKERS_DB[0] : null);
 
   const handleSelectParcelPreset = (preset: { name: string; lat: number; lng: number }) => {
     setJobLat(preset.lat);
@@ -505,6 +538,39 @@ function CreateJobForm() {
   };
 
   const handleSaveOrder = () => {
+    // VALIDACIÓ DE RANG DE TEMPS PER OPERARI (HORES)
+    if (activeWorker && proposedStartDate) {
+      const savedTasksStr = localStorage.getItem('campopro_mock_tasks') || '[]';
+      const savedTasks = JSON.parse(savedTasksStr);
+      
+      const newStart = new Date(proposedStartDate).getTime();
+      const newEnd = newStart + (Number(estimatedHours) || 1) * 3600000; // hours to ms
+
+      const hasConflict = savedTasks.some((t: any) => {
+        if (t.workerId !== activeWorker.id) return false;
+        
+        const existingStart = new Date(t.date).getTime();
+        const existingEnd = existingStart + (Number(t.hours) || 1) * 3600000;
+        
+        // Verifica si hi ha encavallament: (Inici1 < Fi2) i (Fi1 > Inici2)
+        return newStart < existingEnd && newEnd > existingStart;
+      });
+
+      if (hasConflict) {
+        const dateStr = new Date(proposedStartDate).toLocaleString('ca-ES');
+        alert(`❌ ERROR D'ASSIGNACIÓ:\nL'operari ${activeWorker.name} ja té una altra tasca assignada que s'encavalla amb aquest horari (${dateStr}). Si us plau, tria una altra hora d'inici o un altre operari lliure en aquest rang de temps.`);
+        return; // Atura el procés de creació
+      }
+
+      // Desa la nova tasca a l'historial per futures validacions
+      savedTasks.push({
+        workerId: activeWorker.id,
+        date: proposedStartDate,
+        hours: estimatedHours
+      });
+      localStorage.setItem('campopro_mock_tasks', JSON.stringify(savedTasks));
+    }
+
     const totalSum = calculateTotalComprehensiveBudget().toFixed(2);
     const clientName = activeClient ? activeClient.name : 'el client seleccionat';
     alert(`Ordre de Treball i Pressupost #${Date.now().toString().slice(-5)} creats amb èxit per a ${clientName}! Total Pressupost: ${totalSum} €. Aquest pressupost queda arxivat i serà 100% recuperable per generar la factura oficial.`);
@@ -641,26 +707,32 @@ function CreateJobForm() {
                 </select>
               </div>
 
-              <div className="flex items-center justify-between bg-emerald-50 p-4 rounded-2xl border border-emerald-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-700 text-white flex items-center justify-center text-2xl shadow">
-                    {activeWorker.avatar}
+              {activeWorker ? (
+                <div className="flex items-center justify-between bg-emerald-50 p-4 rounded-2xl border border-emerald-200 mt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-700 text-white flex items-center justify-center text-2xl shadow">
+                      {activeWorker.avatar}
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-emerald-900 block">{activeWorker.name}</span>
+                      <span className="text-[11px] text-neutral-600 block">{activeWorker.role}</span>
+                      <span className="text-[10px] text-emerald-800 font-mono flex items-center gap-1 mt-0.5">
+                        <Phone size={10} /> Telèfon directe: {activeWorker.phone}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs font-bold text-emerald-900 block">{activeWorker.name}</span>
-                    <span className="text-[11px] text-neutral-600 block">{activeWorker.role}</span>
-                    <span className="text-[10px] text-emerald-800 font-mono flex items-center gap-1 mt-0.5">
-                      <Phone size={10} /> Telèfon directe: {activeWorker.phone}
+
+                  <div className="text-right">
+                    <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      🟢 Rebrà l'Ordre a la PWA Mòbil
                     </span>
                   </div>
                 </div>
-
-                <div className="text-right">
-                  <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    🟢 Rebrà l'Ordre a la PWA Mòbil
-                  </span>
+              ) : (
+                <div className="bg-surface-container-low p-md rounded-xl border border-dashed border-outline-variant text-sm text-center text-on-surface-variant mt-4">
+                  <p className="italic">💡 No hi ha cap operari disponible actualment per assignar.</p>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Card 3: CONFIGURABLE GPS LOCATION FOR WORKER NAVIGATION */}
@@ -805,9 +877,9 @@ function CreateJobForm() {
                 </div>
 
                 <div className="flex flex-col gap-xs">
-                  <label className="font-label-caps text-xs text-on-surface-variant">DATA D'INICI RECOMANADA (SEGONS VEHICLES)</label>
+                  <label className="font-label-caps text-xs text-on-surface-variant">DATA I HORA D'INICI RECOMANADA</label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     value={proposedStartDate}
                     onChange={(e) => setProposedStartDate(e.target.value)}
                     className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary text-center text-sm outline-none"
