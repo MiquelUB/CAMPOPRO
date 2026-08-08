@@ -93,10 +93,7 @@ function CreateJobForm() {
         console.error(e);
       }
     } else {
-      // Dummy worker fallback if no workers were created
-      setFieldWorkersDB([
-        { id: 'w1', name: 'Operari PWA (Test)', role: 'Operari', status: 'DISPONIBLE', avatar: '👨‍🌾', phone: '600000000' }
-      ]);
+      setFieldWorkersDB([]);
     }
   }, []);
 
@@ -105,23 +102,37 @@ function CreateJobForm() {
   // Only pre-fill if explicitly passed via query parameter (e.g. from client detail page: /gestio/feines/crear?clientId=1)
   const rawClientIdParam = searchParams.get('clientId') || searchParams.get('client') || '';
 
-  const clientsDb: Record<string, { 
-    name: string; 
-    nif: string; 
-    phone: string; 
-    contact: string; 
-    address: string; 
-    lat: number; 
-    lng: number;
-    parcelPresets: Array<{ name: string; lat: number; lng: number }>
-  }> = {};
-
-  const isFromClientFile = Boolean(rawClientIdParam && clientsDb[rawClientIdParam]);
-  const initialClientId = isFromClientFile ? rawClientIdParam : '';
-  const selectedClient = isFromClientFile ? clientsDb[rawClientIdParam] : null;
-
+  const [clientsDb, setClientsDb] = useState<Record<string, any>>({});
+  
   // Form States
-  const [selectedClientId, setSelectedClientId] = useState<string>(initialClientId);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('campopro_clients');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const db: Record<string, any> = {};
+        parsed.forEach((c: any) => {
+          db[c.id] = c;
+        });
+        setClientsDb(db);
+        
+        // Setup initial client
+        const clientIdParam = searchParams.get('clientId') || searchParams.get('client') || '';
+        const initId = (clientIdParam && db[clientIdParam]) ? clientIdParam : (parsed.length > 0 ? parsed[0].id : '');
+        setSelectedClientId(initId);
+        
+        if (initId && db[initId]) {
+          setJobLat(db[initId].lat);
+          setJobLng(db[initId].lng);
+          setJobLocationName(db[initId].parcelPresets?.[0]?.name || '📍 Finca Principal');
+        }
+      } catch (e) {
+        console.error("Error loading clients", e);
+      }
+    }
+  }, [searchParams]);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('op1');
   const [priority, setPriority] = useState<'URGENT' | 'NORMAL' | 'BAIXA'>('NORMAL');
   const [description, setDescription] = useState<string>('');
@@ -132,9 +143,9 @@ function CreateJobForm() {
   const [proposedStartDate, setProposedStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   // GPS Coordinates
-  const [jobLat, setJobLat] = useState<number>(selectedClient ? selectedClient.lat : 41.6521);
-  const [jobLng, setJobLng] = useState<number>(selectedClient ? selectedClient.lng : 1.8322);
-  const [jobLocationName, setJobLocationName] = useState<string>(selectedClient ? '📍 Finca Principal (Entrada)' : '');
+  const [jobLat, setJobLat] = useState<number>(41.6521);
+  const [jobLng, setJobLng] = useState<number>(1.8322);
+  const [jobLocationName, setJobLocationName] = useState<string>('');
 
   const [materials, setMaterials] = useState<Array<{ id: string; name: string; qty: string }>>([]);
   const [newMaterial, setNewMaterial] = useState<string>('');
@@ -430,9 +441,9 @@ function CreateJobForm() {
       proposedStartDateFormatted: hasVehicleAlert ? 'Dijous 06/08/2026 (Disponibilitat de maquinària)' : 'Avui mateix',
       fullBudgetLines: copilotBudgetLines,
       calculatedBudget: `${totalCalc.toFixed(2)} €`,
-      lat: selectedClient?.lat || 41.5,
-      lng: selectedClient?.lng || 2.0,
-      locationName: selectedClient?.parcelPresets[0]?.name || '📍 Finca Principal'
+      lat: activeClient?.lat || 41.5,
+      lng: activeClient?.lng || 2.0,
+      locationName: activeClient?.parcelPresets?.[0]?.name || '📍 Finca Principal'
     };
 
     setTimeout(() => {
@@ -562,12 +573,25 @@ function CreateJobForm() {
         return; // Atura el procés de creació
       }
 
-      // Desa la nova tasca a l'historial per futures validacions
-      savedTasks.push({
+      // Desa la nova tasca a l'historial per futures validacions i visualització a la fitxa de client
+      const newTask = {
+        id: `t_${Date.now()}`,
+        clientId: activeClient ? activeClient.id : null,
         workerId: activeWorker.id,
+        workerName: activeWorker.name,
         date: proposedStartDate,
-        hours: estimatedHours
-      });
+        hours: estimatedHours,
+        description: description,
+        priority: priority,
+        status: 'PENDENT', // Estats possibles: PENDENT, EN_CURS, COMPLETADA
+        materials: materials,
+        tools: tools,
+        budget: calculateTotalComprehensiveBudget().toFixed(2),
+        valuation: 0,
+        clientComment: ''
+      };
+      
+      savedTasks.push(newTask);
       localStorage.setItem('campopro_mock_tasks', JSON.stringify(savedTasks));
     }
 
@@ -750,7 +774,7 @@ function CreateJobForm() {
               <div>
                 <label className="font-label-caps text-xs text-on-surface-variant block mb-2">PUNTS I SECTORS DESTACATS DE LA FINCA (SELECCIÓ RÀPIDA):</label>
                 <div className="flex flex-wrap gap-2">
-                  {activeClient?.parcelPresets.map((preset, i) => (
+                  {activeClient?.parcelPresets.map((preset: any, i: number) => (
                     <button
                       key={i}
                       type="button"

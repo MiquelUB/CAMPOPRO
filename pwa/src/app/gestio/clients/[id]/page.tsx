@@ -52,35 +52,27 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     }
 
     if (!clientData) {
-      // Fallback
-      clientData = {
-        id: params.id,
-        name: `Client #${params.id}`,
-        contact: "Contacte Assignat",
-        email: `client${params.id}@campopro.cat`,
-        phone: "600000000",
-        nif: `B00000${params.id}`,
-        telegramChatId: `@Client${params.id}Bot`,
-        address: "Ubicació de la finca",
-        lat: 41.5 + (Number(params.id) || 0) * 0.05,
-        lng: 2.0 + (Number(params.id) || 0) * 0.05,
-        telegramLogs: []
-      };
+      // Do not create mock fallback. Leave clientData as null.
     }
 
     // Load their history of tasks
-    try {
-      const allTasks = JSON.parse(savedTasksStr);
-      // Since tasks currently saved in localStorage don't have clientId yet, we just set it to empty array.
-      // In a real DB, we would filter tasks by clientId.
-      clientData.assignedTasks = [];
-    } catch(e) {
-      clientData.assignedTasks = [];
+    if (clientData) {
+      try {
+        const allTasks = JSON.parse(savedTasksStr);
+        // Filtrem les feines que estiguin lligades a aquest client
+        clientData.assignedTasks = allTasks.filter((t: any) => t.clientId === params.id);
+      } catch(e) {
+        clientData.assignedTasks = [];
+      }
     }
 
-    setClient(clientData);
-    setTelegramChatId(clientData.telegramChatId || '');
-    setLogs(clientData.telegramLogs || []);
+    if (clientData) {
+      setClient(clientData);
+      setTelegramChatId(clientData.telegramChatId || '');
+      setLogs(clientData.telegramLogs || []);
+    } else {
+      setClient(null);
+    }
     setLoading(false);
   }, [params.id]);
 
@@ -88,9 +80,52 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [telegramMessage, setTelegramMessage] = useState("");
   const [logs, setLogs] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+
+  // Quan entrem en mode edició, copiem les dades actuals
+  const handleEditClick = () => {
+    setEditForm({ ...client });
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const savedClients = localStorage.getItem('campopro_clients');
+    if (savedClients) {
+      let parsed = JSON.parse(savedClients);
+      parsed = parsed.map((c: any) => c.id === client.id ? editForm : c);
+      localStorage.setItem('campopro_clients', JSON.stringify(parsed));
+      setClient(editForm);
+      setIsEditing(false);
+    }
+  };
+
+  const handleSaveValuation = (taskId: string, newValuation: number, newComment: string) => {
+    const savedTasksStr = localStorage.getItem('campopro_mock_tasks') || '[]';
+    let allTasks = JSON.parse(savedTasksStr);
+    allTasks = allTasks.map((t: any) => {
+      if (t.id === taskId) {
+        return { ...t, valuation: newValuation, clientComment: newComment };
+      }
+      return t;
+    });
+    localStorage.setItem('campopro_mock_tasks', JSON.stringify(allTasks));
+    
+    // Update local state so it reflects instantly
+    setClient((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        assignedTasks: prev.assignedTasks.map((t: any) => t.id === taskId ? { ...t, valuation: newValuation, clientComment: newComment } : t)
+      };
+    });
+    if (selectedTaskArchive && selectedTaskArchive.id === taskId) {
+      setSelectedTaskArchive({ ...selectedTaskArchive, valuation: newValuation, clientComment: newComment });
+    }
+  };
 
   // Selected Task Archive Modal State (Transferred from /gestio/feines/completades)
-  const [selectedTaskArchive, setSelectedTaskArchive] = useState<TaskRecord | null>(null);
+  const [selectedTaskArchive, setSelectedTaskArchive] = useState<any>(null);
 
   const handleSendTelegram = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,7 +139,16 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         message: `📱 Enviat des de la PWA per a ${client.name}: ${telegramMessage}`,
         status: "Enviat"
       };
-      setLogs([newLog, ...logs]);
+      const updatedLogs = [newLog, ...logs];
+      setLogs(updatedLogs);
+      
+      const savedClients = localStorage.getItem('campopro_clients');
+      if (savedClients) {
+        let parsed = JSON.parse(savedClients);
+        parsed = parsed.map((c: any) => c.id === client.id ? { ...c, telegramLogs: updatedLogs } : c);
+        localStorage.setItem('campopro_clients', JSON.stringify(parsed));
+      }
+
       setTelegramMessage("");
       setIsSending(false);
     }, 600);
@@ -112,6 +156,21 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
   if (loading) {
     return <div className="p-12 text-center mt-20 font-bold text-primary">Carregant fitxa del client...</div>;
+  }
+
+  if (!client) {
+    return (
+      <div className="p-12 text-center mt-20 flex flex-col items-center gap-4">
+        <div className="w-16 h-16 bg-neutral-100 text-neutral-400 rounded-full flex items-center justify-center">
+          <AlertTriangle size={32} />
+        </div>
+        <h2 className="text-xl font-bold text-neutral-800">Client No Trobat</h2>
+        <p className="text-neutral-500">No existeix cap client amb aquest identificador.</p>
+        <Link href="/gestio/clients" className="mt-4 bg-primary text-white px-6 py-2 rounded-xl font-bold hover:bg-primary/90 transition-colors">
+          Tornar a Clients
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -141,33 +200,97 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Client Specific Company Data */}
           <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2 text-neutral-900">
+                <Building size={18} className="text-primary" />
+                Dades del Client (Exclusives)
+              </h2>
+              {!isEditing ? (
+                <button onClick={handleEditClick} className="text-sm font-bold text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors">
+                  Editar
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={() => setIsEditing(false)} className="text-sm font-bold text-neutral-500 hover:bg-neutral-100 px-3 py-1.5 rounded-lg transition-colors">
+                    Cancel·lar
+                  </button>
+                  <button onClick={handleSaveEdit} className="text-sm font-bold text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-lg transition-colors">
+                    Guardar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isEditing ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1"><label className="text-xs text-neutral-500 font-bold uppercase">Nom Fiscal</label><input type="text" className="border rounded p-2 text-sm" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} /></div>
+                <div className="flex flex-col gap-1"><label className="text-xs text-neutral-500 font-bold uppercase">NIF / CIF</label><input type="text" className="border rounded p-2 text-sm uppercase" value={editForm.nif} onChange={e => setEditForm({...editForm, nif: e.target.value})} /></div>
+                <div className="flex flex-col gap-1"><label className="text-xs text-neutral-500 font-bold uppercase">Contacte</label><input type="text" className="border rounded p-2 text-sm" value={editForm.contact} onChange={e => setEditForm({...editForm, contact: e.target.value})} /></div>
+                <div className="flex flex-col gap-1"><label className="text-xs text-neutral-500 font-bold uppercase">Telèfon</label><input type="text" className="border rounded p-2 text-sm" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} /></div>
+                <div className="flex flex-col gap-1 md:col-span-2"><label className="text-xs text-neutral-500 font-bold uppercase">Adreça</label><input type="text" className="border rounded p-2 text-sm" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} /></div>
+                <div className="flex flex-col gap-1"><label className="text-xs text-neutral-500 font-bold uppercase">Latitud</label><input type="number" step="any" className="border rounded p-2 text-sm" value={editForm.lat} onChange={e => setEditForm({...editForm, lat: e.target.value})} /></div>
+                <div className="flex flex-col gap-1"><label className="text-xs text-neutral-500 font-bold uppercase">Longitud</label><input type="number" step="any" className="border rounded p-2 text-sm" value={editForm.lng} onChange={e => setEditForm({...editForm, lng: e.target.value})} /></div>
+                <div className="flex flex-col gap-1 md:col-span-2"><label className="text-xs text-neutral-500 font-bold uppercase">Notes / Comentaris Interns</label><textarea rows={3} className="border rounded p-2 text-sm resize-none" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} /></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                <div>
+                  <label className="text-xs text-neutral-500 uppercase font-semibold">Nom Fiscal</label>
+                  <p className="text-neutral-900 font-medium">{client.name}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 uppercase font-semibold">NIF / CIF</label>
+                  <p className="text-neutral-900 font-mono font-medium">{client.nif}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 uppercase font-semibold">Adreça Principal</label>
+                  <p className="text-neutral-900">{client.address}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 uppercase font-semibold">Contacte Directe</label>
+                  <div className="flex items-center gap-2 text-neutral-900 mt-1">
+                    <User size={14} className="text-neutral-400" />
+                    {client.contact}
+                  </div>
+                  <div className="flex items-center gap-2 text-neutral-900 mt-1">
+                    <Phone size={14} className="text-neutral-400" />
+                    {client.phone}
+                  </div>
+                </div>
+                {client.notes && (
+                  <div className="md:col-span-2 mt-2 bg-amber-50 p-3 rounded-xl border border-amber-100">
+                    <label className="text-xs text-amber-800 uppercase font-bold flex items-center gap-1 mb-1">
+                      <FileText size={14} /> Notes i Particularitats
+                    </label>
+                    <p className="text-amber-900 text-sm whitespace-pre-wrap">{client.notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Billing Summary Section */}
+          <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-neutral-900">
-              <Building size={18} className="text-primary" />
-              Dades del Client (Exclusives)
+              <CreditCard size={18} className="text-primary" />
+              Resum Econòmic
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
-              <div>
-                <label className="text-xs text-neutral-500 uppercase font-semibold">Nom Fiscal</label>
-                <p className="text-neutral-900 font-medium">{client.name}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
+                <span className="text-xs font-bold text-emerald-800 uppercase block mb-1">Total Generat</span>
+                <span className="text-2xl font-black text-emerald-600">
+                  {client.assignedTasks.reduce((acc: number, task: any) => acc + (parseFloat(task.budget) || 0), 0).toFixed(2)} €
+                </span>
+                <span className="text-[10px] text-emerald-700 font-medium block mt-1">Suma de totes les feines</span>
               </div>
-              <div>
-                <label className="text-xs text-neutral-500 uppercase font-semibold">NIF / CIF</label>
-                <p className="text-neutral-900 font-mono font-medium">{client.nif}</p>
-              </div>
-              <div>
-                <label className="text-xs text-neutral-500 uppercase font-semibold">Adreça Principal</label>
-                <p className="text-neutral-900">{client.address}</p>
-              </div>
-              <div>
-                <label className="text-xs text-neutral-500 uppercase font-semibold">Contacte Directe</label>
-                <div className="flex items-center gap-2 text-neutral-900 mt-1">
-                  <User size={14} className="text-neutral-400" />
-                  {client.contact}
-                </div>
-                <div className="flex items-center gap-2 text-neutral-900 mt-1">
-                  <Phone size={14} className="text-neutral-400" />
-                  {client.phone}
-                </div>
+              <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl">
+                <span className="text-xs font-bold text-amber-800 uppercase block mb-1">Pendent (En Curs / Pendent)</span>
+                <span className="text-2xl font-black text-amber-600">
+                  {client.assignedTasks
+                    .filter((t: any) => t.status !== 'COMPLETADA')
+                    .reduce((acc: number, task: any) => acc + (parseFloat(task.budget) || 0), 0).toFixed(2)} €
+                </span>
+                <span className="text-[10px] text-amber-700 font-medium block mt-1">Pressupost no tancat</span>
               </div>
             </div>
           </div>
@@ -196,12 +319,12 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold font-mono bg-primary/10 text-primary px-2.5 py-0.5 rounded-md">
-                          #{task.code}
+                          #{task.id.split('_')[1]?.slice(-4) || 'TASK'}
                         </span>
-                        <span className="font-bold text-neutral-900 text-sm group-hover:text-primary transition-colors">{task.title}</span>
+                        <span className="font-bold text-neutral-900 text-sm group-hover:text-primary transition-colors">{task.description || 'Feina sense descripció'}</span>
                       </div>
                       <span className="text-xs text-neutral-500">
-                        Data: {task.date} • Assignat a: <strong className="text-neutral-700">{task.operari}</strong> • Facturat: <strong className="text-primary font-bold">{task.invoicedTotal}</strong>
+                        Data: {task.date} • Assignat a: <strong className="text-neutral-700">{task.workerName}</strong> • Facturat: <strong className="text-primary font-bold">{task.budget} €</strong>
                       </span>
                     </div>
 
@@ -336,132 +459,123 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-100">
               <div>
                 <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full">
-                  FITXA ÚNICA DE TASCA #{selectedTaskArchive.code}
+                  FITXA ÚNICA DE TASCA #{selectedTaskArchive.id.split('_')[1]?.slice(-4) || 'TASK'}
                 </span>
-                <h3 className="text-xl font-bold text-neutral-900 mt-2">{selectedTaskArchive.title}</h3>
-                <p className="text-xs text-neutral-500">Client: <strong className="text-neutral-800">{client.name}</strong> • Executat: {selectedTaskArchive.date} • Operari: <strong className="text-neutral-800">{selectedTaskArchive.operari}</strong></p>
+                <h3 className="text-xl font-bold text-neutral-900 mt-2">{selectedTaskArchive.description || 'Sense descripció'}</h3>
+                <p className="text-xs text-neutral-500">Client: <strong className="text-neutral-800">{client.name}</strong> • Data Prevista: {selectedTaskArchive.date} • Operari: <strong className="text-neutral-800">{selectedTaskArchive.workerName}</strong></p>
+                <div className="mt-2">
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                    selectedTaskArchive.status === "COMPLETADA"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : selectedTaskArchive.status === "EN_CURS"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}>
+                    {selectedTaskArchive.status}
+                  </span>
+                </div>
               </div>
-              <button onClick={() => setSelectedTaskArchive(null)} className="p-1 text-neutral-400 hover:text-neutral-700 rounded-full">
+              <button onClick={() => setSelectedTaskArchive(null)} className="p-1 text-neutral-400 hover:text-neutral-700 rounded-full bg-neutral-100 hover:bg-neutral-200">
                 <X size={22} />
               </button>
             </div>
 
-            {/* Financial Summary & Invoicing (Factura / Pressupost) */}
+            {/* Financial Summary */}
             <div className="space-y-4 mb-6">
               <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2">
-                <FileText size={16} className="text-primary" /> Facturació i Pressupost d'Aquesta Tasca
+                <FileText size={16} className="text-primary" /> Dades Econòmiques
               </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-neutral-50 p-4 rounded-2xl border border-neutral-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-neutral-50 p-4 rounded-2xl border border-neutral-200">
                 <div>
-                  <span className="text-[10px] font-semibold text-neutral-500 uppercase block">Total Facturat</span>
-                  <span className="text-base font-bold text-emerald-700 block mt-0.5">{selectedTaskArchive.invoicedTotal}</span>
-                  <span className="text-[10px] font-mono text-neutral-500">{selectedTaskArchive.invoiceNumber}</span>
+                  <span className="text-[10px] font-semibold text-neutral-500 uppercase block">Total Pressupostat (Cost Estimat)</span>
+                  <span className="text-xl font-bold text-neutral-900 block mt-0.5">{selectedTaskArchive.budget} €</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-semibold text-neutral-500 uppercase block">Pressupost Acordat</span>
-                  <span className="text-base font-bold text-neutral-900 block mt-0.5">{selectedTaskArchive.budgetAmount}</span>
-                  <span className="text-[10px] font-mono text-neutral-500">{selectedTaskArchive.budgetNumber}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-semibold text-neutral-500 uppercase block">Cost Executat Real</span>
-                  <span className="text-base font-bold text-neutral-800 block mt-0.5">{selectedTaskArchive.costReal}</span>
-                  <span className="text-[10px] text-neutral-500 font-medium">Hores: {selectedTaskArchive.hoursSpent}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-semibold text-neutral-500 uppercase block">Desviació de Materials</span>
-                  <span className="text-xs font-bold text-amber-800 flex items-center gap-1 mt-1">
-                    <TrendingUp size={14} /> {selectedTaskArchive.deviationPercent}
-                  </span>
-                  <span className="text-[9px] text-neutral-500 block leading-tight mt-0.5">{selectedTaskArchive.deviationReason}</span>
+                  <span className="text-[10px] font-semibold text-neutral-500 uppercase block">Hores Estimades</span>
+                  <span className="text-base font-bold text-neutral-800 block mt-0.5">{selectedTaskArchive.hours}h</span>
                 </div>
               </div>
             </div>
 
-            {/* Itemized Materials Used in THIS specific task */}
-            <div className="mb-6">
-              <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
-                <Package size={16} className="text-primary" /> Desglose de Materials Emplets ({selectedTaskArchive.materialsList.length} articles)
-              </h4>
-              <div className="border border-neutral-200 rounded-2xl overflow-hidden text-xs">
-                <table className="w-full text-left">
-                  <thead className="bg-neutral-100 text-neutral-600 font-semibold uppercase">
-                    <tr>
-                      <th className="p-2.5">Material / Article</th>
-                      <th className="p-2.5">Quantitat</th>
-                      <th className="p-2.5">Preu Unitari</th>
-                      <th className="p-2.5 text-right">Total Net</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-200">
-                    {selectedTaskArchive.materialsList.map((m, idx) => (
-                      <tr key={idx} className="hover:bg-neutral-50">
-                        <td className="p-2.5 font-medium text-neutral-900">{m.name}</td>
-                        <td className="p-2.5 font-bold text-neutral-800">{m.qty}</td>
-                        <td className="p-2.5 text-neutral-600">{m.unitPrice}</td>
-                        <td className="p-2.5 text-right font-bold text-emerald-700">{m.total}</td>
-                      </tr>
+            {/* Real Materials & Tools Used */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
+                  <Package size={16} className="text-primary" /> Materials Programats ({selectedTaskArchive.materials?.length || 0})
+                </h4>
+                {selectedTaskArchive.materials && selectedTaskArchive.materials.length > 0 ? (
+                  <ul className="space-y-2">
+                    {selectedTaskArchive.materials.map((m: any, i: number) => (
+                      <li key={i} className="text-xs p-2 bg-neutral-50 border border-neutral-200 rounded-lg flex justify-between">
+                        <span className="font-medium">{m.name}</span>
+                        <span className="font-bold">{m.qty}</span>
+                      </li>
                     ))}
-                  </tbody>
-                </table>
+                  </ul>
+                ) : (
+                  <p className="text-xs text-neutral-500 italic">No hi ha materials programats.</p>
+                )}
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
+                  <PenTool size={16} className="text-primary" /> Eines Necessàries ({selectedTaskArchive.tools?.length || 0})
+                </h4>
+                {selectedTaskArchive.tools && selectedTaskArchive.tools.length > 0 ? (
+                  <ul className="space-y-2">
+                    {selectedTaskArchive.tools.map((t: string, i: number) => (
+                      <li key={i} className="text-xs p-2 bg-neutral-50 border border-neutral-200 rounded-lg">
+                        <span className="font-medium">{t}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-neutral-500 italic">No s'han registrat eines específiques.</p>
+                )}
               </div>
             </div>
 
-            {/* Operari Field Report */}
-            <div className="mb-6 bg-blue-50/60 border border-blue-200 p-4 rounded-2xl">
-              <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider block">Nota i Part de Treball de l'Operari ({selectedTaskArchive.operari})</span>
-              <p className="text-xs text-neutral-800 mt-1 italic">"{selectedTaskArchive.operariFieldNotes}"</p>
-            </div>
-
-            {/* Photo Evidence & Blueprint Annotations */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
-                  <Image size={16} className="text-primary" /> Foto Evidència de Camp (Tasca #{selectedTaskArchive.code})
-                </h4>
-                <div className="relative h-44 rounded-2xl overflow-hidden border border-neutral-200 shadow-sm group">
-                  <img src={selectedTaskArchive.evidencePhoto} alt={selectedTaskArchive.title} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-3">
-                    <span className="text-white text-xs font-medium">{selectedTaskArchive.photoCaption}</span>
+            {/* Valoració i Feedback del Client */}
+            <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+              <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3">
+                ⭐ Valoració del Client per aquesta feina
+              </h4>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <label className="text-[10px] font-semibold text-neutral-600 uppercase mb-1 block">Satisfacció (1-5)</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button 
+                        key={star}
+                        onClick={() => handleSaveValuation(selectedTaskArchive.id, star, selectedTaskArchive.clientComment || '')}
+                        className={`p-2 rounded-lg transition-colors ${
+                          (selectedTaskArchive.valuation || 0) >= star 
+                          ? 'bg-amber-100 text-amber-500' 
+                          : 'bg-white border border-neutral-200 text-neutral-300 hover:text-amber-400'
+                        }`}
+                      >
+                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2 mb-2">
-                  <PenTool size={16} className="text-primary" /> Signatura Única de Conformitat
-                </h4>
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 flex flex-col justify-between h-44">
-                  <div>
-                    <span className="text-[10px] font-semibold text-neutral-500 uppercase block">Receptor i Signatari</span>
-                    <span className="text-sm font-bold text-neutral-900 block mt-0.5">{selectedTaskArchive.clientSignatureName}</span>
-                    <span className="text-[10px] text-neutral-500">Data i Hora: {selectedTaskArchive.clientSignatureDate}</span>
-                  </div>
-                  <div className="h-16 bg-white rounded-xl border border-neutral-200 flex items-center justify-center p-2">
-                    <svg className="w-full h-full stroke-primary fill-none opacity-80" viewBox="0 0 100 40">
-                      <path d={selectedTaskArchive.signatureSvgPath} strokeWidth="2.5" strokeLinecap="round"></path>
-                    </svg>
-                  </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-neutral-600 uppercase mb-1 block">Comentaris o Queixes del Client</label>
+                  <textarea 
+                    rows={2}
+                    placeholder="Escriu què opina el client d'aquesta feina (opcional)..."
+                    value={selectedTaskArchive.clientComment || ''}
+                    onChange={(e) => {
+                      // Utilitzem un timeout senzill tipus debounce o ho deixem en temps real ja que s'actualitza l'estat local
+                      handleSaveValuation(selectedTaskArchive.id, selectedTaskArchive.valuation || 0, e.target.value);
+                    }}
+                    className="w-full p-3 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-primary resize-none"
+                  />
                 </div>
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="pt-4 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-3">
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => alert(`Generant PDF Oficial de la Feina #${selectedTaskArchive.code}...`)}
-                  className="px-4 py-2.5 bg-neutral-100 text-neutral-800 hover:bg-neutral-200 rounded-xl text-xs font-bold flex items-center gap-2"
-                >
-                  <Download size={14} /> PDF de la Feina #{selectedTaskArchive.code}
-                </button>
-                <button 
-                  onClick={() => alert(`Obrint Factura Oficial ${selectedTaskArchive.invoiceNumber}...`)}
-                  className="px-4 py-2.5 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2"
-                >
-                  <FileCheck size={14} /> Veure Factura ({selectedTaskArchive.invoiceNumber})
-                </button>
-              </div>
-
+            <div className="pt-4 border-t border-neutral-100 flex justify-end">
               <button 
                 onClick={() => setSelectedTaskArchive(null)} 
                 className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90"

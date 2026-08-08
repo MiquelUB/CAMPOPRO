@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import DynamicMap from "@/components/map/DynamicMap";
-import { Search, MapPin, Plus, MoreVertical, X, Save, Building, User, Mail, Phone, Map, Trash2 } from "lucide-react";
+import { Search, MapPin, Plus, MoreVertical, X, Save, Building, User, Mail, Phone, Map, Trash2, FileText, CreditCard, Loader2 } from "lucide-react";
 
 export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,13 +15,41 @@ export default function ClientsPage() {
   // New Client Form State
   const [newClient, setNewClient] = useState({
     name: '',
+    nif: '',
     contact: '',
     email: '',
     phone: '',
     address: '',
-    lat: 41.6, // Default coords approx
-    lng: 1.5,
+    notes: '',
+    lat: '' as string | number, 
+    lng: '' as string | number,
   });
+
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleGeolocate = async () => {
+    if (!newClient.address) {
+      alert("Si us plau, introdueix una adreça primer.");
+      return;
+    }
+    setIsLocating(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(newClient.address)}`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        setNewClient(prev => ({
+          ...prev,
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        }));
+      } else {
+        alert("No s'han trobat coordenades per aquesta adreça. Si us plau, introdueix-les manualment.");
+      }
+    } catch (e) {
+      alert("Error connectant amb el servei de mapes.");
+    }
+    setIsLocating(false);
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('campopro_clients');
@@ -36,13 +64,13 @@ export default function ClientsPage() {
     const clientToSave = {
       ...newClient,
       id: `c_${Date.now()}`,
-      parcelPresets: [{ name: 'Entrada Principal', lat: newClient.lat, lng: newClient.lng }]
+      parcelPresets: newClient.lat && newClient.lng ? [{ name: 'Entrada Principal', lat: Number(newClient.lat), lng: Number(newClient.lng) }] : []
     };
     const updated = [...clients, clientToSave];
     setClients(updated);
     localStorage.setItem('campopro_clients', JSON.stringify(updated));
     setShowAddModal(false);
-    setNewClient({ name: '', contact: '', email: '', phone: '', address: '', lat: 41.6, lng: 1.5 });
+    setNewClient({ name: '', nif: '', contact: '', email: '', phone: '', address: '', notes: '', lat: '', lng: '' });
   };
 
   const handleDeleteClient = (id: string) => {
@@ -198,6 +226,21 @@ export default function ClientsPage() {
                   </div>
                 </div>
 
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-neutral-600 uppercase">NIF / CIF</label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+                    <input 
+                      type="text" 
+                      value={newClient.nif} onChange={(e) => setNewClient({...newClient, nif: e.target.value})}
+                      placeholder="Ex: B12345678" 
+                      className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-colors uppercase"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-neutral-600 uppercase">Telèfon *</label>
                   <div className="relative">
@@ -227,22 +270,60 @@ export default function ClientsPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-neutral-600 uppercase">Adreça Postal de la Finca / Jardí</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+                    <input 
+                      type="text" 
+                      value={newClient.address} onChange={(e) => setNewClient({...newClient, address: e.target.value})}
+                      placeholder="Carretera C-12, km..." 
+                      className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleGeolocate}
+                    disabled={isLocating || !newClient.address}
+                    className="bg-primary text-white px-4 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  >
+                    {isLocating ? <Loader2 size={18} className="animate-spin" /> : <Map size={18} />}
+                    <span className="hidden sm:inline">Cercar Coordenades</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-neutral-600 uppercase">Latitud (Opcional)</label>
                   <input 
-                    type="text" 
-                    value={newClient.address} onChange={(e) => setNewClient({...newClient, address: e.target.value})}
-                    placeholder="Carretera C-12, km..." 
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-colors"
+                    type="number" 
+                    step="any"
+                    value={newClient.lat} onChange={(e) => setNewClient({...newClient, lat: e.target.value})}
+                    placeholder="Ex: 41.6176" 
+                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-neutral-600 uppercase">Longitud (Opcional)</label>
+                  <input 
+                    type="number" 
+                    step="any"
+                    value={newClient.lng} onChange={(e) => setNewClient({...newClient, lng: e.target.value})}
+                    placeholder="Ex: 1.6200" 
+                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3">
-                <Map className="text-blue-600 shrink-0 mt-0.5" size={20} />
-                <div className="text-sm text-blue-900">
-                  <p className="font-bold mb-1">Geolocalització Automàtica</p>
-                  <p>Les coordenades per defecte s'han generat. Properament podreu ajustar el punt exacte al mapa dins la fitxa del client.</p>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-neutral-600 uppercase">Notes / Comentaris Interns</label>
+                <div className="relative">
+                  <FileText className="absolute left-3 top-3 text-neutral-400" size={16} />
+                  <textarea 
+                    value={newClient.notes} onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
+                    placeholder="Particularitats, gossos a la finca, horaris preferits..." 
+                    rows={3}
+                    className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-colors resize-none"
+                  />
                 </div>
               </div>
             </div>
