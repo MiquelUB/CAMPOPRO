@@ -300,9 +300,8 @@ export default function ClientsPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-neutral-600 uppercase">Latitud (Opcional)</label>
                   <input 
-                    type="number" 
-                    step="any"
-                    value={newClient.lat} onChange={(e) => setNewClient({...newClient, lat: e.target.value})}
+                    type="text"
+                    value={newClient.lat ?? ''} onChange={(e) => setNewClient({...newClient, lat: e.target.value.replace(',', '.')})}
                     placeholder="Ex: 41.6176" 
                     className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-colors"
                   />
@@ -310,9 +309,8 @@ export default function ClientsPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-neutral-600 uppercase">Longitud (Opcional)</label>
                   <input 
-                    type="number" 
-                    step="any"
-                    value={newClient.lng} onChange={(e) => setNewClient({...newClient, lng: e.target.value})}
+                    type="text" 
+                    value={newClient.lng ?? ''} onChange={(e) => setNewClient({...newClient, lng: e.target.value.replace(',', '.')})}
                     placeholder="Ex: 1.6200" 
                     className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-colors"
                   />
