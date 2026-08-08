@@ -5,25 +5,33 @@ from uuid import UUID
 from app.dependencies import get_db
 from app.models.user import Usuari
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
-from app.core.security import get_current_user, require_super_admin, TokenPayload, hash_password
+from app.core.security import get_current_user, require_super_admin, TokenPayload, hash_password, get_current_user_optional
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("", response_model=List[UserResponse])
 async def llistar_usuaris(
+    skip: int = 0,
+    limit: int = 100,
     db: asyncpg.Connection = Depends(get_db),
-    # current_user: TokenPayload = Depends(require_super_admin)  # Descomentar si volem forçar admin
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
-    # En un entorn real filtraríem per empresa_id
     query = """
-        SELECT id, empresa_id, rol, nom, telefon, email, vehicle_assignat, actiu, created_at, updated_at
-        FROM usuaris
-        ORDER BY created_at DESC
+        SELECT * FROM usuaris
+        WHERE actiu = true
     """
-    records = await db.fetch(query)
+    args = []
+    if current_user and current_user.empresa_id:
+        query += " AND (empresa_id = $1 OR empresa_id IS NULL)"
+        args.append(current_user.empresa_id)
+        
+    query += f" ORDER BY created_at DESC OFFSET ${len(args) + 1} LIMIT ${len(args) + 2}"
+    args.extend([skip, limit])
+    
+    records = await db.fetch(query, *args)
     return [dict(r) for r in records]
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def crear_usuari(
     usuari: UserCreate,
     db: asyncpg.Connection = Depends(get_db)
