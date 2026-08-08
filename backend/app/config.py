@@ -14,13 +14,11 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str = Field(default="5432")
     POSTGRES_DB: str = Field(default="campopro")
     
-    @property
-    def DATABASE_URL(self) -> str:
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    DATABASE_URL: str | None = None
     
-    @property
-    def ASYNC_DATABASE_URL(self) -> str:
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    def model_post_init(self, __context) -> None:
+        if not self.DATABASE_URL:
+            self.DATABASE_URL = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     # Redis / Celery
     REDIS_URL: str = Field(default="redis://localhost:6379/0")
