@@ -19,7 +19,11 @@ export const apiClient = {
       method: 'GET',
       headers: getHeaders(),
     });
-    if (!res.ok) throw new Error(`Error fetching ${endpoint}`);
+    if (!res.ok) {
+      let errData;
+      try { errData = await res.json(); } catch (e) { errData = await res.text(); }
+      throw { status: res.status, data: errData, message: `Error fetching ${endpoint}` };
+    }
     return res.json();
   },
 
@@ -29,7 +33,11 @@ export const apiClient = {
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(`Error posting ${endpoint}`);
+    if (!res.ok) {
+      let errData;
+      try { errData = await res.json(); } catch (e) { errData = await res.text(); }
+      throw { status: res.status, data: errData, message: `Error posting ${endpoint}` };
+    }
     return res.json();
   },
 
@@ -39,7 +47,11 @@ export const apiClient = {
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(`Error patching ${endpoint}`);
+    if (!res.ok) {
+      let errData;
+      try { errData = await res.json(); } catch (e) { errData = await res.text(); }
+      throw { status: res.status, data: errData, message: `Error patching ${endpoint}` };
+    }
     return res.json();
   },
 
@@ -48,7 +60,11 @@ export const apiClient = {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    if (!res.ok) throw new Error(`Error deleting ${endpoint}`);
+    if (!res.ok) {
+      let errData;
+      try { errData = await res.json(); } catch (e) { errData = await res.text(); }
+      throw { status: res.status, data: errData, message: `Error deleting ${endpoint}` };
+    }
     return true;
   }
 };

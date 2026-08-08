@@ -79,7 +79,10 @@ export default function ClientsPage() {
     fetchClients();
   }, []);
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const handleSaveClient = async () => {
+    setFormError(null);
     try {
       const savedClient = await apiClient.post('/clients', {
         nom: newClient.name,
@@ -87,8 +90,8 @@ export default function ClientsPage() {
         email: newClient.email || undefined,
         nif: newClient.nif || undefined,
         adreca: newClient.address || undefined,
-        lat: newClient.lat ? parseFloat(newClient.lat) : undefined,
-        lng: newClient.lng ? parseFloat(newClient.lng) : undefined,
+        lat: newClient.lat ? parseFloat(newClient.lat as string) : undefined,
+        lng: newClient.lng ? parseFloat(newClient.lng as string) : undefined,
         notes: newClient.notes || undefined,
         tipus: newClient.contact || 'particular',
         actiu: true
@@ -103,9 +106,21 @@ export default function ClientsPage() {
       setClients([...clients, clientToSave]);
       setShowAddModal(false);
       setNewClient({ name: '', nif: '', contact: '', email: '', phone: '', address: '', notes: '', lat: '', lng: '' });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error creating client", e);
-      alert("Error guardant el client al servidor.");
+      if (e.data && e.data.detail) {
+        if (Array.isArray(e.data.detail)) {
+          const errors = e.data.detail.map((err: any) => {
+            const field = err.loc[err.loc.length - 1];
+            return `El camp "${field}" conté un error: ${err.msg}`;
+          }).join('\n');
+          setFormError(errors);
+        } else {
+          setFormError(typeof e.data.detail === 'string' ? e.data.detail : JSON.stringify(e.data.detail));
+        }
+      } else {
+        setFormError("Error guardant el client al servidor. Revisa els camps obligatoris.");
+      }
     }
   };
 
@@ -248,6 +263,23 @@ export default function ClientsPage() {
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-5">
+              {formError && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Hi ha errors en el formulari:</h3>
+                      <div className="mt-2 text-sm text-red-700 whitespace-pre-line">
+                        {formError}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-neutral-600 uppercase">Nom del Client o Empresa *</label>
