@@ -93,6 +93,8 @@ ALTER TABLE assignacio_eines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE registres_us_vehicle ENABLE ROW LEVEL SECURITY;
 
 -- Polítiques (simplified, Agent Seguretat will expand)
+DROP POLICY IF EXISTS eines_all ON eines;
 CREATE POLICY eines_all ON eines USING (empresa_id = current_setting('app.current_empresa_id', true)::UUID);
+DROP POLICY IF EXISTS vehicles_all ON vehicles;
 CREATE POLICY vehicles_all ON vehicles USING (empresa_id = current_setting('app.current_empresa_id', true)::UUID);
 

@@ -110,22 +110,28 @@ ALTER TABLE anotacions_planol ENABLE ROW LEVEL SECURITY;
 
 -- Polítiques d'aïllament per empresa
 
+DROP POLICY IF EXISTS planols_empresa_policy ON planols;
 CREATE POLICY planols_empresa_policy ON planols
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid);
 
+DROP POLICY IF EXISTS feines_empresa_policy ON feines;
 CREATE POLICY feines_empresa_policy ON feines
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid);
 
 -- Assignacions hereten empresa_id per join (o directament, si afegim empresa_id, però podem fer JOIN)
 -- Com que no tenen empresa_id en la taula, fem JOIN o subquery.
+DROP POLICY IF EXISTS assignacions_empresa_policy ON assignacions;
 CREATE POLICY assignacions_empresa_policy ON assignacions
     USING (feina_id IN (SELECT id FROM feines WHERE empresa_id = current_setting('app.current_empresa_id')::uuid));
 
+DROP POLICY IF EXISTS actuacions_empresa_policy ON actuacions;
 CREATE POLICY actuacions_empresa_policy ON actuacions
     USING (feina_id IN (SELECT id FROM feines WHERE empresa_id = current_setting('app.current_empresa_id')::uuid));
 
+DROP POLICY IF EXISTS fotos_empresa_policy ON fotos;
 CREATE POLICY fotos_empresa_policy ON fotos
     USING (feina_id IN (SELECT id FROM feines WHERE empresa_id = current_setting('app.current_empresa_id')::uuid));
 
+DROP POLICY IF EXISTS anotacions_planol_empresa_policy ON anotacions_planol;
 CREATE POLICY anotacions_planol_empresa_policy ON anotacions_planol
     USING (planol_id IN (SELECT id FROM planols WHERE empresa_id = current_setting('app.current_empresa_id')::uuid));

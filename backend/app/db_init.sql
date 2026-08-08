@@ -120,41 +120,53 @@ ALTER TABLE equipament_instal_lat ENABLE ROW LEVEL SECURITY;
 
 -- Standard RLS following postgresql_rls.md skill
 -- Municipis
+DROP POLICY IF EXISTS "municipis_select_policy" ON municipis;
 CREATE POLICY "municipis_select_policy" ON municipis FOR SELECT
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "municipis_insert_policy" ON municipis;
 CREATE POLICY "municipis_insert_policy" ON municipis FOR INSERT
 WITH CHECK (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "municipis_update_policy" ON municipis;
 CREATE POLICY "municipis_update_policy" ON municipis FOR UPDATE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "municipis_delete_policy" ON municipis;
 CREATE POLICY "municipis_delete_policy" ON municipis FOR DELETE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
 -- Clients
+DROP POLICY IF EXISTS "clients_select_policy" ON clients;
 CREATE POLICY "clients_select_policy" ON clients FOR SELECT
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "clients_insert_policy" ON clients;
 CREATE POLICY "clients_insert_policy" ON clients FOR INSERT
 WITH CHECK (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "clients_update_policy" ON clients;
 CREATE POLICY "clients_update_policy" ON clients FOR UPDATE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "clients_delete_policy" ON clients;
 CREATE POLICY "clients_delete_policy" ON clients FOR DELETE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
 -- Equipament
+DROP POLICY IF EXISTS "equipament_select_policy" ON equipament_instal_lat;
 CREATE POLICY "equipament_select_policy" ON equipament_instal_lat FOR SELECT
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "equipament_insert_policy" ON equipament_instal_lat;
 CREATE POLICY "equipament_insert_policy" ON equipament_instal_lat FOR INSERT
 WITH CHECK (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "equipament_update_policy" ON equipament_instal_lat;
 CREATE POLICY "equipament_update_policy" ON equipament_instal_lat FOR UPDATE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "equipament_delete_policy" ON equipament_instal_lat;
 CREATE POLICY "equipament_delete_policy" ON equipament_instal_lat FOR DELETE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 -- Migració 004: Magatzem i Inventari
@@ -205,18 +217,21 @@ ALTER TABLE public.producte ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.moviment_magatzem ENABLE ROW LEVEL SECURITY;
 
 -- Polítiques de Seguretat per categoria_producte
+DROP POLICY IF EXISTS categoria_producte_empresa_policy ON categoria_producte;
 CREATE POLICY categoria_producte_empresa_policy ON public.categoria_producte
     FOR ALL
     USING (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID)
     WITH CHECK (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID);
 
 -- Polítiques de Seguretat per producte
+DROP POLICY IF EXISTS producte_empresa_policy ON producte;
 CREATE POLICY producte_empresa_policy ON public.producte
     FOR ALL
     USING (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID)
     WITH CHECK (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID);
 
 -- Polítiques de Seguretat per moviment_magatzem
+DROP POLICY IF EXISTS moviment_magatzem_empresa_policy ON moviment_magatzem;
 CREATE POLICY moviment_magatzem_empresa_policy ON public.moviment_magatzem
     FOR ALL
     USING (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID)
@@ -344,7 +359,9 @@ ALTER TABLE assignacio_eines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE registres_us_vehicle ENABLE ROW LEVEL SECURITY;
 
 -- Polítiques (simplified, Agent Seguretat will expand)
+DROP POLICY IF EXISTS eines_all ON eines;
 CREATE POLICY eines_all ON eines USING (empresa_id = current_setting('app.current_empresa_id', true)::UUID);
+DROP POLICY IF EXISTS vehicles_all ON vehicles;
 CREATE POLICY vehicles_all ON vehicles USING (empresa_id = current_setting('app.current_empresa_id', true)::UUID);
 
 -- 006_feines.sql
@@ -459,23 +476,29 @@ ALTER TABLE anotacions_planol ENABLE ROW LEVEL SECURITY;
 
 -- Polítiques d'aïllament per empresa
 
+DROP POLICY IF EXISTS planols_empresa_policy ON planols;
 CREATE POLICY planols_empresa_policy ON planols
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid);
 
+DROP POLICY IF EXISTS feines_empresa_policy ON feines;
 CREATE POLICY feines_empresa_policy ON feines
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid);
 
 -- Assignacions hereten empresa_id per join (o directament, si afegim empresa_id, però podem fer JOIN)
 -- Com que no tenen empresa_id en la taula, fem JOIN o subquery.
+DROP POLICY IF EXISTS assignacions_empresa_policy ON assignacions;
 CREATE POLICY assignacions_empresa_policy ON assignacions
     USING (feina_id IN (SELECT id FROM feines WHERE empresa_id = current_setting('app.current_empresa_id')::uuid));
 
+DROP POLICY IF EXISTS actuacions_empresa_policy ON actuacions;
 CREATE POLICY actuacions_empresa_policy ON actuacions
     USING (feina_id IN (SELECT id FROM feines WHERE empresa_id = current_setting('app.current_empresa_id')::uuid));
 
+DROP POLICY IF EXISTS fotos_empresa_policy ON fotos;
 CREATE POLICY fotos_empresa_policy ON fotos
     USING (feina_id IN (SELECT id FROM feines WHERE empresa_id = current_setting('app.current_empresa_id')::uuid));
 
+DROP POLICY IF EXISTS anotacions_planol_empresa_policy ON anotacions_planol;
 CREATE POLICY anotacions_planol_empresa_policy ON anotacions_planol
     USING (planol_id IN (SELECT id FROM planols WHERE empresa_id = current_setting('app.current_empresa_id')::uuid));
 -- 007_incidencies.sql
@@ -566,15 +589,19 @@ CREATE TABLE IF NOT EXISTS notificacions (
 -- RLS Policies
 ALTER TABLE notificacions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "notificacions_select_policy" ON notificacions;
 CREATE POLICY "notificacions_select_policy" ON notificacions FOR SELECT
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "notificacions_insert_policy" ON notificacions;
 CREATE POLICY "notificacions_insert_policy" ON notificacions FOR INSERT
 WITH CHECK (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "notificacions_update_policy" ON notificacions;
 CREATE POLICY "notificacions_update_policy" ON notificacions FOR UPDATE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "notificacions_delete_policy" ON notificacions;
 CREATE POLICY "notificacions_delete_policy" ON notificacions FOR DELETE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 -- 009_pressupostos_addicionals.sql

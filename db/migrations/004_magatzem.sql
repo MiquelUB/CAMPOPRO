@@ -46,18 +46,21 @@ ALTER TABLE public.producte ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.moviment_magatzem ENABLE ROW LEVEL SECURITY;
 
 -- Polítiques de Seguretat per categoria_producte
+DROP POLICY IF EXISTS categoria_producte_empresa_policy ON categoria_producte;
 CREATE POLICY categoria_producte_empresa_policy ON public.categoria_producte
     FOR ALL
     USING (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID)
     WITH CHECK (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID);
 
 -- Polítiques de Seguretat per producte
+DROP POLICY IF EXISTS producte_empresa_policy ON producte;
 CREATE POLICY producte_empresa_policy ON public.producte
     FOR ALL
     USING (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID)
     WITH CHECK (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID);
 
 -- Polítiques de Seguretat per moviment_magatzem
+DROP POLICY IF EXISTS moviment_magatzem_empresa_policy ON moviment_magatzem;
 CREATE POLICY moviment_magatzem_empresa_policy ON public.moviment_magatzem
     FOR ALL
     USING (empresa_id = current_setting('app.current_empresa_id', TRUE)::UUID)

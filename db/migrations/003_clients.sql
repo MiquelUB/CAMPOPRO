@@ -52,40 +52,52 @@ ALTER TABLE equipament_instal_lat ENABLE ROW LEVEL SECURITY;
 
 -- Standard RLS following postgresql_rls.md skill
 -- Municipis
+DROP POLICY IF EXISTS "municipis_select_policy" ON municipis;
 CREATE POLICY "municipis_select_policy" ON municipis FOR SELECT
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "municipis_insert_policy" ON municipis;
 CREATE POLICY "municipis_insert_policy" ON municipis FOR INSERT
 WITH CHECK (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "municipis_update_policy" ON municipis;
 CREATE POLICY "municipis_update_policy" ON municipis FOR UPDATE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "municipis_delete_policy" ON municipis;
 CREATE POLICY "municipis_delete_policy" ON municipis FOR DELETE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
 -- Clients
+DROP POLICY IF EXISTS "clients_select_policy" ON clients;
 CREATE POLICY "clients_select_policy" ON clients FOR SELECT
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "clients_insert_policy" ON clients;
 CREATE POLICY "clients_insert_policy" ON clients FOR INSERT
 WITH CHECK (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "clients_update_policy" ON clients;
 CREATE POLICY "clients_update_policy" ON clients FOR UPDATE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "clients_delete_policy" ON clients;
 CREATE POLICY "clients_delete_policy" ON clients FOR DELETE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
 -- Equipament
+DROP POLICY IF EXISTS "equipament_select_policy" ON equipament_instal_lat;
 CREATE POLICY "equipament_select_policy" ON equipament_instal_lat FOR SELECT
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "equipament_insert_policy" ON equipament_instal_lat;
 CREATE POLICY "equipament_insert_policy" ON equipament_instal_lat FOR INSERT
 WITH CHECK (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "equipament_update_policy" ON equipament_instal_lat;
 CREATE POLICY "equipament_update_policy" ON equipament_instal_lat FOR UPDATE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "equipament_delete_policy" ON equipament_instal_lat;
 CREATE POLICY "equipament_delete_policy" ON equipament_instal_lat FOR DELETE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');

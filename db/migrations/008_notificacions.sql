@@ -20,14 +20,18 @@ CREATE TABLE IF NOT EXISTS notificacions (
 -- RLS Policies
 ALTER TABLE notificacions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "notificacions_select_policy" ON notificacions;
 CREATE POLICY "notificacions_select_policy" ON notificacions FOR SELECT
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "notificacions_insert_policy" ON notificacions;
 CREATE POLICY "notificacions_insert_policy" ON notificacions FOR INSERT
 WITH CHECK (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "notificacions_update_policy" ON notificacions;
 CREATE POLICY "notificacions_update_policy" ON notificacions FOR UPDATE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
 
+DROP POLICY IF EXISTS "notificacions_delete_policy" ON notificacions;
 CREATE POLICY "notificacions_delete_policy" ON notificacions FOR DELETE
 USING (empresa_id::text = current_setting('app.current_empresa_id', true) OR current_setting('app.is_super_admin', true) = 'true');
