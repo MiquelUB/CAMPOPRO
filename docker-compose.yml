@@ -13,7 +13,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d
     ports:
-      - "127.0.0.1:5433:5432" # Port 5433 extern per evitar conflicte amb PostgreSQL del sistema
+      - "127.0.0.1:5433:5432"
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -26,6 +26,21 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: campopro_redis
+    restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: 
       context: ./backend
@@ -33,17 +48,21 @@ services:
     restart: always
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-campopro}
+      - REDIS_URL=redis://redis:6379/0
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     security_opt:
       - no-new-privileges:true
-    user: "1000:1000" # Evitar córrer com a root
+    user: "1000:1000"
     read_only: true
     tmpfs:
       - /tmp
 
 volumes:
   pgdata:
+
