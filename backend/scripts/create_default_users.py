@@ -6,7 +6,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.database import db_pool
-from app.core.security import get_password_hash
+from app.core.security import hash_password
 from app.config import get_settings
 
 async def seed_users():
@@ -32,8 +32,8 @@ async def seed_users():
         )
 
         print("Creant usuaris per defecte...")
-        pass_hash = get_password_hash("admin123")
-        pin_hash = get_password_hash("1234")
+        pass_hash = hash_password("admin123")
+        pin_hash = hash_password("1234")
 
         # Superadmin (no té empresa_id associada normalment, però li posem)
         await db_pool.execute(

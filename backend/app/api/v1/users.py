@@ -5,7 +5,7 @@ from uuid import UUID
 from app.dependencies import get_db
 from app.models.user import Usuari
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
-from app.core.security import get_current_user, require_super_admin, TokenPayload, get_password_hash
+from app.core.security import get_current_user, require_super_admin, TokenPayload, hash_password
 
 router = APIRouter()
 
@@ -33,8 +33,8 @@ async def crear_usuari(
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id, empresa_id, rol, nom, telefon, email, vehicle_assignat, actiu, created_at, updated_at
     """
-    password_hash = get_password_hash(usuari.password) if usuari.password else None
-    pin_hash = get_password_hash(usuari.pin) if usuari.pin else None
+    password_hash = hash_password(usuari.password) if usuari.password else None
+    pin_hash = hash_password(usuari.pin) if usuari.pin else None
 
     record = await db.fetchrow(
         query,
@@ -78,9 +78,9 @@ async def actualitzar_usuari(
         return existing
         
     if "password" in update_data and update_data["password"]:
-        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+        update_data["password_hash"] = hash_password(update_data.pop("password"))
     if "pin" in update_data and update_data["pin"]:
-        update_data["pin_hash"] = get_password_hash(update_data.pop("pin"))
+        update_data["pin_hash"] = hash_password(update_data.pop("pin"))
         
     set_clauses = []
     values = []
