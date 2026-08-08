@@ -437,14 +437,21 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               Ubicació Finca ({client.name})
             </h2>
             <div className="flex-1 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200">
-              <DynamicMap 
-                locations={[{ id: client.id, lat: client.lat, lng: client.lng, name: client.name }]} 
-                center={[client.lat, client.lng]} 
-                zoom={14} 
-              />
+              {client.lat && client.lng && !isNaN(Number(client.lat)) && !isNaN(Number(client.lng)) ? (
+                <DynamicMap 
+                  locations={[{ id: client.id, lat: Number(client.lat), lng: Number(client.lng), name: client.name }]} 
+                  center={[Number(client.lat), Number(client.lng)]} 
+                  zoom={14} 
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                  <MapPin size={32} className="text-neutral-300 mb-2" />
+                  <p className="text-sm font-medium text-neutral-500">No hi ha coordenades GPS vàlides per aquesta finca.</p>
+                </div>
+              )}
             </div>
             <p className="text-xs text-neutral-500 mt-4 text-center">
-              Coordenades GPS: {client.lat.toFixed(4)}° N, {client.lng.toFixed(4)}° E
+              Coordenades GPS: {client.lat && !isNaN(Number(client.lat)) ? Number(client.lat).toFixed(4) : '--'}° N, {client.lng && !isNaN(Number(client.lng)) ? Number(client.lng).toFixed(4) : '--'}° E
             </p>
           </div>
         </div>
