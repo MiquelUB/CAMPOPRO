@@ -176,7 +176,9 @@ export default function ConfiguracioPage() {
       photoUrl: newPhoto ? URL.createObjectURL(newPhoto) : undefined
     };
 
-    setUsers([...users, newUserObj]);
+    const updatedUsers = [...users, newUserObj];
+    setUsers(updatedUsers);
+    localStorage.setItem('campopro_staff', JSON.stringify(updatedUsers));
     setShowAddModal(false);
 
     // AIXÒ ÉS EL FIX: Si és un Operari, l'afegim també a campopro_workers perquè aparegui a /gestio/operaris
@@ -353,7 +355,17 @@ export default function ConfiguracioPage() {
                     <button 
                       onClick={() => {
                         if (confirm(`Estàs segur que vols eliminar l'usuari ${u.name}?`)) {
-                          setUsers(users.filter(user => user.id !== u.id));
+                          const updatedUsers = users.filter(user => user.id !== u.id);
+                          setUsers(updatedUsers);
+                          localStorage.setItem('campopro_staff', JSON.stringify(updatedUsers));
+                          
+                          // Eliminar de campopro_workers si existeix
+                          const savedWorkersStr = localStorage.getItem('campopro_workers');
+                          if (savedWorkersStr) {
+                            const savedWorkers = JSON.parse(savedWorkersStr);
+                            const updatedWorkers = savedWorkers.filter((w: any) => w.name !== u.name);
+                            localStorage.setItem('campopro_workers', JSON.stringify(updatedWorkers));
+                          }
                         }
                       }}
                       className="p-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-bold transition-colors"
