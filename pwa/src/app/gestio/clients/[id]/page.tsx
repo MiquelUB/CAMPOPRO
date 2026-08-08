@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, MapPin, Building, User, Phone, Send, CheckCircle2, Clock, Plus, FileText, Eye, Download, Image, PenTool, TrendingUp, AlertTriangle, X, Check, FileCheck, Package, Wrench, ShieldCheck } from "lucide-react";
 import DynamicMap from "@/components/map/DynamicMap";
 
@@ -76,12 +77,20 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     setLoading(false);
   }, [params.id]);
 
+  const searchParams = useSearchParams();
   const [telegramChatId, setTelegramChatId] = useState("");
   const [telegramMessage, setTelegramMessage] = useState("");
   const [logs, setLogs] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
+
+  useEffect(() => {
+    if (client && searchParams.get('edit') === 'true' && !isEditing) {
+      setEditForm({ ...client });
+      setIsEditing(true);
+    }
+  }, [searchParams, client]);
 
   // Quan entrem en mode edició, copiem les dades actuals
   const handleEditClick = () => {
