@@ -148,9 +148,9 @@ export default function OperarisDashboardPage() {
   };
 
   const filteredWorkers = workers.filter(w => 
-    w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    w.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    w.specialty.toLowerCase().includes(searchTerm.toLowerCase())
+    (w.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (w.role || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (w.specialty || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -198,7 +198,7 @@ export default function OperarisDashboardPage() {
                 email: '',
                 status: 'DISPONIBLE' as const,
                 isTeamLeader: false,
-                avatar: `https://i.pravatar.cc/150?u=${Date.now()}`,
+                avatar: `👨‍🔧`,
                 joiningDate: new Date().toISOString().split('T')[0],
                 drivingLicense: 'B',
                 assignedVehicle: 'Cap',
@@ -291,8 +291,12 @@ export default function OperarisDashboardPage() {
             <div>
               {/* Header Avatar & Status */}
               <div className="flex justify-between items-start mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-neutral-100 text-3xl flex items-center justify-center border border-neutral-200 shadow-inner group-hover:scale-105 transition-transform">
-                  {worker.avatar}
+                <div className="w-16 h-16 rounded-2xl bg-neutral-100 text-3xl flex items-center justify-center border border-neutral-200 shadow-inner overflow-hidden group-hover:scale-105 transition-transform">
+                  {worker.avatar?.startsWith('http') || worker.avatar?.startsWith('blob') ? (
+                    <img src={worker.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    worker.avatar || '👨‍🔧'
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-300">
@@ -352,8 +356,12 @@ export default function OperarisDashboardPage() {
             {/* Modal Header */}
             <div className="flex justify-between items-start pb-4 border-b border-neutral-100 shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-primary text-white text-3xl flex items-center justify-center shadow-lg">
-                  {selectedWorker.avatar}
+                <div className="w-24 h-24 rounded-3xl bg-neutral-100 border-4 border-white shadow-lg flex items-center justify-center text-5xl flex-shrink-0 overflow-hidden relative z-10">
+                  {selectedWorker.avatar?.startsWith('http') || selectedWorker.avatar?.startsWith('blob') ? (
+                    <img src={selectedWorker.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    selectedWorker.avatar || '👨‍🔧'
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
