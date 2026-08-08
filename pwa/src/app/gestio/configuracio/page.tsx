@@ -113,6 +113,7 @@ export default function ConfiguracioPage() {
   const [newRole, setNewRole] = useState<StaffUser['role']>('ENGINYER_SUPERVISOR');
   const [newPassword, setNewPassword] = useState('');
   const [newPhoto, setNewPhoto] = useState<File | null>(null);
+  const [newDrivingLicense, setNewDrivingLicense] = useState('B');
 
   const generatePassword = (role: StaffUser['role'] = newRole) => {
     if (role === 'CAP_GRUP_OPERARI' || role === 'OPERARI_PWA') {
@@ -144,6 +145,7 @@ export default function ConfiguracioPage() {
     setNewPhone('');
     setNewRole('ENGINYER_SUPERVISOR');
     setNewPhoto(null);
+    setNewDrivingLicense('B');
     generatePassword('ENGINYER_SUPERVISOR');
     setShowAddModal(true);
   };
@@ -195,9 +197,9 @@ export default function ConfiguracioPage() {
         email: newEmail,
         status: 'DISPONIBLE' as const,
         isTeamLeader: newRole === 'CAP_GRUP_OPERARI',
-        avatar: newPhoto ? URL.createObjectURL(newPhoto) : `https://i.pravatar.cc/150?u=${Date.now()}`,
+        avatar: newPhoto ? URL.createObjectURL(newPhoto) : undefined,
         joiningDate: new Date().toISOString().split('T')[0],
-        drivingLicense: 'B',
+        drivingLicense: newDrivingLicense,
         assignedVehicle: 'Cap',
         stats: { completedJobs: 0, hoursLoggedThisMonth: 0, kmDrivenThisMonth: 0, clientRatingAverage: 0, incidentsReported: 0, toolIncidentsCount: 0 },
         ratingBreakdown: { professionalism: 0, punctuality: 0, customerTreatment: 0 },
@@ -838,6 +840,24 @@ export default function ConfiguracioPage() {
                   </span>
                 )}
               </div>
+
+              {(newRole === 'CAP_GRUP_OPERARI' || newRole === 'OPERARI_PWA') && (
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">Carnet de Conduir *</label>
+                  <select 
+                    value={newDrivingLicense} 
+                    onChange={(e) => setNewDrivingLicense(e.target.value)} 
+                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-medium outline-none"
+                  >
+                    <option value="Cap">Sense Carnet</option>
+                    <option value="B">Tipus B (Turismes i furgonetes petites)</option>
+                    <option value="B+E">Tipus B+E (Remolcs)</option>
+                    <option value="C1">Tipus C1 (Camions lleugers)</option>
+                    <option value="C">Tipus C (Camions pesats)</option>
+                    <option value="Tractor">Llicència de Vehicles Agrícoles (Tractor)</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="pt-3 border-t border-neutral-100 flex justify-end gap-2">
