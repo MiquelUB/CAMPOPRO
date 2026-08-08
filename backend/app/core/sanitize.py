@@ -4,19 +4,22 @@ import os
 from typing import Optional
 
 # Regex constants
-NIF_REGEX = re.compile(r'^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$', re.IGNORECASE)
-PHONE_REGEX = re.compile(r'^\+?[0-9]{9,15}$')
+NIF_REGEX = re.compile(r'^[A-Z0-9]{9}$', re.IGNORECASE)
+PHONE_REGEX = re.compile(r'^\+?[0-9\s\-\.]{9,15}$')
 
 def validate_phone(v: str) -> str:
-    if not PHONE_REGEX.match(v):
+    # Remove spaces and dashes for validation
+    clean_v = re.sub(r'[\s\-\.]', '', v)
+    if not re.match(r'^\+?[0-9]{9,15}$', clean_v):
         raise ValueError('Format de telèfon invàlid')
-    return v
+    return clean_v
 
 def validate_nif(v: str) -> str:
     v = v.upper()
-    if not NIF_REGEX.match(v):
+    clean_v = re.sub(r'[\s\-]', '', v)
+    if not NIF_REGEX.match(clean_v):
         raise ValueError('Format de NIF invàlid')
-    return v
+    return clean_v
 
 def sanitize_html(v: Optional[str]) -> Optional[str]:
     if v is None:

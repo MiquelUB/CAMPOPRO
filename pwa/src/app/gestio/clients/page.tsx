@@ -221,8 +221,10 @@ export default function ClientsPage() {
       ) : (
         <div className="h-[600px] border border-neutral-200 rounded-lg overflow-hidden bg-neutral-100">
           <DynamicMap 
-            locations={filteredClients.map(c => ({ id: c.id, lat: c.lat, lng: c.lng, name: c.name }))} 
-            center={[41.5, 2.0]} 
+            locations={filteredClients
+              .filter(c => c.lat !== '' && c.lng !== '' && !isNaN(Number(c.lat)) && !isNaN(Number(c.lng)))
+              .map(c => ({ id: c.id, lat: Number(c.lat), lng: Number(c.lng), name: c.name }))} 
+            center={[41.5, 2.0]}  
             zoom={9} 
           />
         </div>
