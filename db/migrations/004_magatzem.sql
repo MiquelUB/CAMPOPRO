@@ -73,18 +73,20 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers per actualitzat_a
+DROP TRIGGER IF EXISTS update_categoria_producte_modtime ON public.categoria_producte;
 CREATE TRIGGER update_categoria_producte_modtime
     BEFORE UPDATE ON public.categoria_producte
     FOR EACH ROW
     EXECUTE FUNCTION update_actualitzat_a_column();
 
+DROP TRIGGER IF EXISTS update_producte_modtime ON public.producte;
 CREATE TRIGGER update_producte_modtime
     BEFORE UPDATE ON public.producte
     FOR EACH ROW
     EXECUTE FUNCTION update_actualitzat_a_column();
 
 -- Índexs
-CREATE INDEX idx_categoria_producte_empresa ON public.categoria_producte(empresa_id);
-CREATE INDEX idx_producte_empresa_categoria ON public.producte(empresa_id, categoria_id);
-CREATE INDEX idx_moviment_magatzem_producte ON public.moviment_magatzem(producte_id);
-CREATE INDEX idx_moviment_magatzem_data ON public.moviment_magatzem(data_moviment);
+CREATE INDEX IF NOT EXISTS idx_categoria_producte_empresa ON public.categoria_producte(empresa_id);
+CREATE INDEX IF NOT EXISTS idx_producte_empresa_categoria ON public.producte(empresa_id, categoria_id);
+CREATE INDEX IF NOT EXISTS idx_moviment_magatzem_producte ON public.moviment_magatzem(producte_id);
+CREATE INDEX IF NOT EXISTS idx_moviment_magatzem_data ON public.moviment_magatzem(data_moviment);

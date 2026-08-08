@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS usuaris (
 );
 
 -- Index for authentication lookups
-CREATE INDEX idx_usuaris_email ON usuaris(email) WHERE email IS NOT NULL;
-CREATE INDEX idx_usuaris_telefon ON usuaris(telefon) WHERE telefon IS NOT NULL;
-CREATE INDEX idx_usuaris_empresa ON usuaris(empresa_id);
+CREATE INDEX IF NOT EXISTS idx_usuaris_email ON usuaris(email) WHERE email IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_usuaris_telefon ON usuaris(telefon) WHERE telefon IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_usuaris_empresa ON usuaris(empresa_id);
 
 -- Updated_at trigger
 CREATE OR REPLACE FUNCTION update_usuaris_updated_at()
@@ -30,7 +30,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_usuaris_updated_at ON usuaris;
 CREATE TRIGGER trigger_update_usuaris_updated_at
-BEFORE UPDATE ON usuaris
+    BEFORE UPDATE ON usuaris
 FOR EACH ROW
 EXECUTE FUNCTION update_usuaris_updated_at();

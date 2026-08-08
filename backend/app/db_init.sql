@@ -48,9 +48,9 @@ CREATE TABLE IF NOT EXISTS usuaris (
 );
 
 -- Index for authentication lookups
-CREATE INDEX idx_usuaris_email ON usuaris(email) WHERE email IS NOT NULL;
-CREATE INDEX idx_usuaris_telefon ON usuaris(telefon) WHERE telefon IS NOT NULL;
-CREATE INDEX idx_usuaris_empresa ON usuaris(empresa_id);
+CREATE INDEX IF NOT EXISTS idx_usuaris_email ON usuaris(email) WHERE email IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_usuaris_telefon ON usuaris(telefon) WHERE telefon IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_usuaris_empresa ON usuaris(empresa_id);
 
 -- Updated_at trigger
 CREATE OR REPLACE FUNCTION update_usuaris_updated_at()
@@ -61,8 +61,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_usuaris_updated_at ON usuaris;
 CREATE TRIGGER trigger_update_usuaris_updated_at
-BEFORE UPDATE ON usuaris
+    BEFORE UPDATE ON usuaris
 FOR EACH ROW
 EXECUTE FUNCTION update_usuaris_updated_at();
 -- Migration: 003_clients
@@ -231,21 +232,23 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers per actualitzat_a
+DROP TRIGGER IF EXISTS update_categoria_producte_modtime ON public.categoria_producte;
 CREATE TRIGGER update_categoria_producte_modtime
     BEFORE UPDATE ON public.categoria_producte
     FOR EACH ROW
     EXECUTE FUNCTION update_actualitzat_a_column();
 
+DROP TRIGGER IF EXISTS update_producte_modtime ON public.producte;
 CREATE TRIGGER update_producte_modtime
     BEFORE UPDATE ON public.producte
     FOR EACH ROW
     EXECUTE FUNCTION update_actualitzat_a_column();
 
 -- Índexs
-CREATE INDEX idx_categoria_producte_empresa ON public.categoria_producte(empresa_id);
-CREATE INDEX idx_producte_empresa_categoria ON public.producte(empresa_id, categoria_id);
-CREATE INDEX idx_moviment_magatzem_producte ON public.moviment_magatzem(producte_id);
-CREATE INDEX idx_moviment_magatzem_data ON public.moviment_magatzem(data_moviment);
+CREATE INDEX IF NOT EXISTS idx_categoria_producte_empresa ON public.categoria_producte(empresa_id);
+CREATE INDEX IF NOT EXISTS idx_producte_empresa_categoria ON public.producte(empresa_id, categoria_id);
+CREATE INDEX IF NOT EXISTS idx_moviment_magatzem_producte ON public.moviment_magatzem(producte_id);
+CREATE INDEX IF NOT EXISTS idx_moviment_magatzem_data ON public.moviment_magatzem(data_moviment);
 -- 005_flota.sql
 -- Models de Flota i Maquinària
 
