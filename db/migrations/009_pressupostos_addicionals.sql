@@ -15,10 +15,12 @@ CREATE TABLE IF NOT EXISTS pressupostos_addicionals (
 
 ALTER TABLE pressupostos_addicionals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Usuaris veuen pressupostos_addicionals de la seva empresa" ON pressupostos_addicionals;
 CREATE POLICY "Usuaris veuen pressupostos_addicionals de la seva empresa"
     ON pressupostos_addicionals FOR SELECT
     USING (empresa_id = current_setting('app.current_empresa_id', TRUE)::uuid);
 
+DROP POLICY IF EXISTS "Usuaris insereixen pressupostos_addicionals a la seva empresa" ON pressupostos_addicionals;
 CREATE POLICY "Usuaris insereixen pressupostos_addicionals a la seva empresa"
     ON pressupostos_addicionals FOR INSERT
     WITH CHECK (empresa_id = current_setting('app.current_empresa_id', TRUE)::uuid);

@@ -37,30 +37,37 @@ CREATE TABLE IF NOT EXISTS pressupostos (
 ALTER TABLE incidencies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pressupostos ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Usuaris veuen incidencies de la seva empresa" ON incidencies;
 CREATE POLICY "Usuaris veuen incidencies de la seva empresa"
     ON incidencies FOR SELECT
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid);
 
+DROP POLICY IF EXISTS "Operaris poden crear incidencies a la seva empresa" ON incidencies;
 CREATE POLICY "Operaris poden crear incidencies a la seva empresa"
     ON incidencies FOR INSERT
     WITH CHECK (empresa_id = current_setting('app.current_empresa_id')::uuid);
 
+DROP POLICY IF EXISTS "Superadmins poden fer tot amb incidencies de la seva empresa" ON incidencies;
 CREATE POLICY "Superadmins poden fer tot amb incidencies de la seva empresa"
     ON incidencies FOR ALL
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid AND current_setting('app.current_rol') = 'super_admin');
 
+DROP POLICY IF EXISTS "Usuaris veuen pressupostos de la seva empresa" ON pressupostos;
 CREATE POLICY "Usuaris veuen pressupostos de la seva empresa"
     ON pressupostos FOR SELECT
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid);
 
+DROP POLICY IF EXISTS "Enginyers i superadmins poden crear pressupostos a la seva empresa" ON pressupostos;
 CREATE POLICY "Enginyers i superadmins poden crear pressupostos a la seva empresa"
     ON pressupostos FOR INSERT
     WITH CHECK (empresa_id = current_setting('app.current_empresa_id')::uuid AND current_setting('app.current_rol') IN ('enginyer', 'super_admin'));
 
+DROP POLICY IF EXISTS "Enginyers i superadmins poden editar pressupostos a la seva empresa" ON pressupostos;
 CREATE POLICY "Enginyers i superadmins poden editar pressupostos a la seva empresa"
     ON pressupostos FOR UPDATE
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid AND current_setting('app.current_rol') IN ('enginyer', 'super_admin'));
 
+DROP POLICY IF EXISTS "Superadmins poden eliminar pressupostos a la seva empresa" ON pressupostos;
 CREATE POLICY "Superadmins poden eliminar pressupostos a la seva empresa"
     ON pressupostos FOR DELETE
     USING (empresa_id = current_setting('app.current_empresa_id')::uuid AND current_setting('app.current_rol') = 'super_admin');
