@@ -11,7 +11,9 @@ class DatabasePool:
 
     async def connect(self):
         settings = get_settings()
-        logger.info("Initializing asyncpg connection pool...")
+        # Debugging log to see the parsed URL (masking password)
+        safe_url = settings.DATABASE_URL.replace(settings.POSTGRES_PASSWORD, "****") if settings.DATABASE_URL and settings.POSTGRES_PASSWORD else settings.DATABASE_URL
+        logger.info(f"Initializing asyncpg connection pool to: {safe_url}")
         try:
             self.pool = await asyncpg.create_pool(
                 dsn=settings.DATABASE_URL,
