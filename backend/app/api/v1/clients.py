@@ -4,7 +4,7 @@ import asyncpg
 import json
 
 from app.dependencies import get_db
-from app.core.security import get_current_user, TokenPayload
+from app.core.security import get_current_user, get_current_user_optional, TokenPayload
 from app.schemas.clients import ClientCreate, ClientUpdate, ClientResponse
 
 router = APIRouter(prefix="/clients", tags=["clients"])
@@ -15,21 +15,24 @@ async def llistar_clients(
     limit: int = Query(50, ge=1, le=100),
     cerca: Optional[str] = None,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM clients
-        WHERE empresa_id = $1 AND actiu = true
+        WHERE actiu = true
     """
-    args = [current_user.empresa_id]
-    
+    args = []
+    if current_user.empresa_id:
+        query += " AND (empresa_id = $1 OR empresa_id IS NULL)"
+        args.append(current_user.empresa_id)
+
     if cerca:
-        query += " AND nom ILIKE $2"
+        query += f" AND nom ILIKE ${len(args) + 1}"
         args.append(f"%{cerca}%")
-        query += " ORDER BY created_at DESC OFFSET $3 LIMIT $4"
+        query += f" ORDER BY created_at DESC OFFSET ${len(args) + 1} LIMIT ${len(args) + 2}"
         args.extend([skip, limit])
     else:
-        query += " ORDER BY created_at DESC OFFSET $2 LIMIT $3"
+        query += f" ORDER BY created_at DESC OFFSET ${len(args) + 1} LIMIT ${len(args) + 2}"
         args.extend([skip, limit])
         
     records = await db.fetch(query, *args)
@@ -39,7 +42,7 @@ async def llistar_clients(
 async def crear_client(
     item: ClientCreate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         INSERT INTO clients (

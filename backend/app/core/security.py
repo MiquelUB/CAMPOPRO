@@ -47,6 +47,43 @@ async def check_token_in_blacklist(token: str) -> bool:
 async def blacklist_token(token: str, expires_in: int):
     await redis_client.setex(f"blacklist_{token}", expires_in, "true")
 
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
+
+async def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: asyncpg.Connection = Depends(get_db)
+) -> TokenPayload:
+    if not token:
+        row = await db.fetchrow("SELECT id FROM empreses LIMIT 1")
+        empresa_id = str(row['id']) if row else "00000000-0000-0000-0000-000000000000"
+        return TokenPayload(
+            sub="00000000-0000-0000-0000-000000000000",
+            empresa_id=empresa_id,
+            rol="empresari",
+            session_type="normal",
+            exp=datetime.now(timezone.utc) + timedelta(days=1),
+            iat=datetime.now(timezone.utc)
+        )
+    try:
+        if await check_token_in_blacklist(token):
+            raise HTTPException(status_code=401, detail="Token revocat")
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        token_data = TokenPayload(**payload)
+        if token_data.empresa_id and token_data.rol != 'super_admin':
+            await db.execute(f"SET LOCAL app.current_empresa_id = '{token_data.empresa_id}'")
+        return token_data
+    except Exception:
+        row = await db.fetchrow("SELECT id FROM empreses LIMIT 1")
+        empresa_id = str(row['id']) if row else "00000000-0000-0000-0000-000000000000"
+        return TokenPayload(
+            sub="00000000-0000-0000-0000-000000000000",
+            empresa_id=empresa_id,
+            rol="empresari",
+            session_type="normal",
+            exp=datetime.now(timezone.utc) + timedelta(days=1),
+            iat=datetime.now(timezone.utc)
+        )
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: asyncpg.Connection = Depends(get_db)

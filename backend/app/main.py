@@ -70,8 +70,8 @@ setup_rate_limiting(app)
 # Set up CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex="https?://.*",  # Permet qualsevol domini HTTP/HTTPS
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
