@@ -47,6 +47,7 @@ services:
     container_name: campopro_backend
     restart: always
     environment:
+      - POSTGRES_SERVER=db
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-campopro}
       - REDIS_URL=redis://redis:6379/0
     ports:
