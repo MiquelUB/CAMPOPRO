@@ -110,7 +110,7 @@ async def actualitzar_usuari(
         UPDATE usuaris
         SET {set_query}, updated_at = NOW()
         WHERE id = $1
-        RETURNING id, empresa_id, rol, nom, telefon, email, vehicle_assignat, actiu, created_at, updated_at
+        RETURNING id, empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, actiu, created_at, updated_at
     """
     record = await db.fetchrow(query, user_id, *values)
     return dict(record)

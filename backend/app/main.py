@@ -108,13 +108,14 @@ from app.api.v1.vehicles import router as vehicles_router
 from app.api.v1.feines import router as feines_router
 from app.api.v1.feines_operari import router as feines_operari_router
 from app.api.v1.planols import router as planols_router
-from app.api.v1.ai_suggestions import router as ai_suggestions_router
+
 from app.api.v1.incidencies import router as incidencies_router
 from app.api.v1.pressupostos import router as pressupostos_router
 from app.api.v1.ai_evaluator import router as ai_evaluator_router
 from app.api.v1.notificacions import router as notificacions_router
 from app.api.v1.users import router as users_router
 from app.api.v1.proveidors import router as proveidors_router
+from app.api.v1.ai_pressupostos import router as ai_pressupostos_router
 
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
@@ -129,12 +130,12 @@ app.include_router(vehicles_router, prefix=f"{settings.API_V1_STR}/vehicles", ta
 app.include_router(feines_router, prefix=f"{settings.API_V1_STR}/feines", tags=["feines"])
 app.include_router(feines_operari_router, prefix=f"{settings.API_V1_STR}/feines-operari", tags=["feines-operari"])
 app.include_router(planols_router, prefix=f"{settings.API_V1_STR}/planols", tags=["planols"])
-app.include_router(ai_suggestions_router, prefix=f"{settings.API_V1_STR}/ai-suggestions", tags=["ai-suggestions"])
+
 app.include_router(incidencies_router, prefix=f"{settings.API_V1_STR}/incidencies", tags=["incidencies"])
 app.include_router(pressupostos_router, prefix=f"{settings.API_V1_STR}/pressupostos", tags=["pressupostos"])
 app.include_router(ai_evaluator_router, prefix=f"{settings.API_V1_STR}/ai-evaluator", tags=["ai-evaluator"])
 app.include_router(notificacions_router, prefix=f"{settings.API_V1_STR}/notificacions", tags=["notificacions"])
-
+app.include_router(ai_pressupostos_router, prefix=f"{settings.API_V1_STR}/ai-agent", tags=["ai-agent"])
 setup_rate_limiting(app)
 
 # Set up CORS

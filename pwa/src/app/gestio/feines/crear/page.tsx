@@ -3,7 +3,7 @@
 import React, { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2, Edit3, Tag, MapPin, Navigation, Crosshair, Compass, UserCheck, Users, Phone, User, FileCheck, Receipt } from 'lucide-react';
+import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, AlertTriangle, Calendar, FileText, DollarSign, Truck, ArrowRight, CheckCircle2, Tag, MapPin, Navigation, Crosshair, Compass, UserCheck, Users, Phone, User, FileCheck } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 
 interface WarehouseMaterialItem {
@@ -35,15 +35,6 @@ interface VehicleItem {
   availableDate: string;
 }
 
-interface BudgetItemLine {
-  id: string;
-  code: string;
-  name: string;
-  category: 'MATERIAL' | 'MA_OBRA' | 'VEHICLE' | 'DESPLAÇAMENT' | 'EINA';
-  qty: number;
-  unit: string;
-  unitPrice: number;
-}
 
 interface WorkerItem {
   id: string;
@@ -54,19 +45,14 @@ interface WorkerItem {
   avatar: string;
 }
 
-const FIELD_WORKERS_DB: WorkerItem[] = [];
 
-const HISTORIAL_CARPETA_FILES_DB: any[] = [];
-
+// Arrays buides: els checklist manuals de magatzem iteraran sobre aquestes.
+// Quan siguin buides no mostraran cap element (Zero Dades Fictícies).
 const WAREHOUSE_MATERIALS_DB: WarehouseMaterialItem[] = [];
-
 const WAREHOUSE_TOOLS_DB: WarehouseToolItem[] = [];
-
 const VEHICLES_FLOTA_DB: VehicleItem[] = [];
 
 const MOCK_AVATARS = ['👨‍🌾', '👷‍♂️', '🚜', '🔧', '🦺'];
-
-const INCIDENCIES_DB: any[] = [];
 
 function CreateJobForm() {
   const router = useRouter();
@@ -128,7 +114,7 @@ function CreateJobForm() {
         
         // Setup initial client
         const clientIdParam = searchParams.get('clientId') || searchParams.get('client') || '';
-        const initId = (clientIdParam && db[clientIdParam]) ? clientIdParam : (parsed.length > 0 ? parsed[0].id : '');
+        const initId = (clientIdParam && db[clientIdParam]) ? clientIdParam : '';
         setSelectedClientId(initId);
         
         if (initId && db[initId]) {
@@ -163,67 +149,11 @@ function CreateJobForm() {
   const [tools, setTools] = useState<string[]>([]);
   const [newTool, setNewTool] = useState<string>('');
 
-  // FULL ITEMIZED COMPREHENSIVE BUDGET TABLE (Reflecteix la TOTALITAT del pressupost: Materials + Eines + Mà d'Obra + Vehicle + Desplaçament)
-  const [fullBudgetLines, setFullBudgetLines] = useState<BudgetItemLine[]>([]);
+  // AI Agent States
+  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
+  const [aiProposal, setAiProposal] = useState<any>(null);
+  const [aiBudget, setAiBudget] = useState<any>(null);
 
-  // Automatically recalculate the TOTALITY of the budget whenever materials, hours, tools, or vehicle change
-  useEffect(() => {
-    const lines: BudgetItemLine[] = [];
-
-    // 1. Materials lines
-    materials.forEach((m, idx) => {
-      const dbMat = WAREHOUSE_MATERIALS_DB.find(wm => wm.name.toLowerCase().trim() === m.name.toLowerCase().trim());
-      const numQty = parseFloat(m.qty.replace(/[^0-9.]/g, '')) || 1;
-      const unitPrice = dbMat ? dbMat.unitPrice : 12.50;
-      
-      lines.push({
-        id: `b-mat-${idx}-${Date.now()}`,
-        code: dbMat ? dbMat.code : `MAT-00${idx + 1}`,
-        name: `Material: ${m.name}`,
-        category: 'MATERIAL',
-        qty: numQty,
-        unit: m.qty.replace(/[0-9.]/g, '').trim() || 'u',
-        unitPrice: unitPrice
-      });
-    });
-
-    // 2. Labor Hours line
-    const hrs = parseFloat(estimatedHours) || 4;
-    lines.push({
-      id: `b-labor-${Date.now()}`,
-      code: 'SERV-001',
-      name: 'Mà d\'Obra Tècnica (Hores Operari)',
-      category: 'MA_OBRA',
-      qty: hrs,
-      unit: 'h',
-      unitPrice: 35.00
-    });
-
-    // 3. Vehicle & Machinery line
-    const isTractor = assignedVehicle.includes('Tractor');
-    lines.push({
-      id: `b-veh-${Date.now()}`,
-      code: isTractor ? 'SERV-002' : 'SERV-003',
-      name: isTractor ? 'Ús de Maquinària (Hora Tractor)' : 'Transport i Vehicle Logístic',
-      category: 'VEHICLE',
-      qty: isTractor ? 3 : 1,
-      unit: isTractor ? 'h' : 'viatge',
-      unitPrice: isTractor ? 65.00 : 50.00
-    });
-
-    // 4. Emergency Displacement line
-    lines.push({
-      id: `b-desp-${Date.now()}`,
-      code: 'SERV-004',
-      name: 'Desplaçament Tècnic d\'Emergència',
-      category: 'DESPLAÇAMENT',
-      qty: 1,
-      unit: 'trajecte',
-      unitPrice: 40.00
-    });
-
-    setFullBudgetLines(lines);
-  }, [materials, estimatedHours, assignedVehicle]);
 
   // Modals for Warehouse Checklist Selection
   const [showMaterialChecklistModal, setShowMaterialChecklistModal] = useState<boolean>(false);
@@ -231,298 +161,6 @@ function CreateJobForm() {
   const [checklistMaterialSearch, setChecklistMaterialSearch] = useState<string>('');
   const [checklistToolSearch, setChecklistToolSearch] = useState<string>('');
 
-  // COPILOT IA STATE
-  const [showCopilotModal, setShowCopilotModal] = useState<boolean>(false);
-  const [copilotInput, setCopilotInput] = useState<string>('');
-  const [isCopilotThinking, setIsCopilotThinking] = useState<boolean>(false);
-  const [isDictating, setIsDictating] = useState<boolean>(false);
-  const [copilotProposal, setCopilotProposal] = useState<any | null>(null);
-  const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'bot'; text: string; proposal?: any }>>([
-    {
-      sender: 'bot',
-      text: `Hola Marc! Sóc el teu **Copilot Tècnic CampoPro**. He integrat la **TOTALITAT del Pressupost (Materials + Eines + Mà d'obra + Vehicle + Desplaçament)** recuperables per a la factura final del client.\n\nEscriu o dicta la tasca (ex: *"fuga aigua camp 3"*) per generar el pressupost complet.`
-    }
-  ]);
-
-  // Recalculate Total Comprehensive Budget
-  const calculateTotalComprehensiveBudget = (): number => {
-    return fullBudgetLines.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
-  };
-
-  const handleUpdateBudgetLine = (id: string, field: 'qty' | 'unitPrice', valStr: string) => {
-    const num = parseFloat(valStr) || 0;
-    setFullBudgetLines(fullBudgetLines.map(item => item.id === id ? { ...item, [field]: num } : item));
-  };
-
-  const handleRemoveBudgetLine = (id: string) => {
-    setFullBudgetLines(fullBudgetLines.filter(item => item.id !== id));
-  };
-
-  const handleClientSelect = (id: string) => {
-    setSelectedClientId(id);
-    if (id && clientsDb[id]) {
-      const client = clientsDb[id];
-      setJobLat(client.lat);
-      setJobLng(client.lng);
-      setJobLocationName(client.parcelPresets[0]?.name || '📍 Finca Principal');
-    } else {
-      setJobLat(41.6521);
-      setJobLng(1.8322);
-      setJobLocationName('');
-    }
-  };
-
-  const activeClient = selectedClientId ? clientsDb[selectedClientId] : null;
-  const activeWorker = FIELD_WORKERS_DB.find(w => w.id === selectedWorkerId) || (FIELD_WORKERS_DB.length > 0 ? FIELD_WORKERS_DB[0] : null);
-
-  const handleSelectParcelPreset = (preset: { name: string; lat: number; lng: number }) => {
-    setJobLat(preset.lat);
-    setJobLng(preset.lng);
-    setJobLocationName(preset.name);
-  };
-
-  // COPILOT IA EXECUTES SYSTEM PROMPT v2 BY REFERENCING /backend/app/data/historial/*.json
-  const handleSendCopilotQuery = async (userQueryText?: string) => {
-    const query = (userQueryText || copilotInput).trim();
-    if (!query) return;
-
-    const updatedHistory = [...chatHistory, { sender: 'user' as const, text: query }];
-    setChatHistory(updatedHistory);
-    setCopilotInput('');
-    setIsCopilotThinking(true);
-
-    const queryLower = query.toLowerCase();
-
-    // 1. CLASSIFY THE JOB (ÀMBIT, ELEMENT PRINCIPAL, ABAST)
-    let ambitTarget = 'Sistema de Reg i Hidràulica';
-    let elementTarget = 'Canonada PE';
-    
-    if (queryLower.includes('fuga') || queryLower.includes('aigua') || queryLower.includes('tub') || queryLower.includes('reg') || queryLower.includes('canonada')) {
-      ambitTarget = 'Sistema de Reg i Hidràulica';
-      elementTarget = 'Canonada PE 90mm';
-    } else if (queryLower.includes('sensor') || queryLower.includes('electric') || queryLower.includes('quadre') || queryLower.includes('iot') || queryLower.includes('cable')) {
-      ambitTarget = 'Instal·lació Elèctrica i Sensorització IOT';
-      elementTarget = 'Quadre Elèctric & Sensor IOT';
-    } else if (queryLower.includes('adobat') || queryLower.includes('terra') || queryLower.includes('llaurar') || queryLower.includes('tractor') || queryLower.includes('poda')) {
-      ambitTarget = 'Treballs Agrícoles i Moviment de Terres';
-      elementTarget = 'Adobat Foliar & Tractor Pala';
-    } else if (queryLower.includes('bomba') || queryLower.includes('motor') || queryLower.includes('filtre') || queryLower.includes('pressio')) {
-      ambitTarget = 'Estació de Bombeig i Pressurització';
-      elementTarget = 'Bomba de Reg i Filtres de Pressió';
-    } else {
-      ambitTarget = 'Intervenció General de Camp';
-      elementTarget = 'Altres elements de camp';
-    }
-
-    // 2. STRICT 3-STAGE FILTERING AGAINST THE HISTORY FOLDER (/backend/app/data/historial/*.json)
-    // Filter 1: Àmbit (Scope)
-    // Filter 2: Element/Material Principal
-    // Filter 3: Abast/Magnitud
-    const matchedHistoryFile = HISTORIAL_CARPETA_FILES_DB.find(h => {
-      const matchScope = h.ambit.toLowerCase() === ambitTarget.toLowerCase();
-      const matchElement = h.element_principal.toLowerCase().includes(elementTarget.toLowerCase()) || elementTarget.toLowerCase().includes(h.element_principal.toLowerCase());
-      return matchScope && matchElement;
-    });
-
-    let coincidenciaObj: { feina_referencia_id: string | null; nivell_coincidencia: 'alta' | 'mitjana' | 'sense_precedent'; motiu: string };
-    let ajustAprenentatgeObj: { factor_aplicat: string; origen: string; confianca_estimacio: 'alta' | 'mitjana' | 'baixa' };
-    let calculatedHours = 4.0;
-    let requiredMaterials: Array<{ name: string; qty: string; unitPrice: number; code: string }> = [];
-    let requiredTools: string[] = [];
-    let requiresTractor = false;
-    let recommendedWorkerObj = FIELD_WORKERS_DB[0];
-
-    if (matchedHistoryFile) {
-      // MATCH FOUND IN HISTORY FOLDER! Apply real hours, PWA deviation & materials from history file
-      coincidenciaObj = {
-        feina_referencia_id: matchedHistoryFile.id,
-        nivell_coincidencia: 'alta',
-        motiu: `Validat amb èxit l'arxiu ${matchedHistoryFile.file} que compleix els 3 filtres del System Prompt (Àmbit: ${matchedHistoryFile.ambit}, Element: ${matchedHistoryFile.element_principal}).`
-      };
-
-      const deviationHours = matchedHistoryFile.hores_reals_pwa - matchedHistoryFile.hores_estimades_pressupost;
-      ajustAprenentatgeObj = {
-        factor_aplicat: deviationHours > 0 ? `+${(deviationHours * 10).toFixed(0)}%` : '0%',
-        origen: `Desviació real PWA registrada a la fitxa d'obra de ${matchedHistoryFile.id} (${matchedHistoryFile.hores_reals_pwa}h reals vs ${matchedHistoryFile.hores_estimades_pressupost}h estimades)`,
-        confianca_estimacio: 'alta'
-      };
-
-      calculatedHours = matchedHistoryFile.hores_reals_pwa;
-      requiredMaterials = matchedHistoryFile.materials_usats.map((m: any, idx: number) => ({
-        name: m.name,
-        qty: m.qty,
-        unitPrice: m.unitPrice,
-        code: `MAT-00${idx + 1}`
-      }));
-      requiredTools = matchedHistoryFile.eines_usades;
-      requiresTractor = matchedHistoryFile.vehicle_usat.includes('Tractor');
-      recommendedWorkerObj = FIELD_WORKERS_DB.find(w => w.name.includes(matchedHistoryFile.operari_principal)) || FIELD_WORKERS_DB[0];
-
-    } else {
-      // NO MATCHING FILE IN HISTORY FOLDER DISCARDED BY ANTI-BLIND COPY RULE!
-      coincidenciaObj = {
-        feina_referencia_id: null,
-        nivell_coincidencia: 'sense_precedent',
-        motiu: `Regla Anti-Còpia Cega (Filtre 1 i 2): Cap feina a la carpeta d'historial (/backend/app/data/historial/) és directament comparable amb l'àmbits '${ambitTarget}'. S'aplica càlcul base de magatzem amb "sense_precedent_directe": true.`
-      };
-
-      ajustAprenentatgeObj = {
-        factor_aplicat: '+10% (Marge de Seguretat Estàndard)',
-        origen: "Sense precedent directe a la carpeta d'historial. Requereix revisió manual de l'enginyer.",
-        confianca_estimacio: 'baixa'
-      };
-
-      calculatedHours = Math.max(3.0, Math.min(8.0, Math.round((query.length / 7) * 10) / 10));
-      requiredMaterials = [
-        { name: 'Connector Rapid Inox 2 polzades', qty: '2u', unitPrice: 42.00, code: 'MAT-006' },
-        { name: 'Cinta de Teflon Professional', qty: '2u', unitPrice: 2.10, code: 'MAT-003' }
-      ];
-      requiredTools = [];
-      requiresTractor = queryLower.includes('finca') || queryLower.includes('parcella');
-      recommendedWorkerObj = FIELD_WORKERS_DB[0];
-    }
-
-    // 3. VEHICLES & ALERTS
-    const targetVehicle = requiresTractor 
-      ? VEHICLES_FLOTA_DB.find(v => v.type.includes('Tractor')) || VEHICLES_FLOTA_DB[1]
-      : VEHICLES_FLOTA_DB[0];
-
-    const hasVehicleAlert = targetVehicle?.status === 'REVISIO_TALLER';
-
-    // 4. ITEMIZE COMPREHENSIVE BUDGET LINES FROM WAREHOUSE CATALOG
-    const copilotBudgetLines: BudgetItemLine[] = [
-      ...requiredMaterials.map((m, i) => ({
-        id: `c-mat-${i}-${Date.now()}`,
-        code: m.code,
-        name: `Material: ${m.name}`,
-        category: 'MATERIAL' as const,
-        qty: parseFloat(m.qty.replace(/[^0-9.]/g, '')) || 1,
-        unit: m.qty.replace(/[0-9.]/g, '').trim() || 'u',
-        unitPrice: m.unitPrice
-      })),
-      { 
-        id: `c-labor-${Date.now()}`, 
-        code: 'SERV-001', 
-        name: `Mà d'Obra Tècnica (${ambitTarget})`, 
-        category: 'MA_OBRA' as const, 
-        qty: calculatedHours, 
-        unit: 'h', 
-        unitPrice: 35.00 
-      },
-      { 
-        id: `c-veh-${Date.now()}`, 
-        code: requiresTractor ? 'SERV-002' : 'SERV-003', 
-        name: requiresTractor ? `Ús de Maquinària Agrícola (${targetVehicle.name})` : `Transport i Vehicle (${targetVehicle.name})`, 
-        category: 'VEHICLE' as const, 
-        qty: requiresTractor ? Math.ceil(calculatedHours * 0.6) : 1, 
-        unit: requiresTractor ? 'h' : 'viatge', 
-        unitPrice: requiresTractor ? 65.00 : 50.00 
-      },
-      { 
-        id: `c-desp-${Date.now()}`, 
-        code: 'SERV-004', 
-        name: 'Desplaçament Tècnic a Finca', 
-        category: 'DESPLAÇAMENT' as const, 
-        qty: 1, 
-        unit: 'trajecte', 
-        unitPrice: 40.00 
-      }
-    ];
-
-    const totalCalc = copilotBudgetLines.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
-
-    const proposalData = {
-      title: matchedHistoryFile ? matchedHistoryFile.titol : `Intervenció Tècnica: ${query}`,
-      matchedCode: matchedHistoryFile ? matchedHistoryFile.id : `OT-${Math.floor(100 + Math.random() * 900)}`,
-      coincidencia_historial: coincidenciaObj,
-      ajust_aprenentatge: ajustAprenentatgeObj,
-      description: matchedHistoryFile 
-        ? `Ordre basada en l'arxiu d'historial ${matchedHistoryFile.file}. ${matchedHistoryFile.titol}.` 
-        : `Sense precedent directe a l'historial. Calculat amb tarifes base de magatzem per a ${ambitTarget}.`,
-      estimatedHours: String(calculatedHours),
-      recommendedWorker: recommendedWorkerObj,
-      materials: requiredMaterials.map((m, idx) => ({ id: `${idx}`, name: m.name, qty: m.qty })),
-      tools: requiredTools,
-      vehicle: targetVehicle,
-      hasVehicleAlert: hasVehicleAlert,
-      alertText: hasVehicleAlert ? `⚠️ ALERTA DE VEHICLE: El ${targetVehicle?.name} (${targetVehicle?.plate}) està en REVISIÓ AL TALLER fins dijous.` : null,
-      proposedStartDate: hasVehicleAlert ? '2026-08-06' : new Date().toISOString().split('T')[0],
-      proposedStartDateFormatted: hasVehicleAlert ? 'Dijous 06/08/2026 (Disponibilitat de maquinària)' : 'Avui mateix',
-      fullBudgetLines: copilotBudgetLines,
-      calculatedBudget: `${totalCalc.toFixed(2)} €`,
-      lat: activeClient?.lat || 41.5,
-      lng: activeClient?.lng || 2.0,
-      locationName: activeClient?.parcelPresets?.[0]?.name || '📍 Finca Principal'
-    };
-
-    setTimeout(() => {
-      setCopilotProposal(proposalData);
-      setChatHistory([
-        ...updatedHistory,
-        {
-          sender: 'bot',
-          text: `📁 **Referència Carpeta Historial (/backend/app/data/historial/):**\n- **Feina d'Historial:** ${coincidenciaObj.feina_referencia_id || 'Cap (Sense precedent directe)'}\n- **Nivell Coincidència:** ${coincidenciaObj.nivell_coincidencia.toUpperCase()}\n- **Motiu:** ${coincidenciaObj.motiu}\n- **Ajust d'Aprenentatge:** ${ajustAprenentatgeObj.factor_aplicat} (${ajustAprenentatgeObj.origen})\n\n💰 **Total Pressupost Calculat:** **${totalCalc.toFixed(2)} €**`,
-          proposal: proposalData
-        }
-      ]);
-
-      setIsCopilotThinking(false);
-    }, 700);
-  };
-
-  const handleToggleDictation = () => {
-    if (isDictating) {
-      setIsDictating(false);
-    } else {
-      setIsDictating(true);
-      setCopilotInput('Escoltant la teva veu...');
-      
-      const sampleQueries = [
-        "Reparació bomba de reg del sector nord",
-        "Revisió del quadre elèctric de l'invernacle",
-        "Adobat foliar i llaurada del camp 5 amb tractor",
-        "Fuga d'aigua a la canonada principal del camp 3",
-        "Substitució de valva de seguretat i filtre de malla"
-      ];
-      const randomQuery = sampleQueries[Math.floor(Math.random() * sampleQueries.length)];
-
-      setTimeout(() => {
-        setCopilotInput(randomQuery);
-        setIsDictating(false);
-        handleSendCopilotQuery(randomQuery);
-      }, 1500);
-    }
-  };
-
-  const applyCopilotProposalToForm = () => {
-    if (!copilotProposal) return;
-
-    setDescription(copilotProposal.description);
-    setEstimatedHours(copilotProposal.estimatedHours);
-    setPriority(copilotProposal.hasVehicleAlert ? 'URGENT' : 'NORMAL');
-    setProposedStartDate(copilotProposal.proposedStartDate);
-    setFullBudgetLines(copilotProposal.fullBudgetLines);
-
-    if (copilotProposal.recommendedWorker) {
-      setSelectedWorkerId(copilotProposal.recommendedWorker.id);
-    }
-
-    if (copilotProposal.lat && copilotProposal.lng) {
-      setJobLat(copilotProposal.lat);
-      setJobLng(copilotProposal.lng);
-      setJobLocationName(copilotProposal.locationName || '📍 Ubicació Assignada');
-    }
-
-    if (copilotProposal.vehicle) {
-      setAssignedVehicle(`${copilotProposal.vehicle.name} (${copilotProposal.vehicle.plate})`);
-    }
-
-    setMaterials(copilotProposal.materials);
-    setTools(copilotProposal.tools);
-
-    setShowCopilotModal(false);
-    alert(`✨ S'ha aplicat tota la proposta del Copilot IA a l'Ordre de Treball! Incloent el pressupost total de ${copilotProposal.calculatedBudget} recuperable per a la factura final.`);
-  };
 
   const handleAddMaterialManual = () => {
     if (newMaterial.trim()) {
@@ -554,6 +192,46 @@ function CreateJobForm() {
       setTools(tools.filter(t => t.toLowerCase().trim() !== toolName.toLowerCase().trim()));
     } else {
       setTools([...tools, toolName]);
+    }
+  };
+
+  const handleGenerateAiProposal = async () => {
+    if (!description.trim()) {
+      alert("Si us plau, introdueix una descripció de la feina primer.");
+      return;
+    }
+    setIsAiLoading(true);
+    setAiProposal(null);
+    setAiBudget(null);
+    try {
+      const data = await apiClient.post('/ai-agent/generar', {
+        descripcio: description,
+        client_id: selectedClientId
+      });
+      setAiProposal(data.proposta);
+      setAiBudget(data.pressupost);
+      
+      if (data.pressupost.hores_estimades) setEstimatedHours(data.pressupost.hores_estimades.toString());
+      if (data.pressupost.vehicle_id) setAssignedVehicle(data.pressupost.vehicle_id);
+      if (data.pressupost.operari_recomanat_id) setSelectedWorkerId(data.pressupost.operari_recomanat_id);
+      
+      if (data.pressupost.materials) {
+        setMaterials(data.pressupost.materials.map((m: any) => ({
+          id: m.material_id,
+          name: m.nom,
+          qty: m.quantitat.toString()
+        })));
+      }
+      
+      if (data.pressupost.eines) {
+        setTools(data.pressupost.eines.map((e: any) => e.nom));
+      }
+      
+    } catch (e) {
+      console.error(e);
+      alert("Error contactant amb l'Agent de Pressupostos.");
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -591,9 +269,8 @@ function CreateJobForm() {
           hores_estimades: Number(estimatedHours) || 1
         });
 
-        const totalSum = calculateTotalComprehensiveBudget().toFixed(2);
         const clientName = activeClient ? activeClient.name : 'el client seleccionat';
-        alert(`Ordre de Treball i Pressupost creats amb èxit per a ${clientName}! Total Pressupost: ${totalSum} €. Aquest pressupost queda arxivat i serà 100% recuperable per generar la factura oficial.`);
+        alert(`Ordre de Treball creada amb èxit per a ${clientName}!`);
         
         if (selectedClientId) {
           router.push(`/gestio/clients/${selectedClientId}`);
@@ -637,14 +314,6 @@ function CreateJobForm() {
             </p>
           </div>
 
-          {/* AI COPILOT CHAT TRIGGER BUTTON */}
-          <button
-            onClick={() => setShowCopilotModal(true)}
-            className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 via-teal-700 to-primary text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 text-sm"
-          >
-            <Bot size={22} className="text-amber-300 animate-bounce" />
-            🤖 Obrir Copilot IA (Calculador de Pressupost)
-          </button>
         </div>
 
         {/* Main Grid Form */}
@@ -883,7 +552,7 @@ function CreateJobForm() {
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Escriu la descripció de la tasca o obre el Copilot IA amb el botó superior..."
+                  placeholder="Escriu la descripció de la tasca..."
                   className="w-full bg-surface-container-low p-4 rounded-xl border border-outline-variant font-body-base outline-none focus:ring-2 focus:ring-primary/20 text-on-surface"
                 ></textarea>
               </div>
@@ -1030,99 +699,51 @@ function CreateJobForm() {
           {/* Right Column: Vehicle, TOTAL COMPREHENSIVE PRESSUPOST & Blueprints */}
           <div className="col-span-12 lg:col-span-5 flex flex-col gap-lg">
             
-            {/* Card 6: PRESSUPOST (Reflecteix la TOTALITAT del Pressupost: Materials, Eines, Mà d'obra, Vehicle i Desplaçament) */}
+            {/* Card 6: PRESSUPOST (AI Agent) */}
             <div className="p-xl bg-gradient-to-br from-emerald-950 via-teal-900 to-primary text-white rounded-3xl shadow-xl border border-emerald-700 flex flex-col gap-md">
               <div className="flex justify-between items-center border-b border-emerald-800 pb-md">
                 <h2 className="font-bold flex items-center gap-2 text-xl text-emerald-300">
                   <DollarSign size={24} className="text-emerald-400" />
-                  Pressupost
+                  Agent de Pressupostos
                 </h2>
-                <span className="text-[10px] font-bold bg-emerald-800 text-emerald-200 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
-                  <Receipt size={12} /> Recuperable per a Factura
-                </span>
               </div>
+              
+              <button 
+                type="button"
+                onClick={handleGenerateAiProposal}
+                disabled={isAiLoading}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {isAiLoading ? "Generant pressupost (Consultant Magatzem/Flota)..." : "Generar Pressupost Automàtic amb IA"}
+              </button>
 
-              <p className="text-xs text-emerald-200 leading-relaxed">
-                Aquesta taula calcula la <strong>TOTALITAT del Pressupost</strong> combinant materials de magatzem, eines, hores d'operari, vehicle i desplaçament. Queda registrat per convertir-se directament en la factura oficial del client.
-              </p>
-
-              {/* Itemized Budget Table */}
-              <div className="space-y-2 text-xs">
-                <span className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider block mb-1">Desglose Detallat de la Totalitat dels Conceptes:</span>
-                
-                <div className="space-y-2 bg-emerald-950/70 p-3 rounded-2xl border border-emerald-800/80">
-                  {fullBudgetLines.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between gap-2 bg-emerald-900/60 p-2.5 rounded-xl border border-emerald-700/50">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white ${
-                            item.category === 'MATERIAL' ? 'bg-emerald-700' :
-                            item.category === 'MA_OBRA' ? 'bg-blue-700' :
-                            item.category === 'VEHICLE' ? 'bg-amber-700' : 'bg-purple-700'
-                          }`}>
-                            {item.category}
-                          </span>
-                          <span className="font-semibold text-white text-xs truncate block">{item.name}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        {/* Qty Edit */}
-                        <div className="flex items-center gap-1 bg-emerald-950 px-2 py-1 rounded-lg border border-emerald-700">
-                          <input 
-                            type="number" 
-                            step="0.5" 
-                            value={item.qty} 
-                            onChange={(e) => handleUpdateBudgetLine(item.id, 'qty', e.target.value)} 
-                            className="w-10 bg-transparent text-center font-bold text-white text-xs outline-none"
-                          />
-                          <span className="text-[10px] text-emerald-400">{item.unit}</span>
-                        </div>
-
-                        <span className="text-emerald-400 text-xs">x</span>
-
-                        {/* Price ReadOnly */}
-                        <div className="flex items-center justify-center gap-1 bg-emerald-950 px-2 py-1 rounded-lg border border-emerald-700 w-16">
-                          <span className="font-bold text-emerald-300 text-xs">{item.unitPrice.toFixed(2)}</span>
-                          <span className="text-[10px] text-emerald-400">€</span>
-                        </div>
-
-                        <span className="font-bold text-white w-16 text-right text-xs">{(item.qty * item.unitPrice).toFixed(2)}€</span>
-
-                        <button onClick={() => handleRemoveBudgetLine(item.id)} className="text-emerald-400 hover:text-red-400 p-0.5">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {aiProposal && (
+                <div className="mt-4 p-4 bg-emerald-900/60 rounded-xl border border-emerald-700">
+                  <h3 className="font-bold text-emerald-300 mb-2">Proposta de la IA (Confiança: {aiProposal.confianca})</h3>
+                  {aiProposal.avisos && aiProposal.avisos.length > 0 ? (
+                    <ul className="list-disc pl-5 text-sm text-amber-200">
+                      {aiProposal.avisos.map((aviso: any, idx: number) => (
+                        <li key={idx}>{aviso}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-emerald-200">Cap incidència detectada en estoc o disponibilitat.</p>
+                  )}
                 </div>
-              </div>
+              )}
 
-              {/* Total Budget Summary & Invoice Recovery Badge */}
-              <div className="flex flex-col gap-2 pt-3 border-t border-emerald-800 text-right">
-                <div className="flex justify-between items-center text-xs text-emerald-300">
-                  <span>Base Imposable (Sense IVA):</span>
-                  <span>{calculateTotalComprehensiveBudget().toFixed(2)} €</span>
-                </div>
-                {activeClient?.discountValue && (
-                  <div className="flex justify-between items-center text-xs text-amber-300 font-bold">
-                    <span>Descompte Client ({activeClient.discountValue}):</span>
-                    <span>-{(calculateTotalComprehensiveBudget() * (parseFloat(String(activeClient.discountValue).replace('%', '')) / 100)).toFixed(2)} €</span>
+              {aiBudget && (
+                <div className="mt-4 p-4 bg-emerald-950 rounded-xl border border-emerald-700">
+                  <h3 className="font-bold text-emerald-300 mb-2">Resum del Pressupost</h3>
+                  <div className="text-sm space-y-1">
+                    <p><strong>Hores Estimades:</strong> {aiBudget.hores_estimades}h</p>
+                    <p><strong>Materials:</strong> {aiBudget.materials?.length || 0} tipus trobats</p>
+                    <p><strong>Eines:</strong> {aiBudget.eines?.length || 0} eines reservades</p>
+                    {aiBudget.vehicle_id && <p className="text-emerald-400">✓ Vehicle de transport assignat</p>}
+                    {aiBudget.maquinaria_id && <p className="text-amber-400">✓ Maquinària pesada requerida assignada</p>}
                   </div>
-                )}
-                <div className="flex justify-between items-center text-xs text-emerald-300">
-                  <span>IVA (21%):</span>
-                  <span>
-                    {((calculateTotalComprehensiveBudget() - (activeClient?.discountValue ? calculateTotalComprehensiveBudget() * (parseFloat(String(activeClient.discountValue).replace('%', '')) / 100) : 0)) * 0.21).toFixed(2)} €
-                  </span>
                 </div>
-                <div className="flex justify-between items-end mt-2 pt-2 border-t border-emerald-800/50">
-                  <span className="text-xs text-emerald-200 block font-semibold uppercase">TOTAL PRESSUPOSTAT (Amb IVA inclòs)</span>
-                  <span className="text-3xl font-extrabold text-white">
-                    {((calculateTotalComprehensiveBudget() - (activeClient?.discountValue ? calculateTotalComprehensiveBudget() * (parseFloat(String(activeClient.discountValue).replace('%', '')) / 100) : 0)) * 1.21).toFixed(2)} €
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Card 7: Vehicle Assignment & Fleet Audit */}
@@ -1206,116 +827,11 @@ function CreateJobForm() {
             className="px-10 py-4 bg-secondary-container text-on-secondary-container font-headline-md rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 uppercase tracking-wider"
           >
             <span className="material-symbols-outlined">check_circle</span>
-            Guardar Ordre i Pressupost ({calculateTotalComprehensiveBudget().toFixed(2)} €)
+            Guardar Ordre
           </button>
         </div>
       </div>
 
-      {/* MODAL COPILOT IA CHAT INTERACTIU */}
-      {showCopilotModal && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-          <div className="bg-white rounded-3xl p-6 max-w-3xl w-full shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
-            <div className="flex justify-between items-center pb-4 border-b border-neutral-100 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-800 text-white flex items-center justify-center shadow-md">
-                  <Bot size={24} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
-                    Copilot Tècnic CampoPro (IA Grounded)
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
-                      Calculador de Pressupost Total
-                    </span>
-                  </h3>
-                  <p className="text-xs text-neutral-500">Calcula la totalitat (Materials + Eines + Mà d'obra + Vehicle + Desplaçament).</p>
-                </div>
-              </div>
-              <button onClick={() => setShowCopilotModal(false)} className="text-neutral-400 hover:text-neutral-700">
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 my-2">
-              {chatHistory.map((msg, idx) => (
-                <div key={idx} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.sender === 'bot' && (
-                    <div className="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 mt-1">
-                      <Bot size={18} />
-                    </div>
-                  )}
-
-                  <div className={`max-w-xl p-4 rounded-2xl text-xs leading-relaxed space-y-3 ${
-                    msg.sender === 'user' ? 'bg-primary text-white font-medium rounded-tr-none' : 'bg-neutral-100 text-neutral-900 rounded-tl-none border border-neutral-200'
-                  }`}>
-                    <p className="whitespace-pre-line">{msg.text}</p>
-
-                    {msg.proposal && (
-                      <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-3 shadow-md text-neutral-900">
-                        <div className="flex justify-between items-start border-b border-neutral-100 pb-2">
-                          <div>
-                            <span className="text-[10px] font-mono font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">
-                              Basat en Historial #{msg.proposal.matchedCode}
-                            </span>
-                            <h4 className="font-bold text-sm text-neutral-900 mt-1">{msg.proposal.title}</h4>
-                          </div>
-                        </div>
-
-                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center font-bold text-emerald-900 text-xs">
-                          <span>TOTAL PRESSUPOSTAT:</span>
-                          <span className="text-sm font-extrabold text-emerald-800">{msg.proposal.calculatedBudget}</span>
-                        </div>
-
-                        <button
-                          onClick={applyCopilotProposalToForm}
-                          className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl font-bold text-xs shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Sparkles size={16} />
-                          ✨ Aplicar Ordre i Pressupost Total al Formulari
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {isCopilotThinking && (
-                <div className="flex gap-2 text-xs text-neutral-500 items-center bg-neutral-100 p-3 rounded-xl w-fit">
-                  <RefreshCw className="animate-spin text-emerald-600" size={16} />
-                  <span>Calculant la totalitat del pressupost...</span>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2 flex gap-2 items-center">
-              <button
-                onClick={handleToggleDictation}
-                className={`p-3 rounded-xl transition-all shadow-sm ${
-                  isDictating ? 'bg-red-600 text-white animate-pulse' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
-                title="Dictar per Veu (Speech-to-Text)"
-              >
-                <Mic size={18} />
-              </button>
-
-              <input
-                type="text"
-                value={copilotInput}
-                onChange={(e) => setCopilotInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendCopilotQuery()}
-                placeholder="Escriu o dicta la tasca (ex: 'fuga aigua camp 3')..."
-                className="flex-1 p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-medium outline-none focus:border-emerald-600"
-              />
-
-              <button
-                onClick={() => handleSendCopilotQuery()}
-                className="p-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-md"
-              >
-                <Send size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL CHECKLIST MATERIALS MAGATZEM */}
       {showMaterialChecklistModal && (
