@@ -135,13 +135,13 @@ export default function OperarisDashboardPage() {
   const [selectedWorker, setSelectedWorker] = useState<WorkerProfile | null>(null);
   const [selectedJobModal, setSelectedJobModal] = useState<CompletedJobDetail | null>(null);
   const [profileTab, setProfileTab] = useState<'info' | 'shifts' | 'crew' | 'jobs' | 'reviews' | 'vehicles' | 'tools' | 'incidents'>('info');
+  const [workerToAssign, setWorkerToAssign] = useState<string>('');
 
-  useEffect(() => {
-    const fetchOperaris = async () => {
-      try {
-        const dbUsers = await apiClient.get('/users');
-        if (dbUsers && Array.isArray(dbUsers)) {
-          const mappedOperaris = dbUsers
+  const loadData = async () => {
+    try {
+      const dbUsers = await apiClient.get('/users');
+      if (dbUsers && Array.isArray(dbUsers)) {
+        const mappedOperaris = dbUsers
             .filter((u: any) => u.rol === 'CAP_GRUP_OPERARI' || u.rol === 'OPERARI_PWA')
             .map((u: any) => ({
               id: u.id,
@@ -161,6 +161,17 @@ export default function OperarisDashboardPage() {
               ratingBreakdown: { professionalism: 0, punctuality: 0, customerTreatment: 0 },
               workShiftHistory: [],
               clientReviews: [],
+              crewMembers: dbUsers
+                .filter((sub: any) => sub.cap_de_grup_id === u.id)
+                .map((sub: any) => ({
+                  id: sub.id,
+                  name: sub.nom,
+                  role: sub.rol === 'OPERARI_PWA' ? 'Oficial' : sub.rol,
+                  phone: sub.telefon || '600 00 00 00',
+                  assignedVehicle: sub.vehicle_assignat || 'Cap',
+                  status: sub.actiu ? 'EN_JORNADA' : 'ABSENT',
+                  avatar: '👨‍🔧'
+                })),
               completedJobsHistory: [],
               assignedTools: [],
               toolIncidentsHistory: [],
@@ -168,13 +179,48 @@ export default function OperarisDashboardPage() {
               reportedFieldIncidents: []
             }));
           setWorkers(mappedOperaris);
+          
+          // Refresh selectedWorker if it's currently open
+          setSelectedWorker((prev) => {
+            if (prev) {
+              return mappedOperaris.find((w: WorkerProfile) => w.id === prev.id) || prev;
+            }
+            return prev;
+          });
         }
       } catch (e) {
         console.error("Error loading operaris from backend", e);
       }
-    };
-    fetchOperaris();
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
+
+  const handleAssignWorker = async () => {
+    if (!workerToAssign || !selectedWorker) return;
+    try {
+      await apiClient.patch(`/users/${workerToAssign}`, { cap_de_grup_id: selectedWorker.id });
+      alert('Operari assignat a la colla correctament!');
+      setWorkerToAssign('');
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      alert('Error en assignar l\'operari');
+    }
+  };
+
+  const handleRemoveWorker = async (workerId: string) => {
+    if (!confirm('Segur que vols desvincular aquest operari de la colla?')) return;
+    try {
+      await apiClient.patch(`/users/${workerId}`, { cap_de_grup_id: null });
+      alert('Operari desvinculat correctament!');
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      alert('Error en desvincular l\'operari');
+    }
+  };
 
   const saveWorkers = (newWorkers: WorkerProfile[]) => {
     setWorkers(newWorkers);
@@ -621,25 +667,59 @@ export default function OperarisDashboardPage() {
                     </span>
                   </div>
 
-                  <h4 className="font-bold text-neutral-900 text-sm">Treballadors Assignats a la Colla</h4>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-4 bg-white border border-neutral-200 rounded-2xl shadow-sm mb-4">
+                    <select 
+                      value={workerToAssign}
+                      onChange={(e) => setWorkerToAssign(e.target.value)}
+                      className="flex-1 p-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none font-medium text-neutral-800"
+                    >
+                      <option value="">Selecciona un operari disponible per afegir...</option>
+                      {workers
+                        .filter(w => !w.isTeamLeader && w.id !== selectedWorker.id)
+                        .map(w => (
+                          <option key={w.id} value={w.id}>{w.name} — {w.specialty || 'General'}</option>
+                      ))}
+                    </select>
+                    <button 
+                      onClick={handleAssignWorker}
+                      disabled={!workerToAssign}
+                      className="px-6 py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-50 hover:bg-primary/90 transition-colors shrink-0 flex items-center justify-center gap-2"
+                    >
+                      <UserPlus size={16} /> Afegir a la Colla
+                    </button>
+                  </div>
+
+                  <h4 className="font-bold text-neutral-900 text-sm">Treballadors Assignats a la Colla ({selectedWorker.crewMembers?.length || 0})</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedWorker.crewMembers?.length === 0 && (
+                      <div className="col-span-1 sm:col-span-2 p-6 text-center text-neutral-500 bg-neutral-50 rounded-2xl border border-neutral-200 border-dashed">
+                        Aquest cap de grup no té cap operari assignat a la seva colla.
+                      </div>
+                    )}
                     {selectedWorker.crewMembers?.map((member) => (
-                      <div key={member.id} className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between shadow-sm">
+                      <div key={member.id} className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between shadow-sm hover:bg-white hover:border-neutral-300 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-neutral-200 text-2xl flex items-center justify-center border border-neutral-300">
+                          <div className="w-12 h-12 rounded-xl bg-neutral-200 text-2xl flex items-center justify-center border border-neutral-300 shrink-0">
                             {member.avatar}
                           </div>
                           <div>
                             <h5 className="font-bold text-neutral-900 text-sm">{member.name}</h5>
-                            <span className="text-xs font-semibold text-primary block">{member.role}</span>
-                            <span className="text-[10px] text-neutral-500 block font-mono">📞 {member.phone}</span>
+                            <span className="text-[10px] text-neutral-500 block font-mono mt-0.5">📞 {member.phone}</span>
                             <span className="text-[10px] text-emerald-800 font-bold block mt-0.5">🚜 {member.assignedVehicle}</span>
                           </div>
                         </div>
 
-                        <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-300">
-                          {member.status}
-                        </span>
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-300">
+                            {member.status}
+                          </span>
+                          <button 
+                            onClick={() => handleRemoveWorker(member.id)}
+                            className="text-[10px] text-red-500 font-bold hover:text-red-700 hover:underline px-2 py-1"
+                          >
+                            Desvincular
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
