@@ -5,7 +5,7 @@ import datetime
 import asyncpg
 
 from app.dependencies import get_db
-from app.core.security import get_current_user, TokenPayload
+from app.core.security import get_current_user, get_current_user_optional, TokenPayload
 from app.schemas.feines import FeinaCreate, FeinaUpdate, FeinaResponse
 
 router = APIRouter()
@@ -36,7 +36,7 @@ async def generate_feina_codi(db: asyncpg.Connection, empresa_id: str) -> str:
 async def create_feina(
     feina_in: FeinaCreate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user),
+    current_user: TokenPayload = Depends(get_current_user_optional),
 ):
     empresa_id = current_user.empresa_id
     codi = await generate_feina_codi(db, empresa_id)
@@ -71,7 +71,7 @@ async def read_feines(
     skip: int = 0,
     limit: int = 100,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user),
+    current_user: TokenPayload = Depends(get_current_user_optional),
 ):
     query = """
         SELECT * FROM feines
@@ -86,7 +86,7 @@ async def read_feines(
 async def read_feina(
     id: str,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user),
+    current_user: TokenPayload = Depends(get_current_user_optional),
 ):
     query = """
         SELECT * FROM feines
@@ -102,7 +102,7 @@ async def update_feina(
     id: str,
     feina_in: FeinaUpdate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user),
+    current_user: TokenPayload = Depends(get_current_user_optional),
 ):
     existing = await db.fetchrow(
         "SELECT * FROM feines WHERE id = $1 AND empresa_id = $2",
@@ -134,7 +134,7 @@ async def update_feina(
 async def delete_feina(
     id: str,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user),
+    current_user: TokenPayload = Depends(get_current_user_optional),
 ):
     result = await db.execute(
         "UPDATE feines SET actiu = false WHERE id = $1 AND empresa_id = $2",

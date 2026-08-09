@@ -34,33 +34,41 @@ async def llistar_usuaris(
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def crear_usuari(
     usuari: UserCreate,
-    db: asyncpg.Connection = Depends(get_db)
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
-        INSERT INTO usuaris (rol, nom, telefon, email, vehicle_assignat, actiu, password_hash, pin_hash)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO usuaris (empresa_id, rol, nom, telefon, email, vehicle_assignat, actiu, password_hash, pin_hash)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING id, empresa_id, rol, nom, telefon, email, vehicle_assignat, actiu, created_at, updated_at
     """
     password_hash = hash_password(usuari.password) if usuari.password else None
     pin_hash = hash_password(usuari.pin) if usuari.pin else None
 
-    record = await db.fetchrow(
-        query,
-        usuari.rol,
-        usuari.nom,
-        usuari.telefon,
-        usuari.email,
-        usuari.vehicle_assignat,
-        usuari.actiu,
-        password_hash,
-        pin_hash
-    )
-    return dict(record)
+    rol_lower = usuari.rol.lower() if usuari.rol else "operari"
+
+    try:
+        record = await db.fetchrow(
+            query,
+            current_user.empresa_id if current_user else None,
+            rol_lower,
+            usuari.nom,
+            usuari.telefon,
+            usuari.email,
+            usuari.vehicle_assignat,
+            usuari.actiu,
+            password_hash,
+            pin_hash
+        )
+        return dict(record)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def obtenir_usuari(
     user_id: UUID,
-    db: asyncpg.Connection = Depends(get_db)
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT id, empresa_id, rol, nom, telefon, email, vehicle_assignat, actiu, created_at, updated_at
@@ -76,7 +84,8 @@ async def obtenir_usuari(
 async def actualitzar_usuari(
     user_id: UUID,
     usuari_update: UserUpdate,
-    db: asyncpg.Connection = Depends(get_db)
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     # Verify exists
     existing = await obtenir_usuari(user_id, db)
@@ -109,7 +118,8 @@ async def actualitzar_usuari(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def esborrar_usuari(
     user_id: UUID,
-    db: asyncpg.Connection = Depends(get_db)
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = "DELETE FROM usuaris WHERE id = $1 RETURNING id"
     record = await db.fetchrow(query, user_id)
