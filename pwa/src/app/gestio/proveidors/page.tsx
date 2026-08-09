@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getStoredProveidors, SupplierItem } from '@/lib/sharedStore';
+import { SupplierItem } from '@/lib/sharedStore';
+import { apiClient } from '@/lib/apiClient';
 
 export default function Page() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,8 +12,32 @@ export default function Page() {
   const [suppliersDb, setSuppliersDb] = useState<SupplierItem[]>([]);
 
   useEffect(() => {
-    const loadSuppliers = () => {
-      setSuppliersDb(getStoredProveidors());
+    const loadSuppliers = async () => {
+      try {
+        const data = await apiClient.get('/proveidors');
+        const mapped = data.map((s: any) => ({
+          id: s.id,
+          nif: s.nif || '',
+          name: s.nom,
+          category: s.categoria || 'Altres',
+          contactPerson: s.contacte || '',
+          phone: s.telefon || '',
+          email: s.email || '',
+          address: s.adreca || '',
+          products: s.productes || '',
+          discountValue: s.descompte || '0%',
+          paymentMethod: s.forma_pagament || '',
+          paymentTerms: s.condicions_pagament || '',
+          iban: s.iban || '',
+          totalBilledMonth: '0,00 €',
+          totalBilledYear: '0,00 €',
+          pendingPayment: '0,00 €',
+          recentOrders: []
+        }));
+        setSuppliersDb(mapped);
+      } catch (e) {
+        console.error("Error loading suppliers", e);
+      }
     };
     loadSuppliers();
 

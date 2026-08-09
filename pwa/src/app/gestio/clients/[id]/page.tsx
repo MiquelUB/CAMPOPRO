@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, MapPin, Building, User, Phone, Send, CheckCircle2, Clock, Plus, FileText, Eye, Download, Image, PenTool, TrendingUp, AlertTriangle, X, Check, FileCheck, Package, Wrench, ShieldCheck, CreditCard } from "lucide-react";
 import DynamicMap from "@/components/map/DynamicMap";
+import { apiClient } from "@/lib/apiClient";
 
 // Rich Task Record Interface including Unique Completed Archive Data for EVERY Task
 interface TaskRecord {
@@ -40,41 +41,49 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Retrieve specific client data or fallback dynamically with unique realistic tasks
+  // Retrieve specific client data from the backend
   useEffect(() => {
-    const savedClients = localStorage.getItem('campopro_clients');
-    const savedTasksStr = localStorage.getItem('campopro_mock_tasks') || '[]';
-    
-    let clientData: any = null;
-
-    if (savedClients) {
-      const parsed = JSON.parse(savedClients);
-      clientData = parsed.find((c: any) => c.id === params.id);
-    }
-
-    if (!clientData) {
-      // Do not create mock fallback. Leave clientData as null.
-    }
-
-    // Load their history of tasks
-    if (clientData) {
+    const fetchClientData = async () => {
+      setLoading(true);
       try {
-        const allTasks = JSON.parse(savedTasksStr);
-        // Filtrem les feines que estiguin lligades a aquest client
-        clientData.assignedTasks = allTasks.filter((t: any) => t.clientId === params.id);
-      } catch(e) {
-        clientData.assignedTasks = [];
-      }
-    }
+        const clientData = await apiClient.get(`/clients/${params.id}`);
+        
+        let assignedTasks = [];
+        try {
+          const allTasks = await apiClient.get('/feines');
+          assignedTasks = allTasks.filter((t: any) => t.client_id === params.id || t.clientId === params.id);
+        } catch (e) {
+          console.error("Error fetching tasks:", e);
+        }
 
-    if (clientData) {
-      setClient(clientData);
-      setTelegramChatId(clientData.telegramChatId || '');
-      setLogs(clientData.telegramLogs || []);
-    } else {
-      setClient(null);
-    }
-    setLoading(false);
+        const formattedClient = {
+          id: clientData.id,
+          name: clientData.nom,
+          nif: clientData.nif || '',
+          contact: clientData.tipus || 'particular',
+          email: clientData.email || '',
+          phone: clientData.telefon || '',
+          address: clientData.adreca || '',
+          notes: clientData.notes || '',
+          lat: clientData.lat || '',
+          lng: clientData.lng || '',
+          assignedTasks: assignedTasks,
+          telegramChatId: clientData.preferencies?.telegram_chat_id || '',
+          telegramLogs: clientData.preferencies?.telegram_logs || []
+        };
+        
+        setClient(formattedClient);
+        setTelegramChatId(formattedClient.telegramChatId);
+        setLogs(formattedClient.telegramLogs);
+      } catch (error) {
+        console.error("Error loading client:", error);
+        setClient(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchClientData();
   }, [params.id]);
 
   const searchParams = useSearchParams();
@@ -98,50 +107,61 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     setIsEditing(true);
   };
 
-  const handleSaveEdit = () => {
-    const savedClients = localStorage.getItem('campopro_clients');
-    if (savedClients) {
-      let parsed = JSON.parse(savedClients);
-      parsed = parsed.map((c: any) => c.id === client.id ? editForm : c);
-      localStorage.setItem('campopro_clients', JSON.stringify(parsed));
+  const handleSaveEdit = async () => {
+    try {
+      await apiClient.patch(`/clients/${client.id}`, {
+        nom: editForm.name,
+        nif: editForm.nif,
+        tipus: editForm.contact,
+        telefon: editForm.phone,
+        adreca: editForm.address,
+        lat: editForm.lat ? parseFloat(editForm.lat) : undefined,
+        lng: editForm.lng ? parseFloat(editForm.lng) : undefined,
+        notes: editForm.notes
+      });
       setClient(editForm);
       setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating client:", error);
+      alert("Error en guardar el client. Comprova les dades.");
     }
   };
 
-  const handleSaveValuation = (taskId: string, newValuation: number, newComment: string) => {
-    const savedTasksStr = localStorage.getItem('campopro_mock_tasks') || '[]';
-    let allTasks = JSON.parse(savedTasksStr);
-    allTasks = allTasks.map((t: any) => {
-      if (t.id === taskId) {
-        return { ...t, valuation: newValuation, clientComment: newComment };
+  const handleSaveValuation = async (taskId: string, newValuation: number, newComment: string) => {
+    try {
+      try {
+        await apiClient.patch(`/feines/${taskId}`, {
+          valoracio: newValuation,
+          comentari_client: newComment
+        });
+      } catch (e) {}
+
+      // Update local state so it reflects instantly
+      setClient((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          assignedTasks: prev.assignedTasks.map((t: any) => t.id === taskId ? { ...t, valuation: newValuation, clientComment: newComment } : t)
+        };
+      });
+      if (selectedTaskArchive && selectedTaskArchive.id === taskId) {
+        setSelectedTaskArchive({ ...selectedTaskArchive, valuation: newValuation, clientComment: newComment });
       }
-      return t;
-    });
-    localStorage.setItem('campopro_mock_tasks', JSON.stringify(allTasks));
-    
-    // Update local state so it reflects instantly
-    setClient((prev: any) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        assignedTasks: prev.assignedTasks.map((t: any) => t.id === taskId ? { ...t, valuation: newValuation, clientComment: newComment } : t)
-      };
-    });
-    if (selectedTaskArchive && selectedTaskArchive.id === taskId) {
-      setSelectedTaskArchive({ ...selectedTaskArchive, valuation: newValuation, clientComment: newComment });
+    } catch (e) {
+      console.error("Error saving valuation:", e);
     }
   };
 
   // Selected Task Archive Modal State (Transferred from /gestio/feines/completades)
   const [selectedTaskArchive, setSelectedTaskArchive] = useState<any>(null);
 
-  const handleSendTelegram = (e: React.FormEvent) => {
+  const handleSendTelegram = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!telegramMessage.trim()) return;
 
     setIsSending(true);
-    setTimeout(() => {
+    
+    try {
       const newLog = {
         id: `t${Date.now()}`,
         date: new Date().toLocaleString("ca-ES"),
@@ -151,16 +171,21 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       const updatedLogs = [newLog, ...logs];
       setLogs(updatedLogs);
       
-      const savedClients = localStorage.getItem('campopro_clients');
-      if (savedClients) {
-        let parsed = JSON.parse(savedClients);
-        parsed = parsed.map((c: any) => c.id === client.id ? { ...c, telegramLogs: updatedLogs } : c);
-        localStorage.setItem('campopro_clients', JSON.stringify(parsed));
+      try {
+        await apiClient.patch(`/clients/${client.id}`, {
+          preferencies: {
+            telegram_chat_id: telegramChatId,
+            telegram_logs: updatedLogs
+          }
+        });
+      } catch (e) {
+        console.error("No s'ha pogut guardar l'historial a preferencies", e);
       }
 
       setTelegramMessage("");
+    } finally {
       setIsSending(false);
-    }, 600);
+    }
   };
 
   if (loading) {

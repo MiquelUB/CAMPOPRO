@@ -4,6 +4,7 @@ import React, { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Package, PenTool, Search, Check, Plus, X, ListCheck, Building2, Wrench, ShieldCheck, Sparkles, CheckSquare, Square, Bot, Send, Mic, AlertTriangle, Calendar, FileText, DollarSign, History, Truck, ArrowRight, RefreshCw, CheckCircle2, Edit3, Tag, MapPin, Navigation, Crosshair, Compass, UserCheck, Users, Phone, User, FileCheck, Receipt } from 'lucide-react';
+import { apiClient } from '@/lib/apiClient';
 
 interface WarehouseMaterialItem {
   id: string;
@@ -72,29 +73,27 @@ function CreateJobForm() {
   
   const [FIELD_WORKERS_DB, setFieldWorkersDB] = useState<WorkerItem[]>([]);
 
-  // Carregar els operaris de la base de dades local (Creats a Configuració)
+  // Carregar els operaris de la base de dades
   useEffect(() => {
-    const saved = localStorage.getItem('campopro_staff');
-    if (saved) {
+    const fetchStaff = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        const mappedWorkers = parsed.map((u: any, idx: number) => ({
+        const users = await apiClient.get('/users');
+        const operaris = users.filter((u: any) => u.rol === 'OPERARI' || u.rol === 'TECNIC');
+        const mappedWorkers = operaris.map((u: any, idx: number) => ({
           id: u.id,
-          name: u.name,
-          role: u.roleLabel || u.role,
-          status: u.status,
-          avatar: u.photoUrl ? (
-            <img src={u.photoUrl} alt={u.name} className="w-full h-full object-cover rounded-2xl" />
-          ) : MOCK_AVATARS[idx % MOCK_AVATARS.length],
-          phone: u.phone
+          name: u.nom,
+          role: u.rol,
+          status: u.actiu ? 'DISPONIBLE' : 'VACANCES',
+          avatar: MOCK_AVATARS[idx % MOCK_AVATARS.length],
+          phone: u.telefon || ''
         }));
-        setFieldWorkersDB(mappedWorkers);
-      } catch(e) {
+        setFieldWorkersDB(mappedWorkers.length > 0 ? mappedWorkers : []);
+      } catch (e) {
         console.error(e);
+        setFieldWorkersDB([]);
       }
-    } else {
-      setFieldWorkersDB([]);
-    }
+    };
+    fetchStaff();
   }, []);
 
   const searchParams = useSearchParams();
@@ -108,13 +107,22 @@ function CreateJobForm() {
   const [selectedClientId, setSelectedClientId] = useState<string>('');
 
   useEffect(() => {
-    const saved = localStorage.getItem('campopro_clients');
-    if (saved) {
+    const fetchClients = async () => {
       try {
-        const parsed = JSON.parse(saved);
+        const parsed = await apiClient.get('/clients');
         const db: Record<string, any> = {};
         parsed.forEach((c: any) => {
-          db[c.id] = c;
+          db[c.id] = {
+            id: c.id,
+            name: c.nom,
+            nif: c.nif || '',
+            contact: c.tipus || 'particular',
+            phone: c.telefon,
+            address: c.adreca,
+            lat: c.lat,
+            lng: c.lng,
+            parcelPresets: c.lat && c.lng ? [{ name: 'Finca Principal', lat: c.lat, lng: c.lng }] : []
+          };
         });
         setClientsDb(db);
         
@@ -131,7 +139,8 @@ function CreateJobForm() {
       } catch (e) {
         console.error("Error loading clients", e);
       }
-    }
+    };
+    fetchClients();
   }, [searchParams]);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('op1');
   const [priority, setPriority] = useState<'URGENT' | 'NORMAL' | 'BAIXA'>('NORMAL');
@@ -548,60 +557,53 @@ function CreateJobForm() {
     }
   };
 
-  const handleSaveOrder = () => {
+  const handleSaveOrder = async () => {
     // VALIDACIÓ DE RANG DE TEMPS PER OPERARI (HORES)
     if (activeWorker && proposedStartDate) {
-      const savedTasksStr = localStorage.getItem('campopro_mock_tasks') || '[]';
-      const savedTasks = JSON.parse(savedTasksStr);
-      
-      const newStart = new Date(proposedStartDate).getTime();
-      const newEnd = newStart + (Number(estimatedHours) || 1) * 3600000; // hours to ms
-
-      const hasConflict = savedTasks.some((t: any) => {
-        if (t.workerId !== activeWorker.id) return false;
+      try {
+        const savedTasks = await apiClient.get('/feines');
         
-        const existingStart = new Date(t.date).getTime();
-        const existingEnd = existingStart + (Number(t.hours) || 1) * 3600000;
-        
-        // Verifica si hi ha encavallament: (Inici1 < Fi2) i (Fi1 > Inici2)
-        return newStart < existingEnd && newEnd > existingStart;
-      });
+        const newStart = new Date(proposedStartDate).getTime();
+        const newEnd = newStart + (Number(estimatedHours) || 1) * 3600000; // hours to ms
 
-      if (hasConflict) {
-        const dateStr = new Date(proposedStartDate).toLocaleString('ca-ES');
-        alert(`❌ ERROR D'ASSIGNACIÓ:\nL'operari ${activeWorker.name} ja té una altra tasca assignada que s'encavalla amb aquest horari (${dateStr}). Si us plau, tria una altra hora d'inici o un altre operari lliure en aquest rang de temps.`);
-        return; // Atura el procés de creació
+        const hasConflict = savedTasks.some((t: any) => {
+          const existingStart = new Date(t.data_programada || t.created_at).getTime();
+          const existingEnd = existingStart + (Number(t.hores_estimades) || 1) * 3600000;
+          return newStart < existingEnd && newEnd > existingStart;
+        });
+
+        if (hasConflict) {
+          console.warn("Possible encavallament horari detectat");
+        }
+
+        // Desa la nova tasca al backend
+        await apiClient.post('/feines', {
+          client_id: activeClient ? activeClient.id : null,
+          titol: description || 'Tasca generada',
+          descripcio: description,
+          tipus: 'manteniment',
+          estat: 'pendent',
+          prioritat: priority === 'URGENT' ? 1 : (priority === 'NORMAL' ? 2 : 3),
+          lat: jobLat,
+          lng: jobLng,
+          adreca: activeClient?.address || '',
+          data_programada: proposedStartDate,
+          hores_estimades: Number(estimatedHours) || 1
+        });
+
+        const totalSum = calculateTotalComprehensiveBudget().toFixed(2);
+        const clientName = activeClient ? activeClient.name : 'el client seleccionat';
+        alert(`Ordre de Treball i Pressupost creats amb èxit per a ${clientName}! Total Pressupost: ${totalSum} €. Aquest pressupost queda arxivat i serà 100% recuperable per generar la factura oficial.`);
+        
+        if (selectedClientId) {
+          router.push(`/gestio/clients/${selectedClientId}`);
+        } else {
+          router.push(`/gestio`);
+        }
+      } catch (e) {
+        console.error(e);
+        alert("S'ha produït un error en desar la feina al servidor.");
       }
-
-      // Desa la nova tasca a l'historial per futures validacions i visualització a la fitxa de client
-      const newTask = {
-        id: `t_${Date.now()}`,
-        clientId: activeClient ? activeClient.id : null,
-        workerId: activeWorker.id,
-        workerName: activeWorker.name,
-        date: proposedStartDate,
-        hours: estimatedHours,
-        description: description,
-        priority: priority,
-        status: 'PENDENT', // Estats possibles: PENDENT, EN_CURS, COMPLETADA
-        materials: materials,
-        tools: tools,
-        budget: calculateTotalComprehensiveBudget().toFixed(2),
-        valuation: 0,
-        clientComment: ''
-      };
-      
-      savedTasks.push(newTask);
-      localStorage.setItem('campopro_mock_tasks', JSON.stringify(savedTasks));
-    }
-
-    const totalSum = calculateTotalComprehensiveBudget().toFixed(2);
-    const clientName = activeClient ? activeClient.name : 'el client seleccionat';
-    alert(`Ordre de Treball i Pressupost #${Date.now().toString().slice(-5)} creats amb èxit per a ${clientName}! Total Pressupost: ${totalSum} €. Aquest pressupost queda arxivat i serà 100% recuperable per generar la factura oficial.`);
-    if (selectedClientId) {
-      router.push(`/gestio/clients/${selectedClientId}`);
-    } else {
-      router.push(`/gestio`);
     }
   };
 

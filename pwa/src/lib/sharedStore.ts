@@ -58,23 +58,12 @@ export const INITIAL_PROVEIDORS: SupplierItem[] = [];
 export const INITIAL_MATERIALS: MaterialItem[] = [];
 
 export function getStoredProveidors(): SupplierItem[] {
-  if (typeof window === 'undefined') return INITIAL_PROVEIDORS;
-  try {
-    const raw = localStorage.getItem('campopro_proveidors');
-    if (!raw) return [];
-    const parsed: SupplierItem[] = JSON.parse(raw);
-    const clean = parsed.filter(p => p.name && !/(?:albar[àa]|lliurament|factura|document|pdf|jpg|png|\.pdf)/i.test(p.name));
-    return clean;
-  } catch (e) {
-    return [];
-  }
+  return [];
 }
 
 export function saveStoredProveidors(list: SupplierItem[]) {
   if (typeof window === 'undefined') return;
   try {
-    const clean = list.filter(p => p.name && !/(?:albar[àa]|lliurament|factura|document|pdf|jpg|png|\.pdf)/i.test(p.name));
-    localStorage.setItem('campopro_proveidors', JSON.stringify(clean));
     window.dispatchEvent(new Event('campopro_store_updated'));
   } catch (e) {
     console.error('Error saving proveidors', e);
@@ -82,31 +71,12 @@ export function saveStoredProveidors(list: SupplierItem[]) {
 }
 
 export function getStoredMaterials(): MaterialItem[] {
-  if (typeof window === 'undefined') return INITIAL_MATERIALS;
-  try {
-    const raw = localStorage.getItem('campopro_materials');
-    if (!raw) return [];
-    const parsed: MaterialItem[] = JSON.parse(raw);
-    const clean = parsed.filter(m => 
-      m.name && 
-      !/(?:albar[àa]|lliurament|factura|document|material de subministrament)/i.test(m.name) && 
-      !/(?:albar[àa]|lliurament|factura|document)/i.test(m.supplier)
-    );
-    return clean;
-  } catch (e) {
-    return [];
-  }
+  return [];
 }
 
 export function saveStoredMaterials(list: MaterialItem[]) {
   if (typeof window === 'undefined') return;
   try {
-    const clean = list.filter(m => 
-      m.name && 
-      !/(?:albar[àa]|lliurament|factura|document|material de subministrament)/i.test(m.name) && 
-      !/(?:albar[àa]|lliurament|factura|document)/i.test(m.supplier)
-    );
-    localStorage.setItem('campopro_materials', JSON.stringify(clean));
     window.dispatchEvent(new Event('campopro_store_updated'));
   } catch (e) {
     console.error('Error saving materials', e);
@@ -116,10 +86,6 @@ export function saveStoredMaterials(list: MaterialItem[]) {
 export function clearUploadedDocumentsStore() {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem('campopro_proveidors');
-    localStorage.removeItem('campopro_materials');
-    localStorage.setItem('campopro_proveidors', JSON.stringify(INITIAL_PROVEIDORS));
-    localStorage.setItem('campopro_materials', JSON.stringify(INITIAL_MATERIALS));
     window.dispatchEvent(new Event('campopro_store_updated'));
   } catch (e) {
     console.error('Error clearing store', e);
