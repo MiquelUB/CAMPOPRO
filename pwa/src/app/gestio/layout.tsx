@@ -216,7 +216,7 @@ export default function GestioLayout({ children }: { children: React.ReactNode }
               <div className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
                 <p><strong>Aquesta icona (?)</strong> ofereix l'accés directe al manual d'usuari i la guia del Portal d'Enginyer de CampoPro.</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li><strong>Operaris & Fitxatge Llei:</strong> Registre d'entrada/sortida geolocalitzat.</li>
+                  <li><strong>Operaris & Control horari:</strong> Registre d'entrada/sortida geolocalitzat.</li>
                   <li><strong>Configuració:</strong> Gestió d'enginyers, caps de personal i permisos d'accés.</li>
                   <li><strong>Redacció de Feines:</strong> Crea ordres i assigna materials/eines.</li>
                 </ul>

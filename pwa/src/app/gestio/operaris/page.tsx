@@ -205,7 +205,7 @@ export default function OperarisDashboardPage() {
             Equip d'Operaris de Camp i Caps d'Equip
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
-            Fitxa 360°: Control horari (fitxatges d'entrada/sortida per llei), composició de la colla/equip, tasques, km en vehicles i eines.
+            Fitxa 360°: Control horari (registres d'entrada/sortida per llei), composició de la colla/equip, tasques, km en vehicles i eines.
           </p>
         </div>
 
@@ -362,9 +362,9 @@ export default function OperarisDashboardPage() {
                   <span className="font-extrabold text-amber-900">{worker.stats.clientRatingAverage} / 5.0</span>
                 </div>
 
-                <div className="flex justify-between items-center bg-emerald-50 p-2 rounded-xl text-emerald-800 font-bold border border-emerald-200">
-                  <span className="flex items-center gap-1"><Clock size={14} className="text-emerald-600" /> Fitxatge Llei Avui:</span>
-                  <span className="text-[11px] bg-emerald-600 text-white px-2 py-0.5 rounded">🟢 Entrada 08:02</span>
+                <div className="flex justify-between items-center bg-neutral-50 p-2 rounded-xl text-neutral-800 font-bold border border-neutral-200">
+                  <span className="flex items-center gap-1"><Clock size={14} className="text-neutral-600" /> Control horari Avui:</span>
+                  <span className="text-[11px] bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded">Sense dades</span>
                 </div>
 
                 <div className="flex justify-between items-center bg-neutral-50 p-2 rounded-xl text-neutral-700">
@@ -565,20 +565,20 @@ export default function OperarisDashboardPage() {
                 </div>
               )}
 
-              {/* 2. CONTROL HORARI (FITXATGE LLEI RDL 8/2019) */}
+              {/* 2. CONTROL HORARI (REGISTRE RDL 8/2019) */}
               {profileTab === 'shifts' && (
                 <div className="space-y-4 text-xs">
                   <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center">
                     <div>
                       <span className="text-xs text-emerald-900 font-bold block">Conformitat amb el Registre de Jornada (Reial Decret-Llei 8/2019)</span>
-                      <span className="text-neutral-600 text-[11px]">Tots els fitxatges estan geolocalitzats i signats digitalment des de la PWA mòbil.</span>
+                      <span className="text-neutral-600 text-[11px]">Tots els registres estan geolocalitzats i signats digitalment des de la PWA mòbil.</span>
                     </div>
                     <span className="px-3 py-1.5 bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1 shadow">
                       <ShieldCheck size={16} /> 100% Auditat
                     </span>
                   </div>
 
-                  <h4 className="font-bold text-neutral-900 text-sm">Registre de Fitxatges d'Entrada i Sortida</h4>
+                  <h4 className="font-bold text-neutral-900 text-sm">Registre d'Entrada i Sortida</h4>
                   <div className="space-y-2">
                     {selectedWorker.workShiftHistory.map((shift) => (
                       <div key={shift.id} className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
