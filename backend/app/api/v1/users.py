@@ -7,7 +7,7 @@ from app.models.user import Usuari
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from app.core.security import get_current_user, require_super_admin, TokenPayload, hash_password, get_current_user_optional
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="", tags=["users"])
 
 @router.get("", response_model=List[UserResponse])
 async def llistar_usuaris(

@@ -86,9 +86,14 @@ async def obtenir_client(
 ):
     query = """
         SELECT * FROM clients
-        WHERE id = $1 AND empresa_id = $2 AND actiu = true
+        WHERE id = $1 AND actiu = true
     """
-    record = await db.fetchrow(query, item_id, current_user.empresa_id)
+    args = [item_id]
+    if current_user.empresa_id:
+        query += " AND empresa_id = $2"
+        args.append(current_user.empresa_id)
+        
+    record = await db.fetchrow(query, *args)
         
     if not record:
         raise HTTPException(status_code=404, detail="Client no trobat")
@@ -107,8 +112,15 @@ async def actualitzar_client(
         raise HTTPException(status_code=400, detail="Cap camp per actualitzar proporcionat")
         
     set_clauses = []
-    args = [item_id, current_user.empresa_id]
-    arg_idx = 3
+    args = [item_id]
+    arg_idx = 2
+    
+    if current_user.empresa_id:
+        args.append(current_user.empresa_id)
+        empresa_clause = f" AND empresa_id = ${arg_idx}"
+        arg_idx += 1
+    else:
+        empresa_clause = ""
     
     for key, value in update_data.items():
         if key == 'preferencies':
@@ -123,7 +135,7 @@ async def actualitzar_client(
     query = f"""
         UPDATE clients
         SET {set_query}
-        WHERE id = $1 AND empresa_id = $2 AND actiu = true
+        WHERE id = $1{empresa_clause} AND actiu = true
         RETURNING *
     """
     try:
@@ -145,11 +157,16 @@ async def esborrar_client(
     query = """
         UPDATE clients
         SET actiu = false
-        WHERE id = $1 AND empresa_id = $2 AND actiu = true
-        RETURNING id
+        WHERE id = $1
     """
+    args = [item_id]
+    if current_user.empresa_id:
+        query += " AND empresa_id = $2"
+        args.append(current_user.empresa_id)
+        
+    query += " AND actiu = true RETURNING id"
     
-    record = await db.fetchrow(query, item_id, current_user.empresa_id)
+    record = await db.fetchrow(query, *args)
         
     if not record:
         raise HTTPException(status_code=404, detail="Client no trobat")
