@@ -128,7 +128,10 @@ function CreateJobForm() {
     };
     fetchClients();
   }, [searchParams]);
-  const [selectedWorkerId, setSelectedWorkerId] = useState<string>('op1');
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
+
+  const activeClient = selectedClientId && clientsDb[selectedClientId] ? clientsDb[selectedClientId] : null;
+  const activeWorker = selectedWorkerId ? FIELD_WORKERS_DB.find(w => w.id === selectedWorkerId) : null;
   const [priority, setPriority] = useState<'URGENT' | 'NORMAL' | 'BAIXA'>('NORMAL');
   const [description, setDescription] = useState<string>('');
   const [estimatedHours, setEstimatedHours] = useState<string>('4');
