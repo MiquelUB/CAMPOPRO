@@ -45,13 +45,11 @@ async def crear_usuari(
     password_hash = hash_password(usuari.password) if usuari.password else None
     pin_hash = hash_password(usuari.pin) if usuari.pin else None
 
-    rol_lower = usuari.rol.lower() if usuari.rol else "operari"
-
     try:
         record = await db.fetchrow(
             query,
             current_user.empresa_id if current_user else None,
-            rol_lower,
+            usuari.rol or "OPERARI_PWA",
             usuari.nom,
             usuari.telefon,
             usuari.email,

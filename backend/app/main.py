@@ -32,6 +32,26 @@ async def lifespan(app: FastAPI):
             logger.info("Database migrations completed successfully.")
     except Exception as e:
         logger.error(f"Error running database migrations: {e}")
+
+    # Remove role constraint dynamically to allow frontend custom roles
+    try:
+        async with db_pool.pool.acquire() as conn:
+            await conn.execute("""
+                DO $$ 
+                DECLARE 
+                    constname text; 
+                BEGIN 
+                    SELECT conname INTO constname 
+                    FROM pg_constraint 
+                    WHERE conrelid = 'usuaris'::regclass AND contype = 'c' AND pg_get_constraintdef(oid) ILIKE '%rol%'; 
+                    IF constname IS NOT NULL THEN 
+                        EXECUTE 'ALTER TABLE usuaris DROP CONSTRAINT ' || constname; 
+                    END IF; 
+                END $$;
+            """)
+            logger.info("Checked and dropped usuaris_rol constraint if existed.")
+    except Exception as e:
+        logger.error(f"Error dropping rol constraint: {e}")
         
     yield
     # Shutdown: disconnect from database
