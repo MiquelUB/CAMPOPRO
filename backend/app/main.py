@@ -52,9 +52,16 @@ async def lifespan(app: FastAPI):
                     END IF; 
                 END $$;
             """)
-            logger.info("Checked and dropped usuaris_rol constraint if existed.")
+            logger.info("Checked and updated usuaris_rol constraint if needed.")
+            
+            # Auto-migrate new columns
+            await conn.execute("""
+                ALTER TABLE usuaris ADD COLUMN IF NOT EXISTS especialitat VARCHAR(100);
+                ALTER TABLE usuaris ADD COLUMN IF NOT EXISTS cap_de_grup_id UUID REFERENCES usuaris(id);
+            """)
+            logger.info("Auto-migrated especialitat and cap_de_grup_id columns.")
     except Exception as e:
-        logger.error(f"Error dropping rol constraint: {e}")
+        logger.error(f"Error checking/updating DB constraints and columns: {e}")
         
     yield
     # Shutdown: disconnect from database

@@ -128,6 +128,8 @@ export default function ConfiguracioPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newPhoto, setNewPhoto] = useState<File | null>(null);
   const [newDrivingLicense, setNewDrivingLicense] = useState('B');
+  const [newSpecialty, setNewSpecialty] = useState('General');
+  const [newTeamLeaderId, setNewTeamLeaderId] = useState('');
 
   const generatePassword = (role: StaffUser['role'] = newRole) => {
     if (role === 'CAP_GRUP_OPERARI' || role === 'OPERARI_PWA') {
@@ -158,6 +160,8 @@ export default function ConfiguracioPage() {
     setNewNif('');
     setNewPhone('');
     setNewRole('ENGINYER_SUPERVISOR');
+    setNewSpecialty('General');
+    setNewTeamLeaderId('');
     setNewPhoto(null);
     setNewDrivingLicense('B');
     generatePassword('ENGINYER_SUPERVISOR');
@@ -186,6 +190,8 @@ export default function ConfiguracioPage() {
         email: newEmail,
         telefon: newPhone || '600 00 00 00',
         vehicle_assignat: isMobileOnlyRole ? 'Cap' : undefined,
+        especialitat: newSpecialty,
+        cap_de_grup_id: newTeamLeaderId || undefined,
         actiu: true,
         password: newPassword,
         pin: newPassword // Per simplificar el PIN
@@ -838,19 +844,48 @@ export default function ConfiguracioPage() {
               </div>
 
               {(newRole === 'CAP_GRUP_OPERARI' || newRole === 'OPERARI_PWA') && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">Especialitat *</label>
+                    <input 
+                      required 
+                      type="text" 
+                      value={newSpecialty} 
+                      onChange={(e) => setNewSpecialty(e.target.value)} 
+                      placeholder="ex: Electricista, General" 
+                      className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-medium outline-none focus:border-primary" 
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">Carnet de Conduir *</label>
+                    <select 
+                      value={newDrivingLicense} 
+                      onChange={(e) => setNewDrivingLicense(e.target.value)} 
+                      className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-medium outline-none"
+                    >
+                      <option value="Cap">Sense Carnet</option>
+                      <option value="B">Tipus B (Turismes i furgonetes petites)</option>
+                      <option value="B+E">Tipus B+E (Remolcs)</option>
+                      <option value="C1">Tipus C1 (Camions lleugers)</option>
+                      <option value="C">Tipus C (Camions pesats)</option>
+                      <option value="Tractor">Llicència de Vehicles Agrícoles (Tractor)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {newRole === 'OPERARI_PWA' && (
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Carnet de Conduir *</label>
+                  <label className="font-bold text-neutral-700 block mb-1">Cap de Grup Assignat (Opcional)</label>
                   <select 
-                    value={newDrivingLicense} 
-                    onChange={(e) => setNewDrivingLicense(e.target.value)} 
+                    value={newTeamLeaderId} 
+                    onChange={(e) => setNewTeamLeaderId(e.target.value)} 
                     className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-medium outline-none"
                   >
-                    <option value="Cap">Sense Carnet</option>
-                    <option value="B">Tipus B (Turismes i furgonetes petites)</option>
-                    <option value="B+E">Tipus B+E (Remolcs)</option>
-                    <option value="C1">Tipus C1 (Camions lleugers)</option>
-                    <option value="C">Tipus C (Camions pesats)</option>
-                    <option value="Tractor">Llicència de Vehicles Agrícoles (Tractor)</option>
+                    <option value="">Sense Cap de Grup (Lliure)</option>
+                    {users.filter(u => u.role === 'CAP_GRUP_OPERARI').map(leader => (
+                      <option key={leader.id} value={leader.id}>{leader.name}</option>
+                    ))}
                   </select>
                 </div>
               )}

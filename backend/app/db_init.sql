@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS usuaris (
     totp_activat BOOLEAN NOT NULL DEFAULT false,
     ip_allowlist TEXT[],
     vehicle_assignat VARCHAR(50),
+    especialitat VARCHAR(100),
+    cap_de_grup_id UUID REFERENCES usuaris(id),
     actiu BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

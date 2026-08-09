@@ -9,6 +9,8 @@ class UserBase(BaseModel):
     email: Optional[str] = None
     telefon: Optional[str] = None
     vehicle_assignat: Optional[str] = None
+    especialitat: Optional[str] = None
+    cap_de_grup_id: Optional[UUID] = None
     actiu: bool = True
 
 class UserCreate(UserBase):
@@ -23,6 +25,8 @@ class UserUpdate(UserBase):
     email: Optional[str] = None
     telefon: Optional[str] = None
     vehicle_assignat: Optional[str] = None
+    especialitat: Optional[str] = None
+    cap_de_grup_id: Optional[UUID] = None
     actiu: Optional[bool] = None
 
 class UserResponse(UserBase):
