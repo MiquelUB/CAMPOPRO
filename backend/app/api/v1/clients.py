@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Optional
 import asyncpg
 import json
+from uuid import UUID
 
 from app.dependencies import get_db
 from app.core.security import get_current_user, get_current_user_optional, TokenPayload
@@ -79,7 +80,7 @@ async def crear_client(
 
 @router.get("/{item_id}", response_model=ClientResponse)
 async def obtenir_client(
-    item_id: str,
+    item_id: UUID,
     db: asyncpg.Connection = Depends(get_db),
     current_user: TokenPayload = Depends(get_current_user)
 ):
@@ -96,7 +97,7 @@ async def obtenir_client(
 
 @router.patch("/{item_id}", response_model=ClientResponse)
 async def actualitzar_client(
-    item_id: str,
+    item_id: UUID,
     item_data: ClientUpdate,
     db: asyncpg.Connection = Depends(get_db),
     current_user: TokenPayload = Depends(get_current_user)
@@ -137,7 +138,7 @@ async def actualitzar_client(
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def esborrar_client(
-    item_id: str,
+    item_id: UUID,
     db: asyncpg.Connection = Depends(get_db),
     current_user: TokenPayload = Depends(get_current_user)
 ):
