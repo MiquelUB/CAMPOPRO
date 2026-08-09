@@ -11,8 +11,4 @@ async def get_db(conn: asyncpg.Connection = Depends(get_db_connection)) -> Async
         async def get_users(db: asyncpg.Connection = Depends(get_db)):
             ...
     """
-    try:
-        yield conn
-    except Exception as e:
-        # Handle transaction rollback or other cleanup if necessary
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database connection error")
+    yield conn

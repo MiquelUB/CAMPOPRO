@@ -7,9 +7,9 @@ from app.models.user import Usuari
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from app.core.security import get_current_user, require_super_admin, TokenPayload, hash_password, get_current_user_optional
 
-router = APIRouter(prefix="", tags=["users"])
+router = APIRouter()
 
-@router.get("", response_model=List[UserResponse])
+@router.get("/", response_model=List[UserResponse])
 async def llistar_usuaris(
     skip: int = 0,
     limit: int = 100,
@@ -31,7 +31,7 @@ async def llistar_usuaris(
     records = await db.fetch(query, *args)
     return [dict(r) for r in records]
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def crear_usuari(
     usuari: UserCreate,
     db: asyncpg.Connection = Depends(get_db)
