@@ -82,7 +82,7 @@ async def crear_client(
 async def obtenir_client(
     item_id: UUID,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM clients
@@ -105,7 +105,7 @@ async def actualitzar_client(
     item_id: UUID,
     item_data: ClientUpdate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     update_data = item_data.model_dump(exclude_unset=True)
     if not update_data:
@@ -152,7 +152,7 @@ async def actualitzar_client(
 async def esborrar_client(
     item_id: UUID,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         UPDATE clients
