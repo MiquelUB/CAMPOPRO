@@ -26,7 +26,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS usuaris (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     empresa_id UUID REFERENCES empreses(id), -- NULL for super_admin
-    rol VARCHAR(20) NOT NULL DEFAULT 'operari' CHECK (rol IN ('super_admin', 'empresari', 'cap_quadrilla', 'operari')),
+    rol VARCHAR(20) NOT NULL DEFAULT 'operari' CHECK (rol IN ('super_admin', 'empresari', 'cap_quadrilla', 'operari', 'ENGINYER_SUPERVISOR', 'CAP_PERSONAL', 'COMPTABILITAT', 'SECRETARI', 'CAP_GRUP_OPERARI', 'OPERARI_PWA')),
     nom VARCHAR(100) NOT NULL,
     telefon VARCHAR(20),
     email VARCHAR(200),

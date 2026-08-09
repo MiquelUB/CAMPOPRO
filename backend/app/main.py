@@ -40,12 +40,15 @@ async def lifespan(app: FastAPI):
                 DO $$ 
                 DECLARE 
                     constname text; 
+                    constdef text;
                 BEGIN 
-                    SELECT conname INTO constname 
+                    SELECT conname, pg_get_constraintdef(oid) INTO constname, constdef 
                     FROM pg_constraint 
                     WHERE conrelid = 'usuaris'::regclass AND contype = 'c' AND pg_get_constraintdef(oid) ILIKE '%rol%'; 
-                    IF constname IS NOT NULL THEN 
+                    
+                    IF constname IS NOT NULL AND constdef NOT ILIKE '%ENGINYER_SUPERVISOR%' THEN 
                         EXECUTE 'ALTER TABLE usuaris DROP CONSTRAINT ' || constname; 
+                        EXECUTE 'ALTER TABLE usuaris ADD CONSTRAINT usuaris_rol_check CHECK (rol IN (''super_admin'', ''empresari'', ''cap_quadrilla'', ''operari'', ''ENGINYER_SUPERVISOR'', ''CAP_PERSONAL'', ''COMPTABILITAT'', ''SECRETARI'', ''CAP_GRUP_OPERARI'', ''OPERARI_PWA''))';
                     END IF; 
                 END $$;
             """)
