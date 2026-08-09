@@ -145,6 +145,23 @@ function CreateJobForm() {
   const [jobLng, setJobLng] = useState<number>(1.8322);
   const [jobLocationName, setJobLocationName] = useState<string>('');
 
+  const handleClientSelect = (id: string) => {
+    setSelectedClientId(id);
+    if (id && clientsDb[id]) {
+      const clientLat = clientsDb[id].lat || 41.6521;
+      const clientLng = clientsDb[id].lng || 1.8322;
+      setJobLat(clientLat);
+      setJobLng(clientLng);
+      setJobLocationName(clientsDb[id].parcelPresets?.[0]?.name || '📍 Finca Principal');
+    }
+  };
+
+  const handleSelectParcelPreset = (preset: any) => {
+    setJobLat(preset.lat);
+    setJobLng(preset.lng);
+    setJobLocationName(preset.name);
+  };
+
   const [materials, setMaterials] = useState<Array<{ id: string; name: string; qty: string }>>([]);
   const [newMaterial, setNewMaterial] = useState<string>('');
   const [newMaterialQty, setNewMaterialQty] = useState<string>('');
@@ -498,15 +515,21 @@ function CreateJobForm() {
               </div>
 
               <div className="relative h-[220px] rounded-2xl overflow-hidden shadow-md border border-neutral-300">
-                <div 
-                  className="w-full h-full bg-cover bg-center transition-all" 
-                  style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCvbJjUps0q9YpuQkGaY5sRz2m_ti7khbFlM6-CHmI8ykOmRLmMra7akOY7vF9x65dHzRdZQqeacIz_LPhVHInJ6E5g_v9awm4ReTUw-3hPNQx830GX3GzrxqwDyK6kSXn8aKLHSmKwRXY8OuBTccG5OdGUf_k9PET1PNq96ySs7M2WQDY9UzJh9kW2ZeGatQwHH-6Msl2sF7P22CxWNJs7BHja5JGG0qkVly74n-qHHixvQx472LXu')` }}
-                ></div>
+                <iframe 
+                  width="100%" 
+                  height="100%" 
+                  frameBorder="0" 
+                  scrolling="no" 
+                  marginHeight={0} 
+                  marginWidth={0} 
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${jobLng-0.005},${jobLat-0.005},${jobLng+0.005},${jobLat+0.005}&layer=mapnik&marker=${jobLat},${jobLng}`}
+                  className="w-full h-full grayscale opacity-80"
+                ></iframe>
 
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-red-600 text-white p-3 rounded-full shadow-2xl animate-bounce border-2 border-white flex items-center gap-1">
+                  <div className="bg-red-600 text-white p-3 rounded-full shadow-2xl animate-bounce border-2 border-white flex items-center gap-1 mt-[-40px]">
                     <MapPin size={22} className="fill-white text-red-600" />
-                    <span className="text-xs font-bold font-mono px-1">{jobLocationName}</span>
+                    <span className="text-xs font-bold font-mono px-1">{jobLocationName || '📍 Ubicació'}</span>
                   </div>
                 </div>
 
