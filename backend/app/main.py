@@ -33,6 +33,18 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error running database migrations: {e}")
 
+    # Auto-migrate new columns for usuaris
+    try:
+        async with db_pool.pool.acquire() as conn:
+            await conn.execute('''
+                ALTER TABLE usuaris ADD COLUMN IF NOT EXISTS nif VARCHAR(20);
+                ALTER TABLE usuaris ADD COLUMN IF NOT EXISTS permis_conduir VARCHAR(50);
+                ALTER TABLE usuaris ADD COLUMN IF NOT EXISTS domicili TEXT;
+            ''')
+            logger.info("Added missing columns to usuaris table.")
+    except Exception as e:
+        logger.error(f"Error auto-migrating usuaris table: {e}")
+
     # Remove role constraint dynamically to allow frontend custom roles
     try:
         async with db_pool.pool.acquire() as conn:
