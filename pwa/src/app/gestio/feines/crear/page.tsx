@@ -48,9 +48,6 @@ interface WorkerItem {
 
 // Arrays buides: els checklist manuals de magatzem iteraran sobre aquestes.
 // Quan siguin buides no mostraran cap element (Zero Dades Fictícies).
-const WAREHOUSE_MATERIALS_DB: WarehouseMaterialItem[] = [];
-const WAREHOUSE_TOOLS_DB: WarehouseToolItem[] = [];
-const VEHICLES_FLOTA_DB: VehicleItem[] = [];
 
 const MOCK_AVATARS = ['👨‍🌾', '👷‍♂️', '🚜', '🔧', '🦺'];
 
@@ -58,17 +55,24 @@ function CreateJobForm() {
   const router = useRouter();
   
   const [FIELD_WORKERS_DB, setFieldWorkersDB] = useState<WorkerItem[]>([]);
+  const [warehouseMaterials, setWarehouseMaterials] = useState<WarehouseMaterialItem[]>([]);
+  const [warehouseTools, setWarehouseTools] = useState<WarehouseToolItem[]>([]);
 
   // Carregar els operaris de la base de dades
   useEffect(() => {
     const fetchStaff = async () => {
       try {
         const users = await apiClient.get('/users');
-        const operaris = users.filter((u: any) => u.rol === 'OPERARI' || u.rol === 'TECNIC');
+        const operaris = users.filter((u: any) => 
+          u.rol === 'OPERARI' || 
+          u.rol === 'TECNIC' || 
+          u.rol === 'OPERARI_PWA' || 
+          u.rol === 'CAP_GRUP_OPERARI'
+        );
         const mappedWorkers = operaris.map((u: any, idx: number) => ({
           id: u.id,
           name: u.nom,
-          role: u.rol,
+          role: u.rol === 'CAP_GRUP_OPERARI' ? 'Cap de Grup' : 'Operari',
           status: u.actiu ? 'DISPONIBLE' : 'VACANCES',
           avatar: MOCK_AVATARS[idx % MOCK_AVATARS.length],
           phone: u.telefon || ''
@@ -80,6 +84,43 @@ function CreateJobForm() {
       }
     };
     fetchStaff();
+  }, []);
+
+  // Fetch materials and tools
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const matRes = await apiClient.get('/magatzem/productes');
+        const materials = matRes.map((m: any) => ({
+          id: m.id,
+          code: m.codi || m.id.substring(0,6).toUpperCase(),
+          name: m.nom,
+          defaultUnit: m.unitat_mesura || 'u',
+          stock: m.stock_actual || 0,
+          location: m.ubicacio || 'Magatzem Central',
+          unitPrice: m.preu_unitari || 0,
+        }));
+        setWarehouseMaterials(materials);
+      } catch (e) {
+        console.error('Error fetching materials', e);
+      }
+
+      try {
+        const toolsRes = await apiClient.get('/eines');
+        const tools = toolsRes.map((t: any) => ({
+          id: t.id,
+          code: t.codi || t.id.substring(0,6).toUpperCase(),
+          name: t.nom,
+          brand: t.marca || 'Genèrica',
+          status: t.estat || 'OPERATIVA',
+          assignedTo: t.assignada_a_usuari_id || 'Magatzem',
+        }));
+        setWarehouseTools(tools);
+      } catch (e) {
+        console.error('Error fetching tools', e);
+      }
+    };
+    fetchInventory();
   }, []);
 
   const searchParams = useSearchParams();
@@ -458,7 +499,7 @@ function CreateJobForm() {
                   Ubicació GPS Configurable (Assignada a l'Operari)
                 </h2>
                 <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                  <Navigation size={12} /> Google Maps / Waze
+                  <Navigation size={12} /> Geolocalització PWA Mòbil
                 </span>
               </div>
 
@@ -890,7 +931,7 @@ function CreateJobForm() {
             </div>
 
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-              {WAREHOUSE_MATERIALS_DB.filter(m => m.name.toLowerCase().includes(checklistMaterialSearch.toLowerCase()) || m.code.toLowerCase().includes(checklistMaterialSearch.toLowerCase())).map((item) => {
+              {warehouseMaterials.filter(m => m.name.toLowerCase().includes(checklistMaterialSearch.toLowerCase()) || m.code.toLowerCase().includes(checklistMaterialSearch.toLowerCase())).map((item) => {
                 const isChecked = materials.some(m => m.name.toLowerCase().trim() === item.name.toLowerCase().trim());
                 return (
                   <div 
@@ -965,7 +1006,7 @@ function CreateJobForm() {
             </div>
 
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-              {WAREHOUSE_TOOLS_DB.filter(t => t.name.toLowerCase().includes(checklistToolSearch.toLowerCase()) || t.code.toLowerCase().includes(checklistToolSearch.toLowerCase())).map((item) => {
+              {warehouseTools.filter(t => t.name.toLowerCase().includes(checklistToolSearch.toLowerCase()) || t.code.toLowerCase().includes(checklistToolSearch.toLowerCase())).map((item) => {
                 const isChecked = tools.some(t => t.toLowerCase().trim() === item.name.toLowerCase().trim());
                 return (
                   <div 
