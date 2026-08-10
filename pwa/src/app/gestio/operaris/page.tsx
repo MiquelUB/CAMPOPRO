@@ -153,7 +153,7 @@ export default function OperarisDashboardPage() {
               email: u.email || '',
               status: (u.actiu ? 'DISPONIBLE' : 'VACANCES') as 'DISPONIBLE' | 'EN_FEINA' | 'VACANCES',
               isTeamLeader: u.rol === 'CAP_GRUP_OPERARI',
-              avatar: undefined,
+              avatar: '👨‍🔧',
               joiningDate: u.created_at ? u.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
               drivingLicense: u.permis_conduir || 'B',
               assignedVehicle: u.vehicle_assignat || 'Cap',
