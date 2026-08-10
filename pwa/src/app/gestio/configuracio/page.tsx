@@ -105,7 +105,8 @@ export default function ConfiguracioPage() {
             vehicle_assignat: u.vehicle_assignat,
             domicili: u.domicili,
             cap_de_grup_id: u.cap_de_grup_id
-          }));
+            };
+          });
           setUsers(mappedUsers);
         }
       } catch (e) {
@@ -198,7 +199,8 @@ export default function ConfiguracioPage() {
           vehicle_assignat: u.vehicle_assignat,
           domicili: u.domicili,
           cap_de_grup_id: u.cap_de_grup_id
-        }));
+          };
+        });
         setUsers(mappedUsers);
       }
     } catch (e) {
