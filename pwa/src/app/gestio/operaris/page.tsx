@@ -435,7 +435,7 @@ export default function OperarisDashboardPage() {
             </div>
 
             {/* Profile Section Navigation Tabs */}
-            <div className="flex bg-neutral-100 p-1.5 rounded-2xl border border-neutral-200 my-4 overflow-x-auto shrink-0 text-xs font-bold">
+            <div className="flex flex-wrap bg-neutral-100 p-1.5 rounded-2xl border border-neutral-200 my-4 gap-1 shrink-0 text-xs font-bold">
               <button
                 onClick={() => setProfileTab('info')}
                 className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap ${

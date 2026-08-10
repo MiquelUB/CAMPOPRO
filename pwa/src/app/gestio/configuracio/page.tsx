@@ -83,15 +83,20 @@ export default function ConfiguracioPage() {
       try {
         const dbUsers = await apiClient.get('/users');
         if (dbUsers && Array.isArray(dbUsers)) {
-          const mappedUsers = dbUsers.map((u: any) => ({
-            id: u.id,
-            name: u.nom,
-            nif: u.nif || '00000000X',
-            email: u.email || '',
-            role: u.rol,
-            roleLabel: u.rol, // Fallback, could map from role
-            accessType: ((u.rol === 'CAP_GRUP_OPERARI' || u.rol === 'OPERARI_PWA') ? 'PWA_MOBIL' : 'DASHBOARD_WEB') as 'DASHBOARD_WEB' | 'PWA_MOBIL',
-            lastLogin: 'Mai registrat',
+          const mappedUsers = dbUsers.map((u: any) => {
+            let mappedRole = u.rol;
+            if (u.rol === 'operari') mappedRole = 'OPERARI_PWA';
+            if (u.rol === 'cap_quadrilla') mappedRole = 'CAP_GRUP_OPERARI';
+
+            return {
+              id: u.id,
+              name: u.nom,
+              nif: u.nif || '',
+              email: u.email || '',
+              role: mappedRole,
+              roleLabel: mappedRole, // Fallback, could map from role
+              accessType: ((mappedRole === 'CAP_GRUP_OPERARI' || mappedRole === 'OPERARI_PWA') ? 'PWA_MOBIL' : 'DASHBOARD_WEB') as 'DASHBOARD_WEB' | 'PWA_MOBIL',
+              lastLogin: 'Mai registrat',
             phone: u.telefon || '',
             status: (u.actiu ? 'ACTIU' : 'REVOCAT') as 'ACTIU' | 'REVOCAT' | 'PENDENT',
             photoUrl: undefined,
@@ -171,15 +176,20 @@ export default function ConfiguracioPage() {
     try {
       const dbUsers = await apiClient.get('/users');
       if (dbUsers && Array.isArray(dbUsers)) {
-        const mappedUsers = dbUsers.map((u: any) => ({
-          id: u.id,
-          name: u.nom,
-          nif: u.nif || '00000000X',
-          email: u.email || '',
-          role: u.rol,
-          roleLabel: u.rol, // Fallback
-          accessType: ((u.rol === 'CAP_GRUP_OPERARI' || u.rol === 'OPERARI_PWA') ? 'PWA_MOBIL' : 'DASHBOARD_WEB') as 'DASHBOARD_WEB' | 'PWA_MOBIL',
-          lastLogin: 'Mai registrat',
+          const mappedUsers = dbUsers.map((u: any) => {
+            let mappedRole = u.rol;
+            if (u.rol === 'operari') mappedRole = 'OPERARI_PWA';
+            if (u.rol === 'cap_quadrilla') mappedRole = 'CAP_GRUP_OPERARI';
+
+            return {
+              id: u.id,
+              name: u.nom,
+              nif: u.nif || '',
+              email: u.email || '',
+              role: mappedRole,
+              roleLabel: mappedRole, // Fallback
+              accessType: ((mappedRole === 'CAP_GRUP_OPERARI' || mappedRole === 'OPERARI_PWA') ? 'PWA_MOBIL' : 'DASHBOARD_WEB') as 'DASHBOARD_WEB' | 'PWA_MOBIL',
+              lastLogin: 'Mai registrat',
           phone: u.telefon || '',
           status: (u.actiu ? 'ACTIU' : 'REVOCAT') as 'ACTIU' | 'REVOCAT' | 'PENDENT',
           photoUrl: undefined,
@@ -414,7 +424,7 @@ export default function ConfiguracioPage() {
                       className="p-2 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-xl font-bold transition-colors"
                       title="Editar Usuari"
                     >
-                      <span className="material-symbols-outlined text-[14px]">edit</span>
+                      <Edit3 size={14} />
                     </button>
                     <button 
                       onClick={() => alert(`Enviat correu de restabliment de contrasenya a ${u.email}`)}
