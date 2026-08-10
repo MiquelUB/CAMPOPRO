@@ -73,6 +73,32 @@ export default function MagatzemDashboard() {
           }));
           setProveidors(mappedSuppliers);
         }
+
+        const dbEines = await apiClient.get('/eines');
+        if (dbEines && Array.isArray(dbEines)) {
+          const mappedEines = dbEines.map((t: any) => ({
+            id: t.id,
+            code: t.codi || t.id.substring(0, 6).toUpperCase(),
+            name: t.nom,
+            brand: t.marca || 'Genèrica',
+            assignedTo: t.assignada_a_usuari_id ? 'Treballador/a' : 'Magatzem Central',
+            returnConditionStatus: t.estat || 'OPERATIVA'
+          }));
+          setEines(mappedEines);
+        }
+
+        const dbVehicles = await apiClient.get('/vehicles');
+        if (dbVehicles && Array.isArray(dbVehicles)) {
+          const mappedVehicles = dbVehicles.map((v: any) => ({
+            id: v.id,
+            plate: v.matricula,
+            name: v.marca_model || v.matricula,
+            type: v.tipus || 'Furgoneta',
+            counterValue: v.quilometratge_actual || 0,
+            unitType: 'Km'
+          }));
+          setVehicles(mappedVehicles);
+        }
       } catch (e) {
         console.error("Error fetching magatzem data", e);
       }
