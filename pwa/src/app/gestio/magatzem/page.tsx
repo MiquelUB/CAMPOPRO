@@ -116,7 +116,7 @@ export default function MagatzemDashboard() {
     if (isNaN(val) || val < 0) return;
     const updated = materials.map(m => m.id === id ? { ...m, unitPrice: val } : m);
     setMaterials(updated);
-    saveStoredMaterials(updated);
+    // saveStoredMaterials(updated); // Obsolet
   };
 
   // Database 2: Eines
@@ -560,7 +560,7 @@ Return a single JSON object with this structure:
       alert('Tiquet assignat i analitzat, però les analítiques encara no s\'estan desant a la base de dades!');
 
     setProveidors(updatedProveidors);
-    saveStoredProveidors(updatedProveidors);
+    setProveidors(updatedProveidors);
 
     // 2. Process Warehouse Stock Update (ONLY Delivery Notes / Albarans add stock!)
     let updatedMaterials = [...materials];
@@ -646,7 +646,7 @@ Return a single JSON object with this structure:
       // API backend call pending
       alert("Comanda finalitzada. Falta integrar la gravació de stock directament a la API!");
       setMaterials(updatedMaterials);
-      saveStoredMaterials(updatedMaterials);
+      // saveStoredMaterials(updatedMaterials); // Obsolet
     }
 
     // 3. User Feedback Notification & Automatic Tab Switch
@@ -786,7 +786,6 @@ Return a single JSON object with this structure:
     setNewSupplier({ nif: '', name: '', category: '', contactPerson: '', phone: '', email: '', address: '', products: '', discountValue: '0%', paymentMethod: 'Transferència', paymentTerms: '30 dies', iban: '' });
     const updated = [item, ...proveidors];
     setProveidors(updated);
-    saveStoredProveidors(updated);
     setNewProv({ name: '', nif: '', contact: '', phone: '', email: '', address: '', products: '', discount: '', paymentMethod: '' });
     setShowAddModal(false);
   };
