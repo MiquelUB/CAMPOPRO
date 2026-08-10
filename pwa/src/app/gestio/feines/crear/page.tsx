@@ -148,6 +148,8 @@ function CreateJobForm() {
   
   // Form States
   const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [clientSearch, setClientSearch] = useState<string>('');
+  const [showClientDropdown, setShowClientDropdown] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -410,20 +412,64 @@ function CreateJobForm() {
                 </span>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-label-caps text-xs text-on-surface-variant">SELECCIONAR CLIENT</label>
-                <select
-                  value={selectedClientId}
-                  onChange={(e) => handleClientSelect(e.target.value)}
-                  className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                >
-                  <option value="">-- Selecciona un client --</option>
-                  {Object.entries(clientsDb).map(([id, c]) => (
-                    <option key={id} value={id}>
-                      {c.name} — {c.nif} ({c.contact})
-                    </option>
-                  ))}
-                </select>
+              <div className="flex flex-col gap-1 relative">
+                <label className="font-label-caps text-xs text-on-surface-variant">SELECCIONAR CLIENT (BUSCADOR)</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Cerca per nom, NIF o telèfon..."
+                    value={clientSearch}
+                    onFocus={() => setShowClientDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+                    onChange={(e) => {
+                      setClientSearch(e.target.value);
+                      setShowClientDropdown(true);
+                      if (selectedClientId) setSelectedClientId('');
+                    }}
+                    className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  {showClientDropdown && !selectedClientId && (
+                    <div className="absolute top-full mt-2 w-full max-h-60 overflow-y-auto bg-white border border-outline-variant/30 rounded-xl shadow-lg z-10 flex flex-col p-2 gap-1">
+                      {Object.entries(clientsDb)
+                        .filter(([id, c]) => 
+                           c.name.toLowerCase().includes(clientSearch.toLowerCase()) || 
+                           (c.nif && c.nif.toLowerCase().includes(clientSearch.toLowerCase())) ||
+                           (c.phone && c.phone.includes(clientSearch))
+                        )
+                        .map(([id, c]) => (
+                          <div 
+                            key={id}
+                            className="p-3 hover:bg-primary/5 rounded-lg cursor-pointer flex flex-col"
+                            onClick={() => {
+                              handleClientSelect(id);
+                              setClientSearch(c.name);
+                              setShowClientDropdown(false);
+                            }}
+                          >
+                            <span className="font-bold text-sm text-primary">{c.name}</span>
+                            <span className="text-xs text-on-surface-variant">NIF: {c.nif} • Tel: {c.phone}</span>
+                          </div>
+                      ))}
+                      {Object.entries(clientsDb).filter(([id, c]) => 
+                           c.name.toLowerCase().includes(clientSearch.toLowerCase()) || 
+                           (c.nif && c.nif.toLowerCase().includes(clientSearch.toLowerCase())) ||
+                           (c.phone && c.phone.includes(clientSearch))
+                        ).length === 0 && (
+                          <div className="p-3 text-sm text-on-surface-variant italic text-center">Cap client trobat.</div>
+                      )}
+                    </div>
+                  )}
+                  {selectedClientId && (
+                     <button 
+                       type="button" 
+                       onClick={() => { setSelectedClientId(''); setClientSearch(''); }} 
+                       className="absolute right-4 top-[14px] text-on-surface-variant hover:text-error text-lg"
+                       title="Netejar selecció"
+                     >
+                       ✕
+                     </button>
+                  )}
+                </div>
               </div>
 
               {activeClient ? (

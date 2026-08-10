@@ -449,7 +449,7 @@ Return a single JSON object with this structure:
 
 
 
-  const applyAIAuditToDatabase = () => {
+  const applyAIAuditToDatabase = async () => {
     if (!aiAuditResult) return;
 
     const supplierLegalName = aiAuditResult.supplier.legalName || aiAuditResult.supplier.name;
@@ -565,8 +565,8 @@ Return a single JSON object with this structure:
     // 2. Process Warehouse Stock Update (ONLY Delivery Notes / Albarans add stock!)
     let updatedMaterials = [...materials];
 
-    if (!isInvoice) {
-      aiAuditResult.items?.forEach((item: any) => {
+    if (!isInvoice && aiAuditResult.items) {
+      for (const item of aiAuditResult.items) {
         const itemCode = item.code?.trim() || '';
         const itemDesc = (item.description || item.name || '').trim();
         const itemQty = Number(item.quantity || item.qty) || 1;
@@ -582,71 +582,92 @@ Return a single JSON object with this structure:
 
         if (existingMatIndex >= 0) {
           const existingMat = updatedMaterials[existingMatIndex];
-          const newStockTotal = (existingMat.stockTotal || 0) + itemQty;
-          const newStockAvailable = newStockTotal - (existingMat.stockCheckedOut || 0);
+          try {
+            await apiClient.post('/magatzem/moviments', {
+              producte_id: existingMat.id,
+              tipus: 'ENTRADA',
+              quantitat: itemQty,
+              motiu: `Albarà #${aiAuditResult.docNumber}`
+            });
+            const newStockTotal = (existingMat.stockTotal || 0) + itemQty;
+            const newStockAvailable = newStockTotal - (existingMat.stockCheckedOut || 0);
 
-          updatedMaterials[existingMatIndex] = {
-            ...existingMat,
-            stockTotal: newStockTotal,
-            stock: newStockAvailable,
-            purchasePrice: itemUnitPrice,
-            marginPercent: itemMargin,
-            salePrice: itemSalePrice,
-            unitPrice: itemSalePrice,
-            lastPurchaseDate: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
-            purchaseHistory: [
-              {
-                id: `ph-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-                date: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
-                docNumber: aiAuditResult.docNumber,
-                qty: itemQty,
-                unitPrice: itemUnitPrice,
-                supplierName: supplierLegalName
-              },
-              ...(existingMat.purchaseHistory || [])
-            ]
-          };
+            updatedMaterials[existingMatIndex] = {
+              ...existingMat,
+              stockTotal: newStockTotal,
+              stock: newStockAvailable,
+              purchasePrice: itemUnitPrice,
+              marginPercent: itemMargin,
+              salePrice: itemSalePrice,
+              unitPrice: itemSalePrice,
+              lastPurchaseDate: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
+              purchaseHistory: [
+                {
+                  id: `ph-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                  date: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
+                  docNumber: aiAuditResult.docNumber,
+                  qty: itemQty,
+                  unitPrice: itemUnitPrice,
+                  supplierName: supplierLegalName
+                },
+                ...(existingMat.purchaseHistory || [])
+              ]
+            };
+          } catch (e) {
+            console.error("Error updating stock", e);
+          }
         } else {
           // Create NEW Material Item in Warehouse Database
-          const newMaterial: MaterialItem = {
-            id: `m-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            code: itemCode || `MAT-${Math.floor(100 + Math.random() * 900)}`,
-            name: itemDesc,
-            supplierSku: item.supplierSku || `REF-SUP-${itemCode}`,
-            stockTotal: itemQty,
-            stockCheckedOut: 0,
-            stock: itemQty,
-            minStock: 5,
-            unit: item.unitOfMeasure || item.unit || 'u',
-            location: 'Magatzem Central',
-            supplier: supplierLegalName,
-            supplierNif: supplierNif,
-            purchasePrice: itemUnitPrice,
-            marginPercent: itemMargin,
-            salePrice: itemSalePrice,
-            unitPrice: itemSalePrice,
-            isService: itemIsService,
-            lastPurchaseDate: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
-            workerMovementHistory: [],
-            purchaseHistory: [
-              {
-                id: `ph-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-                date: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
-                docNumber: aiAuditResult.docNumber,
-                qty: itemQty,
-                unitPrice: itemUnitPrice,
-                supplierName: supplierLegalName
-              }
-            ]
-          };
-          updatedMaterials = [newMaterial, ...updatedMaterials];
-        }
-      });
+          try {
+            const newProd = await apiClient.post('/magatzem/productes', {
+              nom: itemDesc,
+              codi_barres: itemCode || null,
+              descripcio: `Subministrat per ${supplierLegalName}`,
+              preu_unitari: itemUnitPrice,
+              unitat_mesura: item.unitOfMeasure || item.unit || 'u',
+              estoc_minim: 5,
+              estoc_actual: itemQty
+            });
 
-      // API backend call pending
-      alert("Comanda finalitzada. Falta integrar la gravació de stock directament a la API!");
+            const newMaterial: MaterialItem = {
+              id: newProd.id,
+              code: newProd.codi_barres || `MAT-${Math.floor(100 + Math.random() * 900)}`,
+              name: newProd.nom,
+              supplierSku: item.supplierSku || `REF-SUP-${itemCode}`,
+              stockTotal: itemQty,
+              stockCheckedOut: 0,
+              stock: itemQty,
+              minStock: 5,
+              unit: newProd.unitat_mesura || 'u',
+              location: 'Magatzem Central',
+              supplier: supplierLegalName,
+              supplierNif: supplierNif,
+              purchasePrice: itemUnitPrice,
+              marginPercent: itemMargin,
+              salePrice: itemSalePrice,
+              unitPrice: itemSalePrice,
+              isService: itemIsService,
+              lastPurchaseDate: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
+              workerMovementHistory: [],
+              purchaseHistory: [
+                {
+                  id: `ph-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                  date: aiAuditResult.date || new Date().toLocaleDateString('ca-ES'),
+                  docNumber: aiAuditResult.docNumber,
+                  qty: itemQty,
+                  unitPrice: itemUnitPrice,
+                  supplierName: supplierLegalName
+                }
+              ]
+            };
+            updatedMaterials = [newMaterial, ...updatedMaterials];
+          } catch (e) {
+            console.error("Error creating product", e);
+          }
+        }
+      }
+
       setMaterials(updatedMaterials);
-      // saveStoredMaterials(updatedMaterials); // Obsolet
     }
 
     // 3. User Feedback Notification & Automatic Tab Switch
