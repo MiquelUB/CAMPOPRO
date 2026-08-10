@@ -57,6 +57,7 @@ function CreateJobForm() {
   const [FIELD_WORKERS_DB, setFieldWorkersDB] = useState<WorkerItem[]>([]);
   const [warehouseMaterials, setWarehouseMaterials] = useState<WarehouseMaterialItem[]>([]);
   const [warehouseTools, setWarehouseTools] = useState<WarehouseToolItem[]>([]);
+  const [vehiclesFlota, setVehiclesFlota] = useState<VehicleItem[]>([]);
 
   // Carregar els operaris de la base de dades
   useEffect(() => {
@@ -118,6 +119,21 @@ function CreateJobForm() {
         setWarehouseTools(tools);
       } catch (e) {
         console.error('Error fetching tools', e);
+      }
+
+      try {
+        const vehiclesRes = await apiClient.get('/vehicles');
+        const v = vehiclesRes.map((v: any) => ({
+          id: v.id,
+          plate: v.matricula,
+          name: v.marca_model || v.matricula,
+          type: v.tipus || 'Furgoneta',
+          status: v.estat || 'OPERATIU',
+          availableDate: 'Ara mateix'
+        }));
+        setVehiclesFlota(v);
+      } catch (e) {
+        console.error('Error fetching vehicles', e);
       }
     };
     fetchInventory();
@@ -827,7 +843,7 @@ function CreateJobForm() {
                   onChange={(e) => setAssignedVehicle(e.target.value)}
                   className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary outline-none cursor-pointer text-sm"
                 >
-                  {VEHICLES_FLOTA_DB.length > 0 ? VEHICLES_FLOTA_DB.map(v => (
+                  {vehiclesFlota.length > 0 ? vehiclesFlota.map(v => (
                     <option key={v.plate} value={`${v.name} (${v.plate})`}>{v.name} ({v.plate}) — {v.status === 'OPERATIU' ? '🟢 Operatiu' : '🛠️ En Revisió'}</option>
                   )) : (
                     <option value="">-- Cap vehicle disponible --</option>
