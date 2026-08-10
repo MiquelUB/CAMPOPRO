@@ -3,7 +3,7 @@ from typing import List, Optional
 import asyncpg
 
 from app.dependencies import get_db
-from app.core.security import get_current_user, TokenPayload
+from app.core.security import get_current_user_optional, TokenPayload
 from app.schemas.magatzem import Producte, ProducteCreate, MovimentMagatzem, MovimentMagatzemCreate
 
 router = APIRouter()
@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/productes", response_model=List[Producte])
 async def get_productes(
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM producte
@@ -24,7 +24,7 @@ async def get_productes(
 async def create_producte(
     item: ProducteCreate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         INSERT INTO producte (
@@ -54,7 +54,7 @@ async def create_producte(
 @router.get("/productes/stock_minim", response_model=List[Producte])
 async def get_productes_stock_minim(
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM producte
@@ -67,7 +67,7 @@ async def get_productes_stock_minim(
 async def create_moviment(
     item: MovimentMagatzemCreate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     # Retrieve product to check stock
     producte = await db.fetchrow(
@@ -120,7 +120,7 @@ async def create_moviment(
 @router.get("/moviments", response_model=List[MovimentMagatzem])
 async def get_moviments(
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM moviment_magatzem

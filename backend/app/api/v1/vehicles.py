@@ -4,7 +4,7 @@ import asyncpg
 from datetime import date, timedelta
 
 from app.dependencies import get_db
-from app.core.security import get_current_user, TokenPayload
+from app.core.security import get_current_user_optional, TokenPayload
 from app.schemas.flota import Vehicle, VehicleCreate, VehicleUpdate, AlertaVehicle
 
 router = APIRouter()
@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/", response_model=List[Vehicle])
 async def get_vehicles(
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM vehicles
@@ -25,7 +25,7 @@ async def get_vehicles(
 async def get_alertes_vehicles(
     dies_avis: int = 30,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     alertes = []
     data_limit = date.today() + timedelta(days=dies_avis)
@@ -78,7 +78,7 @@ async def get_alertes_vehicles(
 async def get_vehicle(
     id: str,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM vehicles
@@ -93,7 +93,7 @@ async def get_vehicle(
 async def create_vehicle(
     vehicle: VehicleCreate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         INSERT INTO vehicles (
@@ -131,7 +131,7 @@ async def update_vehicle(
     id: str,
     vehicle: VehicleUpdate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     existing = await db.fetchrow(
         "SELECT * FROM vehicles WHERE id = $1 AND empresa_id = $2",

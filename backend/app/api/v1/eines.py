@@ -3,7 +3,7 @@ from typing import List
 import asyncpg
 
 from app.dependencies import get_db
-from app.core.security import get_current_user, TokenPayload
+from app.core.security import get_current_user_optional, TokenPayload
 from app.schemas.flota import Eina, EinaCreate, EinaUpdate, ReassignacioEina
 
 router = APIRouter()
@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/", response_model=List[Eina])
 async def get_eines(
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM eines
@@ -24,7 +24,7 @@ async def get_eines(
 async def get_eina(
     id: str,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         SELECT * FROM eines
@@ -39,7 +39,7 @@ async def get_eina(
 async def create_eina(
     eina: EinaCreate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         INSERT INTO eines (
@@ -70,7 +70,7 @@ async def update_eina(
     id: str,
     eina: EinaUpdate,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     # Retrieve existing
     existing = await db.fetchrow(
@@ -106,7 +106,7 @@ async def update_eina(
 async def delete_eina(
     id: str,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     # Soft delete
     query = """
@@ -123,7 +123,7 @@ async def reassignar_eina(
     id: str,
     reassignacio: ReassignacioEina,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     # Verify user exists? In a real system maybe, here we rely on FK
     query = """
