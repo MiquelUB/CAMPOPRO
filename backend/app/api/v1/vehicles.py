@@ -166,7 +166,7 @@ async def update_vehicle(
 async def delete_vehicle(
     id: str,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
         UPDATE vehicles SET actiu = false
