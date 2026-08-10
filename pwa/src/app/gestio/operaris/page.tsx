@@ -146,16 +146,16 @@ export default function OperarisDashboardPage() {
             .map((u: any) => ({
               id: u.id,
               name: u.nom,
-              nif: '00000000X',
+              nif: u.nif || '00000000X',
               role: u.rol === 'CAP_GRUP_OPERARI' ? 'Cap de Grup' : 'Oficial',
-              specialty: 'General',
+              specialty: u.especialitat || 'General',
               phone: u.telefon || '600 00 00 00',
               email: u.email || '',
-              status: u.actiu ? 'DISPONIBLE' : 'BAIXA',
+              status: (u.actiu ? 'DISPONIBLE' : 'VACANCES') as 'DISPONIBLE' | 'EN_FEINA' | 'VACANCES',
               isTeamLeader: u.rol === 'CAP_GRUP_OPERARI',
               avatar: undefined,
-              joiningDate: u.created_at.split('T')[0],
-              drivingLicense: 'B',
+              joiningDate: u.created_at ? u.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              drivingLicense: u.permis_conduir || 'B',
               assignedVehicle: u.vehicle_assignat || 'Cap',
               stats: { completedJobs: 0, hoursLoggedThisMonth: 0, kmDrivenThisMonth: 0, clientRatingAverage: 0, incidentsReported: 0, toolIncidentsCount: 0 },
               ratingBreakdown: { professionalism: 0, punctuality: 0, customerTreatment: 0 },
@@ -267,41 +267,6 @@ export default function OperarisDashboardPage() {
             />
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
           </div>
-          <button 
-            onClick={() => {
-              const newWorker = {
-                id: `op_${Date.now()}`,
-                name: 'Nou Operari',
-                nif: '',
-                role: 'Oficial 1a',
-                specialty: 'General',
-                phone: '',
-                email: '',
-                status: 'DISPONIBLE' as const,
-                isTeamLeader: false,
-                avatar: `👨‍🔧`,
-                joiningDate: new Date().toISOString().split('T')[0],
-                drivingLicense: 'B',
-                assignedVehicle: 'Cap',
-                stats: { completedJobs: 0, hoursLoggedThisMonth: 0, kmDrivenThisMonth: 0, clientRatingAverage: 0, incidentsReported: 0, toolIncidentsCount: 0 },
-                ratingBreakdown: { professionalism: 0, punctuality: 0, customerTreatment: 0 },
-                workShiftHistory: [],
-                clientReviews: [],
-                completedJobsHistory: [],
-                assignedTools: [],
-                toolIncidentsHistory: [],
-                vehicleKmHistory: [],
-                reportedFieldIncidents: []
-              };
-              saveWorkers([...workers, newWorker]);
-              setSelectedWorker(newWorker);
-              setProfileTab('info');
-            }}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap"
-          >
-            <UserPlus size={18} />
-            Donar d'Alta
-          </button>
         </div>
       </div>
 

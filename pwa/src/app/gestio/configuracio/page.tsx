@@ -22,6 +22,11 @@ interface StaffUser {
   phone: string;
   status: 'ACTIU' | 'REVOCAT' | 'PENDENT';
   photoUrl?: string;
+  especialitat?: string;
+  permis_conduir?: string;
+  vehicle_assignat?: string;
+  domicili?: string;
+  cap_de_grup_id?: string;
 }
 
 interface CorporateCard {
@@ -81,15 +86,20 @@ export default function ConfiguracioPage() {
           const mappedUsers = dbUsers.map((u: any) => ({
             id: u.id,
             name: u.nom,
-            nif: '00000000X', // TODO: backend camp nif
+            nif: u.nif || '00000000X',
             email: u.email || '',
             role: u.rol,
             roleLabel: u.rol, // Fallback, could map from role
-            accessType: (u.rol === 'CAP_GRUP_OPERARI' || u.rol === 'OPERARI_PWA') ? 'PWA_MOBIL' : 'DASHBOARD_WEB',
+            accessType: ((u.rol === 'CAP_GRUP_OPERARI' || u.rol === 'OPERARI_PWA') ? 'PWA_MOBIL' : 'DASHBOARD_WEB') as 'DASHBOARD_WEB' | 'PWA_MOBIL',
             lastLogin: 'Mai registrat',
             phone: u.telefon || '',
             status: u.actiu ? 'ACTIU' : 'INACTIU',
-            photoUrl: undefined
+            photoUrl: undefined,
+            especialitat: u.especialitat,
+            permis_conduir: u.permis_conduir,
+            vehicle_assignat: u.vehicle_assignat,
+            domicili: u.domicili,
+            cap_de_grup_id: u.cap_de_grup_id
           }));
           setUsers(mappedUsers);
         }
@@ -120,6 +130,7 @@ export default function ConfiguracioPage() {
   const [botLogMessage, setBotLogMessage] = useState<string | null>(null);
 
   // New User Form State
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newNif, setNewNif] = useState('');
@@ -130,6 +141,8 @@ export default function ConfiguracioPage() {
   const [newDrivingLicense, setNewDrivingLicense] = useState('B');
   const [newSpecialty, setNewSpecialty] = useState('General');
   const [newTeamLeaderId, setNewTeamLeaderId] = useState('');
+  const [newDomicili, setNewDomicili] = useState('');
+  const [newVehicleAssignat, setNewVehicleAssignat] = useState('Cap');
 
   const generatePassword = (role: StaffUser['role'] = newRole) => {
     if (role === 'CAP_GRUP_OPERARI' || role === 'OPERARI_PWA') {
@@ -154,7 +167,37 @@ export default function ConfiguracioPage() {
     }
   };
 
+  const loadData = async () => {
+    try {
+      const dbUsers = await apiClient.get('/users');
+      if (dbUsers && Array.isArray(dbUsers)) {
+        const mappedUsers = dbUsers.map((u: any) => ({
+          id: u.id,
+          name: u.nom,
+          nif: u.nif || '00000000X',
+          email: u.email || '',
+          role: u.rol,
+          roleLabel: u.rol, // Fallback
+          accessType: ((u.rol === 'CAP_GRUP_OPERARI' || u.rol === 'OPERARI_PWA') ? 'PWA_MOBIL' : 'DASHBOARD_WEB') as 'DASHBOARD_WEB' | 'PWA_MOBIL',
+          lastLogin: 'Mai registrat',
+          phone: u.telefon || '',
+          status: u.actiu ? 'ACTIU' : 'INACTIU',
+          photoUrl: undefined,
+          especialitat: u.especialitat,
+          permis_conduir: u.permis_conduir,
+          vehicle_assignat: u.vehicle_assignat,
+          domicili: u.domicili,
+          cap_de_grup_id: u.cap_de_grup_id
+        }));
+        setUsers(mappedUsers);
+      }
+    } catch (e) {
+      console.error("Error loading staff from backend", e);
+    }
+  };
+
   const handleOpenAddModal = () => {
+    setEditingUserId(null);
     setNewName('');
     setNewEmail('');
     setNewNif('');
@@ -164,13 +207,31 @@ export default function ConfiguracioPage() {
     setNewTeamLeaderId('');
     setNewPhoto(null);
     setNewDrivingLicense('B');
+    setNewDomicili('');
+    setNewVehicleAssignat('Cap');
     generatePassword('ENGINYER_SUPERVISOR');
+    setShowAddModal(true);
+  };
+
+  const handleOpenEditModal = (u: StaffUser) => {
+    setEditingUserId(u.id);
+    setNewName(u.name);
+    setNewEmail(u.email);
+    setNewNif(u.nif || '');
+    setNewPhone(u.phone);
+    setNewRole(u.role);
+    setNewSpecialty(u.especialitat || 'General');
+    setNewTeamLeaderId(u.cap_de_grup_id || '');
+    setNewDrivingLicense(u.permis_conduir || 'B');
+    setNewDomicili(u.domicili || '');
+    setNewVehicleAssignat(u.vehicle_assignat || 'Cap');
+    setNewPassword(''); // Keep empty if not changing password
     setShowAddModal(true);
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName || !newEmail) return;
+    if (!newName) return;
 
     const isMobileOnlyRole = newRole === 'CAP_GRUP_OPERARI' || newRole === 'OPERARI_PWA';
     const computedAccess: StaffUser['accessType'] = isMobileOnlyRole ? 'PWA_MOBIL' : 'DASHBOARD_WEB';
@@ -182,41 +243,37 @@ export default function ConfiguracioPage() {
     else if (newRole === 'CAP_GRUP_OPERARI') roleLabelText = 'Cap de Grup (Només PWA Mòbil)';
     else if (newRole === 'OPERARI_PWA') roleLabelText = 'Operari de Camp (Només PWA Mòbil)';
 
+    const payload: any = {
+      nom: newName,
+      rol: newRole,
+      email: newEmail,
+      telefon: newPhone || '600 00 00 00',
+      nif: newNif,
+      vehicle_assignat: isMobileOnlyRole ? newVehicleAssignat : undefined,
+      especialitat: newSpecialty,
+      cap_de_grup_id: newTeamLeaderId || undefined,
+      actiu: true,
+      permis_conduir: newDrivingLicense,
+      domicili: newDomicili
+    };
+    if (newPassword) {
+      payload.password = newPassword;
+      payload.pin = newPassword;
+    }
+
     try {
-      // POST al backend (Base de dades PostgreSQL)
-      const nouUsuari = await apiClient.post('/users', {
-        nom: newName,
-        rol: newRole,
-        email: newEmail,
-        telefon: newPhone || '600 00 00 00',
-        vehicle_assignat: isMobileOnlyRole ? 'Cap' : undefined,
-        especialitat: newSpecialty,
-        cap_de_grup_id: newTeamLeaderId || undefined,
-        actiu: true,
-        password: newPassword,
-        pin: newPassword // Per simplificar el PIN
-      });
-
-      const newUserObj: StaffUser = {
-        id: nouUsuari.id,
-        name: nouUsuari.nom,
-        nif: newNif || '00000000X',
-        email: nouUsuari.email,
-        role: nouUsuari.rol,
-        roleLabel: roleLabelText,
-        accessType: computedAccess,
-        lastLogin: 'Mai registrat',
-        phone: nouUsuari.telefon,
-        status: nouUsuari.actiu ? 'ACTIU' : 'INACTIU',
-        photoUrl: undefined
-      };
-
-      setUsers([...users, newUserObj]);
+      if (editingUserId) {
+        await apiClient.patch(`/users/${editingUserId}`, payload);
+        alert(`S'han guardat els canvis de ${newName}.`);
+      } else {
+        await apiClient.post('/users', payload);
+        alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText} a la base de dades.\n\nAccés: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}\n\nLliureu aquestes credencials al treballador:\n📧 Email: ${newEmail}\n🔑 Contrasenya: ${newPassword}`);
+      }
+      
+      await loadData();
       setShowAddModal(false);
-
-      alert(`✨ Nou usuari "${newName}" creat com a ${roleLabelText} a la base de dades.\n\nAccés: ${computedAccess === 'DASHBOARD_WEB' ? '💻 Dashboard Web' : '📱 PWA Mòbil'}\n\nLliureu aquestes credencials al treballador:\n📧 Email: ${newEmail}\n🔑 Contrasenya: ${newPassword}`);
     } catch (e) {
-      console.error("Error creating user in backend", e);
+      console.error("Error saving user in backend", e);
       alert("Error guardant l'usuari a la base de dades.");
     }
   };
@@ -408,11 +465,19 @@ export default function ConfiguracioPage() {
                     <h4 className="font-bold text-neutral-900 text-sm">{u.name}</h4>
                     <span className="text-xs text-primary font-semibold block">{u.roleLabel}</span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-                    u.accessType === 'DASHBOARD_WEB' ? 'bg-purple-100 text-purple-900' : 'bg-emerald-100 text-emerald-900'
-                  }`}>
-                    {u.accessType === 'DASHBOARD_WEB' ? '💻 Accés Web' : '📱 Accés PWA'}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${
+                      u.accessType === 'DASHBOARD_WEB' ? 'bg-purple-100 text-purple-900' : 'bg-emerald-100 text-emerald-900'
+                    }`}>
+                      {u.accessType === 'DASHBOARD_WEB' ? '💻 Accés Web' : '📱 Accés PWA'}
+                    </span>
+                    <button 
+                      onClick={() => handleOpenEditModal(u)}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-bold underline"
+                    >
+                      Editar
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2 bg-neutral-50 p-3 rounded-2xl border border-neutral-200">
@@ -745,7 +810,7 @@ export default function ConfiguracioPage() {
           <form onSubmit={handleAddUser} className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-neutral-200 space-y-4">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-3">
               <h3 className="font-bold text-neutral-900 text-base flex items-center gap-2">
-                <UserPlus size={20} className="text-primary" /> Donar d'Alta Nou Personal o Enginyer
+                <UserPlus size={20} className="text-primary" /> {editingUserId ? 'Editar Personal' : "Donar d'Alta Nou Personal o Enginyer"}
               </h3>
               <button type="button" onClick={() => setShowAddModal(false)} className="text-neutral-400 hover:text-neutral-700">
                 <X size={22} />
@@ -771,7 +836,7 @@ export default function ConfiguracioPage() {
 
               <div>
                 <label className="font-bold text-neutral-700 block mb-1">Correu Corporatiu (Usuari d'accés) *</label>
-                <input required type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="laura.fonts@campopro.cat" className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-medium outline-none focus:border-primary" />
+                <input required={!editingUserId} type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="laura.fonts@campopro.cat" className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-medium outline-none focus:border-primary" />
               </div>
 
               <div>
@@ -783,7 +848,7 @@ export default function ConfiguracioPage() {
                     <RefreshCw size={10} /> Generar nova clau
                   </button>
                 </div>
-                <input required type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={newRole === 'CAP_GRUP_OPERARI' || newRole === 'OPERARI_PWA' ? "123456" : "Contrasenya"} className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-mono text-primary font-bold outline-none focus:border-primary tracking-widest" />
+                <input required={!editingUserId} type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={newRole === 'CAP_GRUP_OPERARI' || newRole === 'OPERARI_PWA' ? "123456" : "Contrasenya"} className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl font-mono text-primary font-bold outline-none focus:border-primary tracking-widest" />
               </div>
 
               <div>
