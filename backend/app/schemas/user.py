@@ -11,6 +11,9 @@ class UserBase(BaseModel):
     vehicle_assignat: Optional[str] = None
     especialitat: Optional[str] = None
     cap_de_grup_id: Optional[UUID] = None
+    nif: Optional[str] = None
+    permis_conduir: Optional[str] = None
+    domicili: Optional[str] = None
     actiu: bool = True
 
 class UserCreate(UserBase):
@@ -27,6 +30,9 @@ class UserUpdate(UserBase):
     vehicle_assignat: Optional[str] = None
     especialitat: Optional[str] = None
     cap_de_grup_id: Optional[UUID] = None
+    nif: Optional[str] = None
+    permis_conduir: Optional[str] = None
+    domicili: Optional[str] = None
     actiu: Optional[bool] = None
 
 class UserResponse(UserBase):

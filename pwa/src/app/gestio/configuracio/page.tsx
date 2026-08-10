@@ -410,6 +410,13 @@ export default function ConfiguracioPage() {
 
                   <div className="col-span-1 text-right flex justify-end gap-1">
                     <button 
+                      onClick={() => handleOpenEditModal(u)}
+                      className="p-2 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-xl font-bold transition-colors"
+                      title="Editar Usuari"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">edit</span>
+                    </button>
+                    <button 
                       onClick={() => alert(`Enviat correu de restabliment de contrasenya a ${u.email}`)}
                       className="p-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold transition-colors"
                       title="Reset Contrasenya"

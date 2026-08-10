@@ -38,9 +38,9 @@ async def crear_usuari(
     current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
-        INSERT INTO usuaris (empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, actiu, password_hash, pin_hash)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        RETURNING id, empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, actiu, created_at, updated_at
+        INSERT INTO usuaris (empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, nif, permis_conduir, domicili, actiu, password_hash, pin_hash)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING id, empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, nif, permis_conduir, domicili, actiu, created_at, updated_at
     """
     password_hash = hash_password(usuari.password) if usuari.password else None
     pin_hash = hash_password(usuari.pin) if usuari.pin else None
@@ -56,6 +56,9 @@ async def crear_usuari(
             usuari.vehicle_assignat,
             usuari.especialitat,
             usuari.cap_de_grup_id,
+            usuari.nif,
+            usuari.permis_conduir,
+            usuari.domicili,
             usuari.actiu,
             password_hash,
             pin_hash
@@ -71,7 +74,7 @@ async def obtenir_usuari(
     current_user: TokenPayload = Depends(get_current_user_optional)
 ):
     query = """
-        SELECT id, empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, actiu, created_at, updated_at
+        SELECT id, empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, nif, permis_conduir, domicili, actiu, created_at, updated_at
         FROM usuaris
         WHERE id = $1
     """
@@ -110,7 +113,7 @@ async def actualitzar_usuari(
         UPDATE usuaris
         SET {set_query}, updated_at = NOW()
         WHERE id = $1
-        RETURNING id, empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, actiu, created_at, updated_at
+        RETURNING id, empresa_id, rol, nom, telefon, email, vehicle_assignat, especialitat, cap_de_grup_id, nif, permis_conduir, domicili, actiu, created_at, updated_at
     """
     record = await db.fetchrow(query, user_id, *values)
     return dict(record)
