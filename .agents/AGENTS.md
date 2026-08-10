@@ -8,3 +8,10 @@
 4. **COMPROVACIÓ PRÈVIA:** Abans de proposar o modificar qualsevol arxiu, llegeix i assegura't que no estàs injectant dades "de demostració".
 
 Consulta sempre aquesta regla abans de crear components de UI o de processar dades de backend/localStorage.
+
+# REGLES DE DESPLEGAMENT I GITHUB
+
+1. **NO TREBALLEM EN LOCAL:** El desplegament es fa a GitHub per a que Easypanel ho pugi automàticament. L'usuari no treballa ni comprova els canvis en local.
+2. **NO DEMANIS FER GIT PULL:** Està completament prohibit demanar a l'usuari que faci `git pull origin main` al seu ordinador per comprovar res, ja que no hi ha entorn local.
+3. **PUSH OBLIGATORI:** En finalitzar qualsevol canvi o tasca, és obligatori fer un `git commit` i un `git push origin main` automàticament, abans d'informar a l'usuari.
+4. **NOM DEL COMMIT:** En la resposta, informa sempre del nom exacte de l'últim commit (el missatge del commit) que has pujat a `main`, perquè l'usuari el pugui verificar a Easypanel/GitHub.
