@@ -1,89 +1,76 @@
-# 🚀 DISSENY D'ARQUITECTURA MULTI-VERTICAL & WHITE-LABEL (CAMPOPRO, ELECTRICPRO, HYDROPRO, ETC.)
+# 🚀 ARQUITECTURA MULTI-VERTICAL & DISSENY CAMALEÓ (BRANDING DINÀMIC AMB CAMPOPRO, ELECTRICPRO, HYDROPRO)
 
 ---
 
-## 📌 DESCRIPCIÓ GENERAL
-Aquest document recull la planificació estratègica per transformar el repositori actual en un **Sistema Multivertical Modular i Marca Blanca (White-Label)**. 
-
-L'objectiu és permetre generar diferents variants comercials del producte (**CampoPro**, **ElectricPro**, **HydroPro**, **BuildingPro**) a partir d'un sol repositori central, sense duplicar codi ni haver de mantenir diferents projectes per separat.
+## 📌 DESCRIPCIÓ GENERAL & PRICIPI D'IDENTITAT
+Aquest document recull la planificació estratègica corregida per transformar el repositori en una **Suite Multivertical amb Disseny Camaleó (Chameleon UI Engine)**.
 
 ---
 
-## 🏗️ 1. ARQUITECTURA MONOREPO MODULAR (SINGLE-CORE MULTI-VERTICAL)
+## 🦎 1. EL PRINCIPI DEL DISSENY CAMALEÓ (CHAMELEON BRANDING ENGINE)
 
-En lloc de crear múltiples repositoris independents (que obligarien a duplicar les millores de Veri*factu, la PWA mòbil o el fitxatge de jornada a cada projecte), adoptem una **Arquitectura Concentrica Modular**:
+**Regla d'Or:** L'aplicació NO té colors ni logos de marca fixos per vertical. L'aplicació actua com un **Camaleó**:
+- **S'adapta al 100% als colors corporatius i al logo de l'Empresa Compradora.**
+- Quan una empresa compradora (*ex: Agro Riera SL, Finca Vallès, Electricitat Ponent*) s'adona d'alta a CampoPro/ElectricPro, puja el seu **logo corporatiu** i selecciona els seus **colors de marca (Color Primari, Secundari i Accent)**.
+- La interfície sencera (PWA Mòbil d'operaris, Dashboard Web d'enginyers, PDFs de factures Veri*factu, notificacions de Telegram i pantalles de login) **es transforma com un camaleó** adoptant els colors i la marca d'aquesta empresa.
+
+### 🎨 Com Funciona el Engine Camaleó:
+1. **Pujada de Logo Corporatiu:** L'empresa puja la seva imatge corporativa (`logo.png` / `logo.svg`).
+2. **Extracció i Injecció Dinàmica de Palette (Tokens CSS/HSL):**
+   - `--color-primary`: Color corporatiu principal del client.
+   - `--color-secondary`: Color d'accent / fons de targetes.
+   - `--color-brand-contrast`: Text d'alt contrast calculat automàticament.
+3. **Sentiment d'App Propia:** Tant els operaris de camp a la PWA com els clients a la web senten que estan utilitzant el programari natiu de la seva pròpia empresa.
+
+---
+
+## 🏗️ 2. SEPARACIÓ ENTRE "DISSENY CAMALEÓ" I "VERTICAL TÈCNICA"
+
+Mentre que l'aparença visual (colors i logo) la decideix el **Disseny Camaleó de l'Empresa Compradora**, la **Vertical** decideix la **Terminologia Tècnica, el Magatzem i els Prompts de l'IA**:
 
 ```
-                              ┌─────────────────────────────────────────┐
-                              │ 🧠 CORE ENGINE (REPOSITORI CENTRAL)    │
-                              │   • Sistema de Facturació Veri*factu   │
-                              │   • PWA Mòbil d'Operaris & Fitxatge     │
-                              │   • Integració amb IA Local (LM Studio) │
-                              │   • Superadmin B2B & Gestió de Llicències│
-                              └────────────────────┬────────────────────┘
-                                                   │
-                ┌──────────────────────────────────┼──────────────────────────────────┐
-                ▼                                  ▼                                  ▼
-      🌾 VERTICAL CAMPOPRO               ⚡ VERTICAL ELECTRICPRO               💧 VERTICAL HYDROPRO
-   (Serveis Agrícoles & Reg)            (Instal·lacions Elèctriques)          (Fontaneria & Bombeig)
-   • Verd Agrícola (#1b4332)            • Groc/Blau Elèctric (#f59e0b)        • Blau Cel/Turquesa (#0284c7)
-   • Terminologia: Finces, Tractors     • Terminologia: Quadres, kW, Cabling  • Terminologia: Bombes, Bar, Cabal
-   • Prompt IA: Hidràulica/Adobat       • Prompt IA: Proteccions/Boletins     • Prompt IA: Pressió/Tuberies
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🦎 DISSENY CAMALEÓ (APARENÇA VISUAL DEL CLIENT COMPRADOR)                              │
+│   • Logo de l'Empresa Compradora (ex: Agro Riera SL / Finca Vallès)                    │
+│   • Palette de Colors Corporatius Personalitzats (Tokens CSS HSL)                      │
+│   • Adaptació de PDFs, Telegram i PWA a la Marca del Client                            │
+└───────────────────────────────────┬────────────────────────────────────────────────────┘
+                                    │ (Aplicat a qualsevol vertical)
+                ┌───────────────────┴───────────────────┐
+                ▼                                       ▼
+      🌾 VERTICAL CAMPOPRO                     ⚡ VERTICAL ELECTRICPRO
+   (Especialització Agrícola)                (Especialització Elèctrica)
+   • Vocabulari: Finques, Parcel·les, Reg   • Vocabulari: Quadres, kW, Cabling
+   • Magatzem: Canonades PE, Fertilitzant   • Magatzem: Magnetotèrmics, Cables
+   • Prompt IA: Càlcul de Reg/Tractors       • Prompt IA: Proteccions/Boletins
 ```
 
 ---
 
-## 🎨 2. COMPONENTS DE PERSONALITZACIÓ DINÀMICA PER VERTICAL
+## ⚙️ 3. DADES CONFIGURABLES PER COMPRADOR AL SUPERADMIN (`/superadmin`)
 
-Cada versió comercial de la suite adaptarà automàticament 4 capes:
+Per a cada empresa compradora de la suite, des del panell de Superadmin es configurarà:
 
-### A. Capa d'Identitat i Tematització (White-Label UI):
-- **Logo i Favicon:** Configurables per vertical (`campopro-logo.svg`, `electricpro-logo.svg`).
-- **Paleta de Colors CSS/Variables:**
-  - **CampoPro:** Tonalitats verdoses i terroses.
-  - **ElectricPro:** Tonalitats blaves, amber/groc i negre industrial.
-  - **HydroPro:** Tonalitats blaves marines i turquesa.
-
-### B. Capa de Terminologia i Conceptes de Negoci:
-- Les etiquetes de la PWA i del Dashboard s'adapten dinàmicament segons la vertical:
-  - *CampoPro:* "Finques", "Parcel·les", "Hectàrees", "Tractors", "Fitosanitaris".
-  - *ElectricPro:* "Quadres Elèctrics", "Escomeses", "kW Contractats", "Furgonetes Tècniques", "Boletins".
-  - *HydroPro:* "Estacions de Bombeig", "Canonades", "Cabal m³/h", "Pressió Bar", "Valvulería".
-
-### C. Capa d'Intel·ligència Artificial Especialitzada (Copilot Prompts):
-- El mateix System Prompt v2 carregarà una **matriu d'especialització** segons la vertical:
-  - *CampoPro Prompt:* Especialitzat en càlcul de reg, tractors, fittings de PE i fertilitzants.
-  - *ElectricPro Prompt:* Especialitzat en seccions de cable, magnetotèrmics, diferencials i mesuradors d'aïllament.
-
-### D. Capa de Magatzem i Tarifes de Referència:
-- Catàleg inicial d'articles i eines adaptat a la vertical triada.
+1. **🎨 Paràmetres del Engine Camaleó:**
+   - `logo_url`: Imatge del logo corporatiu.
+   - `primary_color_hex`: Color primari de la marca (ex: `#1b4332`, `#0284c7`, `#7c3aed`).
+   - `secondary_color_hex`: Color secundari d'accent.
+2. **🌾 Selection de Vertical Tècnica:**
+   - `vertical_id`: `CAMPOPRO` (Agrícola & Reg) | `ELECTRICPRO` (Instal·lacions Elèctriques) | `HYDROPRO` (Fontaneria) | `BUILDINGPRO` (Edificació).
+3. **👥 Llicències i Quadrilles:**
+   - Nombre de colles d'operaris autoritzades a la PWA mòbil.
+4. **🖥️ Node d'IA Privat:**
+   - URL/IP del seu servidor LM Studio local.
 
 ---
 
-## 👑 3. GESTIÓ MULTI-VERTICAL DES DEL PANELL SUPERADMIN (`/superadmin`)
+## 🗓️ FULL DE RUTA CORREGIT PER FASES
 
-Al panell de Superadmin, com a propietari del programari, podràs:
-
-1. **Crear o Habilitar Verticals per a un Comprador:**
-   - Quan dones d'alta una empresa compradora, selecciones quines verticals té llicenciades:
-     - `[✓] CampoPro (Agrícola & Reg)`
-     - `[✓] ElectricPro (Manteniment Elèctric)`
-     - `[ ] HydroPro (Fontaneria)`
-2. **Assignar Dominis o Subdominis Marca Blanca:**
-   - Possibilitat d'assignar la URL corporativa del client (ex: `https://riera.campopro.cat` o `https://valles.electricpro.cat`).
-3. **Control Centralitzat de Millores:**
-   - Qualsevol actualització de seguretat, millora de la PWA mòbil o canvi en la llei Veri*factu s'aplica simultàniament a totes les verticals amb un sol `git push`.
+- **FASE 1:** Implementació del **Engine de Disseny Camaleó** (Injecció dinàmica de variables CSS `--primary` i `--secondary` des de les dades de l'empresa compradora).
+- **FASE 2:** Mòdul de pujada de Logo Corporatiu i adaptació automàtica del logo a la capçalera de la PWA, al Dashboard i als PDFs de factures Veri*factu.
+- **FASE 3:** Diccionari de Terminologia Tècnica per Vertical (`CAMPOPRO` vs `ELECTRICPRO`).
+- **FASE 4:** Prompts adaptatius del Copilot d'IA segons la vertical tècnica seleccionada.
 
 ---
 
-## 🗓️ FULL DE RUTA D'IMPLEMENTACIÓ PER FASES (ROADMAP)
-
-- **FASE 1:** Creació de l'arxiu central de configuració de Verticals (`config/verticals.json`).
-- **FASE 2:** Implementació del sistema de variables de color CSS / Tailwind per a la tematització automàtica.
-- **FASE 3:** Adaptació dels selectors de terminologia a la PWA d'operaris i al Dashboard.
-- **FASE 4:** Especialització dels Prompts del Copilot d'IA segons la vertical activa.
-- **FASE 5:** Integració de la selecció de vertical al panell de Superadmin B2B.
-
----
-
-*Document d'especificació d'arquitectura multivertical creat el 26/08/2026 a docs/PLANIFICACIO_ARQUITECTURA_MULTIVERTICAL.md*
+*Document corregit el 26/08/2026 i guardat a docs/PLANIFICACIO_ARQUITECTURA_MULTIVERTICAL.md*
