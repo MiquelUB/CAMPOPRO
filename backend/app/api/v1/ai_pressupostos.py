@@ -148,9 +148,9 @@ async def generar_pressupost_ai(
     db: asyncpg.Connection = Depends(get_db),
     current_user: TokenPayload = Depends(get_current_user),
 ):
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY not configured")
+    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY") or "lm-studio"
+    ai_url = os.getenv("AI_API_URL", "http://localhost:1234/v1/chat/completions")
+    ai_model = os.getenv("AI_MODEL_NAME", "qwen2.5-7b-instruct-1m")
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -163,7 +163,7 @@ async def generar_pressupost_ai(
         # We will loop to handle multiple tool calls (up to 5 iterations to avoid infinite loops)
         for _ in range(5):
             payload = {
-                "model": "openai/gpt-4o-mini",
+                "model": ai_model,
                 "messages": messages,
                 "tools": TOOLS,
                 "tool_choice": "auto",
@@ -175,9 +175,10 @@ async def generar_pressupost_ai(
                 "Content-Type": "application/json"
             }
 
-            resp = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=60.0)
+            resp = await client.post(ai_url, headers=headers, json=payload, timeout=60.0)
             if resp.status_code != 200:
-                logger.error(f"OpenRouter Error: {resp.text}")
+                logger.error(f"Error API IA ({ai_url}): {resp.text}")
+                raise HTTPException(status_code=502, detail=f"Error de l'API d'IA: {resp.text}")
                 raise HTTPException(status_code=502, detail="Error de la API IA.")
                 
             resp_data = resp.json()
