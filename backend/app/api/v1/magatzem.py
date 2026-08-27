@@ -26,6 +26,25 @@ async def create_producte(
     db: asyncpg.Connection = Depends(get_db),
     current_user: TokenPayload = Depends(get_current_user_optional)
 ):
+    codi = item.codi_barres.strip() if item.codi_barres and item.codi_barres.strip() else None
+    
+    # Check if product with same barcode already exists for this empresa
+    if codi:
+        existing = await db.fetchrow(
+            "SELECT * FROM producte WHERE empresa_id = $1 AND codi_barres = $2",
+            current_user.empresa_id, codi
+        )
+        if existing:
+            # Update existing product stock and price
+            query_update = """
+                UPDATE producte 
+                SET estoc_actual = estoc_actual + $1, preu_unitari = $2, updated_at = now()
+                WHERE id = $3
+                RETURNING *
+            """
+            rec = await db.fetchrow(query_update, item.estoc_actual, item.preu_unitari, existing['id'])
+            return dict(rec)
+
     query = """
         INSERT INTO producte (
             empresa_id, categoria_id, nom, codi_barres, descripcio,
@@ -40,7 +59,7 @@ async def create_producte(
             current_user.empresa_id,
             item.categoria_id,
             item.nom,
-            item.codi_barres,
+            codi,
             item.descripcio,
             item.preu_unitari,
             item.unitat_mesura,
@@ -49,7 +68,8 @@ async def create_producte(
         )
         return dict(record)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error creant producte: {e}")
+        raise HTTPException(status_code=400, detail=f"Error creant producte: {str(e)}")
 
 @router.get("/productes/stock_minim", response_model=List[Producte])
 async def get_productes_stock_minim(

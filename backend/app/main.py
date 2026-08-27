@@ -89,6 +89,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Set up CORS at top level
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logger.error(f"Validation error on {request.method} {request.url}")
@@ -149,15 +158,6 @@ app.include_router(ai_evaluator_router, prefix=f"{settings.API_V1_STR}/ai-evalua
 app.include_router(notificacions_router, prefix=f"{settings.API_V1_STR}/notificacions", tags=["notificacions"])
 app.include_router(ai_pressupostos_router, prefix=f"{settings.API_V1_STR}/ai-agent", tags=["ai-agent"])
 setup_rate_limiting(app)
-
-# Set up CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.get("/health")
 @limiter.exempt
