@@ -31,6 +31,11 @@ export async function POST(req: NextRequest) {
     const prompt = `Analitza aquest document (un albarà o factura) i extreu-ne tota la informació.
 IMPORTANT: NO t'inventis cap DADA ni cap NIF. Si alguna dada no està present, retorna null. Si el proveïdor no té NIF visible, retorna null a nif. Extreu totes les línies d'articles.
 
+REGLA CRÍTICA DE CLASSIFICACIÓ PER A CADA ARTICLE (tipus):
+1. "EINA": Eines manuals o elèctriques, equips duradors o maquinària de treball que NO es consumeixen ni s'instal·len de forma permanent a l'obra (Exemples: Tisores de podar, serrells, taladros, soldadores, claus d'ungla, alicates, martells, bombes de buit portàtils, desbroçadores).
+2. "MATERIAL": Productes consumibles o materials que queden instal·lats permanentment a la finca/obra (Exemples: Tuberies, connectors, fittings, abonaments, fertilitzants, cargols, cinta, cable, olis, filtres, electrovàlvules).
+3. "SERVEI": Transport, mà d'obra, lloguer o gestió.
+
 RETORNA NOMÉS UN JSON VÀLID (sense text addicional) amb la següent estructura exacta:
 {
   "es_factura": boolean,
@@ -47,7 +52,8 @@ RETORNA NOMÉS UN JSON VÀLID (sense text addicional) amb la següent estructura
       "codi": "string o null",
       "descripcio": "string",
       "quantitat": number,
-      "preu_unitari": number
+      "preu_unitari": number,
+      "tipus": "EINA" | "MATERIAL" | "SERVEI"
     }
   ]
 }`;

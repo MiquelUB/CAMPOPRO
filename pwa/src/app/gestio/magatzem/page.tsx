@@ -365,11 +365,15 @@ Return a single JSON object with this structure:
           const qty = item.quantitat || 1;
           const uPrice = item.preu_unitari || 0;
           const code = item.codi || `MAT-${Math.floor(100 + Math.random() * 900)}`;
+          const desc = item.descripcio || 'Article';
+          const isToolItem = item.tipus === 'EINA' || /tisora|poda|podar|serrell|taladro|soldadora|clau|alicate|martell|desbroçadora/i.test(desc);
+          const isServiceItem = item.tipus === 'SERVEI' || /transport|mà d'obra|lloguer|gestió/i.test(desc);
+
           return {
             code: code,
             supplierSku: `REF-SUP-${code}`,
-            description: item.descripcio || 'Article sense descripció',
-            name: item.descripcio || 'Article',
+            description: desc,
+            name: desc,
             quantity: qty,
             qty: qty,
             unitOfMeasure: 'u',
@@ -380,7 +384,9 @@ Return a single JSON object with this structure:
             salePrice: calculateSalePriceFromCommercialMargin(uPrice, 30),
             itemTotal: qty * uPrice,
             total: qty * uPrice,
-            isService: false
+            isTool: isToolItem,
+            isService: isServiceItem,
+            tipus: isToolItem ? 'EINA' : isServiceItem ? 'SERVEI' : 'MATERIAL'
           };
         });
       }
