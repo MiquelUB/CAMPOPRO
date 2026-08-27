@@ -38,9 +38,31 @@ async def create_feina(
     db: asyncpg.Connection = Depends(get_db),
     current_user: TokenPayload = Depends(get_current_user_optional),
 ):
+    import json
     empresa_id = current_user.empresa_id
     codi = await generate_feina_codi(db, empresa_id)
     
+    # If client_id is None, assign first client for this empresa or default
+    client_id = feina_in.client_id
+    if not client_id:
+        client_id = await db.fetchval("SELECT id FROM clients WHERE empresa_id = $1 LIMIT 1", empresa_id)
+        if not client_id:
+            # Create a default general client if none exists
+            client_id = await db.fetchval(
+                "INSERT INTO clients (empresa_id, nom, telefon, tipus) VALUES ($1, $2, $3, $4) RETURNING id",
+                empresa_id, "Client General / Manteniment", "930000000", "particular"
+            )
+
+    # Process date
+    data_prog = feina_in.data_programada or datetime.date.today()
+    if isinstance(data_prog, str):
+        try:
+            data_prog = datetime.datetime.strptime(data_prog.split('T')[0], "%Y-%m-%d").date()
+        except Exception:
+            data_prog = datetime.date.today()
+
+    mat_json = json.dumps(feina_in.material_assignat) if feina_in.material_assignat is not None else '[]'
+
     query = """
         INSERT INTO feines (
             empresa_id, client_id, codi, titol, descripcio, tipus, estat,
@@ -48,23 +70,24 @@ async def create_feina(
             hora_inici_prevista, hora_fi_prevista, hores_estimades,
             material_assignat, area_m2
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, $17)
         RETURNING *
     """
     try:
         record = await db.fetchrow(
             query,
-            empresa_id, feina_in.client_id, codi, feina_in.titol,
-            feina_in.descripcio, feina_in.tipus, feina_in.estat or "pendent",
+            empresa_id, client_id, codi, feina_in.titol,
+            feina_in.descripcio or feina_in.titol, feina_in.tipus or "manteniment", feina_in.estat or "pendent",
             feina_in.prioritat or 2, feina_in.lat, feina_in.lng,
-            feina_in.adreca, feina_in.data_programada,
+            feina_in.adreca or "", data_prog,
             feina_in.hora_inici_prevista, feina_in.hora_fi_prevista,
-            feina_in.hores_estimades, feina_in.material_assignat,
+            feina_in.hores_estimades or 1.0, mat_json,
             feina_in.area_m2
         )
         return dict(record)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error creant feina: {e}")
+        raise HTTPException(status_code=400, detail=f"Error creant feina: {str(e)}")
 
 @router.get("/")
 async def read_feines(

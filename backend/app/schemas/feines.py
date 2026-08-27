@@ -4,20 +4,21 @@ from datetime import date, time, datetime
 from uuid import UUID
 
 class FeinaBase(BaseModel):
-    client_id: UUID
+    client_id: Optional[UUID] = None
     titol: str
     descripcio: Optional[str] = None
-    tipus: str
-    prioritat: int = 2
+    tipus: Optional[str] = "manteniment"
+    estat: Optional[str] = "pendent"
+    prioritat: Optional[int] = 2
     lat: Optional[float] = None
     lng: Optional[float] = None
     adreca: Optional[str] = None
-    data_programada: date
+    data_programada: Optional[date] = None
     hora_inici_prevista: Optional[time] = None
     hora_fi_prevista: Optional[time] = None
     hores_estimades: Optional[float] = None
     percentatge_incidencia_estimat: Optional[float] = 0
-    material_assignat: Optional[List[dict]] = []
+    material_assignat: Optional[List[Any]] = []
     planol_id: Optional[UUID] = None
     area_m2: Optional[float] = None
     observacions: Optional[str] = None

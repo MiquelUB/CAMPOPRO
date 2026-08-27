@@ -197,12 +197,54 @@ function CreateJobForm() {
   const [hasBlueprint, setHasBlueprint] = useState<boolean>(false);
   const [blueprintName, setBlueprintName] = useState<string>('');
   const [assignedVehicle, setAssignedVehicle] = useState<string>('');
-  const [proposedStartDate, setProposedStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [proposedStartDate, setProposedStartDate] = useState<string>(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${mins}`;
+  });
 
   // GPS Coordinates
   const [jobLat, setJobLat] = useState<number>(41.6521);
   const [jobLng, setJobLng] = useState<number>(1.8322);
   const [jobLocationName, setJobLocationName] = useState<string>('');
+
+  const parseCoordinatesInput = (text: string, isLatTarget: boolean) => {
+    if (!text) return;
+    const clean = text.trim();
+    if (clean.includes(',') && clean.split(',').length === 2 && !clean.includes(' ')) {
+      const parts = clean.split(',');
+      const pLat = parseFloat(parts[0].trim());
+      const pLng = parseFloat(parts[1].trim());
+      if (!isNaN(pLat) && !isNaN(pLng)) {
+        setJobLat(pLat);
+        setJobLng(pLng);
+        setJobLocationName('📍 Coordenades Enganxades (GPS)');
+        return;
+      }
+    } else if (clean.includes(' ') || (clean.includes(',') && clean.split(',').length > 2)) {
+      const parts = clean.split(/[, \t]+/).filter(Boolean);
+      if (parts.length >= 2) {
+        const pLat = parseFloat(parts[0].replace(',', '.'));
+        const pLng = parseFloat(parts[1].replace(',', '.'));
+        if (!isNaN(pLat) && !isNaN(pLng)) {
+          setJobLat(pLat);
+          setJobLng(pLng);
+          setJobLocationName('📍 Coordenades Enganxades (GPS)');
+          return;
+        }
+      }
+    }
+    const val = parseFloat(clean.replace(',', '.'));
+    if (!isNaN(val)) {
+      if (isLatTarget) setJobLat(val);
+      else setJobLng(val);
+      setJobLocationName('📍 Punt Personalitzat (Manual)');
+    }
+  };
 
   const handleClientSelect = (id: string) => {
     setSelectedClientId(id);
@@ -261,7 +303,7 @@ function CreateJobForm() {
     if (exists) {
       setMaterials(materials.filter(m => m.name.toLowerCase().trim() !== item.name.toLowerCase().trim()));
     } else {
-      setMaterials([...materials, { id: `${Date.now()}`, name: item.name, qty: item.defaultUnit }]);
+      setMaterials([...materials, { id: `${Date.now()}`, name: item.name, qty: '1u' }]);
     }
   };
 
@@ -296,9 +338,9 @@ function CreateJobForm() {
       
       if (data.pressupost.materials) {
         setMaterials(data.pressupost.materials.map((m: any) => ({
-          id: m.material_id,
+          id: m.material_id || `${Date.now()}-${Math.random()}`,
           name: m.nom,
-          qty: m.quantitat.toString()
+          qty: m.quantitat ? `${m.quantitat}u` : '1u'
         })));
       }
       
@@ -315,51 +357,39 @@ function CreateJobForm() {
   };
 
   const handleSaveOrder = async () => {
-    // VALIDACIÓ DE RANG DE TEMPS PER OPERARI (HORES)
-    if (activeWorker && proposedStartDate) {
-      try {
-        const savedTasks = await apiClient.get('/feines');
-        
-        const newStart = new Date(proposedStartDate).getTime();
-        const newEnd = newStart + (Number(estimatedHours) || 1) * 3600000; // hours to ms
+    try {
+      const datePart = proposedStartDate ? proposedStartDate.split('T')[0] : new Date().toISOString().split('T')[0];
+      const timePart = proposedStartDate && proposedStartDate.includes('T') ? proposedStartDate.split('T')[1] : '08:00';
 
-        const hasConflict = savedTasks.some((t: any) => {
-          const existingStart = new Date(t.data_programada || t.created_at).getTime();
-          const existingEnd = existingStart + (Number(t.hores_estimades) || 1) * 3600000;
-          return newStart < existingEnd && newEnd > existingStart;
-        });
+      const payload = {
+        client_id: selectedClientId && clientsDb[selectedClientId] ? selectedClientId : null,
+        titol: description.trim() ? description.trim().substring(0, 100) : 'Nova Ordre de Treball',
+        descripcio: description.trim() || 'Tasca de camp',
+        tipus: 'manteniment',
+        estat: 'pendent',
+        prioritat: priority === 'URGENT' ? 1 : (priority === 'NORMAL' ? 2 : 3),
+        lat: jobLat,
+        lng: jobLng,
+        adreca: activeClient?.address || '',
+        data_programada: datePart,
+        hora_inici_prevista: timePart,
+        hores_estimades: Number(estimatedHours) || 1,
+        material_assignat: materials.map(m => ({ nom: m.name, quantitat: m.qty }))
+      };
 
-        if (hasConflict) {
-          console.warn("Possible encavallament horari detectat");
-        }
+      await apiClient.post('/feines', payload);
 
-        // Desa la nova tasca al backend
-        await apiClient.post('/feines', {
-          client_id: activeClient ? activeClient.id : null,
-          titol: description || 'Tasca generada',
-          descripcio: description,
-          tipus: 'manteniment',
-          estat: 'pendent',
-          prioritat: priority === 'URGENT' ? 1 : (priority === 'NORMAL' ? 2 : 3),
-          lat: jobLat,
-          lng: jobLng,
-          adreca: activeClient?.address || '',
-          data_programada: proposedStartDate,
-          hores_estimades: Number(estimatedHours) || 1
-        });
-
-        const clientName = activeClient ? activeClient.name : 'el client seleccionat';
-        alert(`Ordre de Treball creada amb èxit per a ${clientName}!`);
-        
-        if (selectedClientId) {
-          router.push(`/gestio/clients/${selectedClientId}`);
-        } else {
-          router.push(`/gestio`);
-        }
-      } catch (e) {
-        console.error(e);
-        alert("S'ha produït un error en desar la feina al servidor.");
+      const clientName = activeClient ? activeClient.name : 'el client';
+      alert(`🟢 Ordre de Treball creada amb èxit per a ${clientName}!`);
+      
+      if (selectedClientId) {
+        router.push(`/gestio/clients/${selectedClientId}`);
+      } else {
+        router.push(`/gestio`);
       }
+    } catch (e: any) {
+      console.error("Error desant feina:", e);
+      alert(`S'ha produït un error en desar la feina: ${e?.message || 'Revisa la connexió'}`);
     }
   };
 
@@ -586,15 +616,20 @@ function CreateJobForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-neutral-50 p-4 rounded-2xl border border-neutral-200">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-neutral-600 uppercase flex items-center gap-1">
-                    <Compass size={14} className="text-emerald-600" /> Latitud GPS (Lat)
+                    <Compass size={14} className="text-emerald-600" /> Latitud GPS (Enganxa coordenades aquí)
                   </label>
                   <input
-                    type="number"
-                    step="0.0001"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="ex: 41.6521 o 41.6521, 1.8322"
                     value={jobLat}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pasted = e.clipboardData.getData('text');
+                      parseCoordinatesInput(pasted, true);
+                    }}
                     onChange={(e) => {
-                      setJobLat(parseFloat(e.target.value) || 0);
-                      setJobLocationName('📍 Punt Personalitzat (Manual)');
+                      parseCoordinatesInput(e.target.value, true);
                     }}
                     className="p-3 bg-white border border-neutral-300 rounded-xl text-sm font-bold text-neutral-900 outline-none focus:border-emerald-600"
                   />
@@ -605,12 +640,17 @@ function CreateJobForm() {
                     <Compass size={14} className="text-emerald-600" /> Longitud GPS (Lng)
                   </label>
                   <input
-                    type="number"
-                    step="0.0001"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="ex: 1.8322"
                     value={jobLng}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pasted = e.clipboardData.getData('text');
+                      parseCoordinatesInput(pasted, false);
+                    }}
                     onChange={(e) => {
-                      setJobLng(parseFloat(e.target.value) || 0);
-                      setJobLocationName('📍 Punt Personalitzat (Manual)');
+                      parseCoordinatesInput(e.target.value, false);
                     }}
                     className="p-3 bg-white border border-neutral-300 rounded-xl text-sm font-bold text-neutral-900 outline-none focus:border-emerald-600"
                   />
@@ -705,7 +745,9 @@ function CreateJobForm() {
                   <input
                     type="datetime-local"
                     value={proposedStartDate}
-                    onChange={(e) => setProposedStartDate(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value) setProposedStartDate(e.target.value);
+                    }}
                     className="w-full bg-surface-container-low p-3.5 rounded-xl border border-outline-variant font-body-strong text-primary text-center text-sm outline-none"
                   />
                 </div>
@@ -735,10 +777,21 @@ function CreateJobForm() {
                   {materials.map((mat) => (
                     <span key={mat.id} className="bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm">
                       <Package size={14} className="text-emerald-700" />
-                      {mat.name} ({mat.qty})
+                      <span>{mat.name}</span>
+                      <input 
+                        type="text" 
+                        value={mat.qty}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setMaterials(materials.map(m => m.id === mat.id ? { ...m, qty: val } : m));
+                        }}
+                        placeholder="Quantitat (ex: 5 sacs)"
+                        className="w-20 px-2 py-0.5 bg-white border border-emerald-300 rounded-lg text-center font-bold text-emerald-900 outline-none text-xs"
+                      />
                       <button 
+                        type="button"
                         onClick={() => setMaterials(materials.filter((m) => m.id !== mat.id))}
-                        className="hover:text-red-600 transition-colors ml-1"
+                        className="hover:text-red-600 transition-colors ml-1 font-bold text-sm"
                       >
                         ×
                       </button>
