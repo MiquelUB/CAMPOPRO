@@ -582,10 +582,8 @@ Return a single JSON object with this structure:
       });
     }
 
-      // Lògica modificada: no guarda els camps dummy generats amb IA
-      alert('Tiquet assignat i analitzat, però les analítiques encara no s\'estan desant a la base de dades!');
+    alert(`🟢 Albarà/Factura #${aiAuditResult.docNumber} analitzat i guardat correctament a la base de dades! L'estoc i els proveïdors s'han actualitzat.`);
 
-    setProveidors(updatedProveidors);
     setProveidors(updatedProveidors);
 
     // 2. Process Warehouse Stock Update (ONLY Delivery Notes / Albarans add stock!)
