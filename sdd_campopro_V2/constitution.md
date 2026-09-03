@@ -47,10 +47,10 @@ El motor de facturación debe cumplir con los requisitos de la normativa españo
 - Todo PDF emitido incluirá su respectivo código QR estructurado y encadenamiento inmutable mediante **Hash SHA-256** referenciando el registro de la factura anterior.
 - Modo de conservación local seguro e inalterable.
 
-### 6. Arquitectura Asíncrona y Almacenamiento en S3
+### 6. Arquitectura Asíncrona y Almacenamiento Local Seguro
 - **FastAPI Asíncrono (`asyncpg`)**: Ningún endpoint HTTP debe bloquear el event loop.
 - **Procesamiento en Segundo Plano**: Las tareas pesadas (generación de informes PDF con ReportLab, peticiones OCR a LM Studio, envíos al Bot de Telegram) se delegan obligatoriamente a **Celery + Redis**.
-- **Gestión de Archivos:** Las fotos de incidencias, fotos de odómetros y planos técnicos versionados se almacenan en **AWS S3 mediante URLs prefirmadas**, optimizando la base de datos para almacenar únicamente metadatos y geolocalizaciones.
+- **Gestión de Archivos (Sin AWS S3):** Se elimina la dependencia de AWS S3. Todos los datos del cliente, facturas, órdenes de pedido, imágenes de incidencias, fotos de odómetros y planos técnicos versionados se almacenan directamente en discos duros locales vinculados al Mini PC donde reside la IA, implementando copias de seguridad semanales automáticas cada domingo. La base de datos almacena exclusivamente metadatos, rutas locales relativas y geolocalizaciones.
 
 ### 7. Gobernanza SDD (Spec-Driven Development)
 Ninguna línea de código de producción o refactorización se escribirá sin seguir el ciclo:

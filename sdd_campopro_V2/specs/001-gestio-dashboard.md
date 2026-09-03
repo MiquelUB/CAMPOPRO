@@ -1,90 +1,102 @@
 # Spec 001 — Dashboard de Control Operativo Diario (/gestio)
 
 ## Contexto y objetivo
-El Dashboard de Gestión es el centro neurálgico y operativo de inicio de jornada para la oficina técnica y la dirección de la empresa. Proporciona una visión instantánea ("en 5 segundos") del estado global del negocio, la actividad de las cuadrillas en campo, las incidencias urgentes y las necesidades de mantenimiento preventivo, actuando como radar de supervisión y trampolín de navegación hacia las áreas detalladas del sistema sin permitir sobrecarga de capas ni manipulación directa de datos maestros.
+El Dashboard de Gestión es el centro neurálgico y operativo de inicio de jornada para la oficina técnica y la dirección de la empresa. Proporciona una visión instantánea ("en 5 segundos") del estado global del negocio, la actividad de las cuadrillas en campo, las incidencias urgentes y las necesidades de mantenimiento preventivo. 
+
+Actúa como radar de supervisión y trampolín de navegación hacia las áreas detalladas del sistema con una jerarquía limpia de 3 niveles, sin sobrecarga de capas ni duplicación de flujos de edición complejos. Todo el almacenamiento de archivos (audios, fotos, albaranes y planos) reside en almacenamiento local seguro (servidor/Mini PC con nodo de IA) con copias de seguridad semanales programadas cada domingo (sin dependencia de AWS S3).
 
 ---
 
-## Usuarios / actores y Matriz de Acceso
-El sistema adapta dinámicamente la información visible en función del rol autenticado:
+## Usuarios / actores y Matriz de Acceso (Zero-Trust)
+El backend garantiza el aislamiento de datos por rol mediante endpoints específicos y esquemas segregados (la seguridad nunca recae en la mera ocultación visual de la interfaz):
 
-- **Boss (Gerencia / Propietario):** Acceso total e irrestricto a todas las métricas operativas, de personal, mantenimiento y financieras (totales de facturación, cobros pendientes y márgenes).
-- **Ingeniero / Supervisor Técnico:** Acceso total a la operativa de campo, cuadrillas, incidencias, mapa y mantenimiento; **con bloqueo estricto de visualización** sobre el Kanban de Facturación y métricas económicas agregadas de la empresa.
-- **Secretaria / RRHH:** Acceso al canal de notificaciones Telegram, registro horario/presencia de operarios y validación fiscal Veri*factu individual de partes completados, sin acceso a la rentabilidad global ni contabilidad consolidada.
+- **Boss (Gerencia / Propietario):** Acceso total e irrestricto a todas las métricas operativas, personal, alertas, mapa y magnitudes financieras globales (facturación total acumulada, márgenes y estados de cobro). Único perfil con acceso a la pantalla de KPIs macroeconómicos de la empresa.
+- **Ingeniero / Supervisor Técnico:** Acceso total a la operativa de campo, cuadrillas, incidencias, mapa y alertas preventivas. **Acceso autorizado a la búsqueda y lectura de cualquier factura o albarán unitario de clientes** para resolver dudas de obra. **Bloqueo estricto a nivel de API** sobre el Kanban de Facturación global y la página de balances económicos de la empresa (los endpoints para este rol omiten estos datos en el payload).
+- **Secretaria / RRHH:** Acceso al canal de notificaciones Telegram, registro horario/presencia de operarios, **emisión y gestión de facturas de clientes mediante Veri*factu**, visualización del 4º Kanban de facturación operativa del día, y **gestión administrativa completa de personal (altas de trabajadores, contratos, nóminas y expedientes laborales)**; sin acceso a la pantalla de balances y KPIs macroeconómicos de la empresa.
 
 ---
 
 ## Historias de usuario
-- **H1:** Como *Ingeniero*, quiero ver en tiempo real el estado y ubicación de mis cuadrillas y los trabajos asignados hoy para coordinar desvíos e imprevistos inmediatamente.
-- **H2:** Como *Ingeniero*, quiero recibir avisos visuales inmediatos cuando un operario envíe una nota de voz con una incidencia de campo para escucharla, leer su transcripción y determinar si requiere presupuesto adicional sin salir del panel.
-- **H3:** Como *Boss*, quiero visualizar el volumen de facturación pendiente y el cumplimiento de cobros del día para monitorizar la liquidez del negocio sin abrir informes contables pesados.
-- **H4:** Como *Secretaria / RRHH*, quiero revisar las alertas de mantenimiento (ITV de vehículos, garantías de reparaciones y stock crítico) para tramitar citas de taller o redactar pedidos a proveedores con un solo clic.
+- **H1:** Como *Ingeniero*, quiero ver en tiempo real la ubicación de mis cuadrillas y los trabajos asignados hoy para coordinar desvíos e imprevistos inmediatamente.
+- **H2:** Como *Ingeniero*, quiero recibir alertas visuales inmediatas cuando un operario envíe una nota de voz para escucharla, leer la transcripción generada por el nodo local y saltar a la orden de trabajo con un clic si se requiere intervención gráfica.
+- **H3:** Como *Ingeniero*, quiero buscar y abrir cualquier factura o albarán individual de un cliente para contrastar unidades o materiales instalados sin tener acceso a la rentabilidad global de la empresa.
+- **H4:** Como *Boss*, quiero monitorizar el volumen de facturación pendiente y el cumplimiento de cobros del día para asegurar la liquidez del negocio sin abrir informes contables pesados.
+- **H5:** Como *Secretaria / RRHH*, quiero tramitar altas de operarios, emitir facturas con Veri*factu y supervisar alertas inmediatas de personal, ITV y stock bajo mínimos.
 
 ---
 
 ## Requisitos Funcionales (Criterios de Aceptación en EARS)
 
-### Bloque 1: Cabecera y Meta-Buscador Universal
+### Bloque 1: Cabecera y Meta-Buscador Universal con Filtro por Entidad
 - **RF-01:** EL SISTEMA mantendrá visible en la cabecera un saludo dinámico según la franja horaria, la fecha actual en formato legible, el nombre del usuario conectado y un acceso directo "?" al manual y bienvenida operativa.
-- **RF-02:** CUANDO el usuario introduce 2 o más caracteres en la caja del meta-buscador, EL SISTEMA desplegará en tiempo real los resultados agrupados por categorías: *Clientes, Operarios, Órdenes de Trabajo, Matrículas de Vehículos, Referencias de Almacén y Números de Factura*.
-- **RF-03:** CUANDO el usuario selecciona un resultado del meta-buscador, EL SISTEMA redirigirá inmediatamente a la ficha o expediente específico en el menú correspondiente.
-- **RF-04:** SI la búsqueda no arroja coincidencias, ENTONCES EL SISTEMA mostrará un mensaje explícito de "Sin resultados coincidentes" con opción de limpiar la búsqueda.
+- **RF-02:** CUANDO el usuario introduce 2 o más caracteres en el meta-buscador, EL SISTEMA permitirá seleccionar chips/pestañas de filtro por entidad (*Todos, Clientes, Facturas, Operarios, Órdenes, Vehículos, Almacén*) para acotar la búsqueda, desplegando los resultados coincidentes de forma insensible a mayúsculas y acentos (sin comodines sintácticos).
+- **RF-03:** CUANDO el usuario selecciona un resultado del meta-buscador, EL SISTEMA redirigirá inmediatamente a la ficha, orden o documento correspondiente.
+- **RF-04:** SI la búsqueda no arroja coincidencias en la categoría seleccionada, ENTONCES EL SISTEMA mostrará un mensaje explícito de "Sin resultados coincidentes" con opción de limpiar el filtro.
 - **RF-05:** CUANDO el usuario pulsa el botón "Orden de trabajo genérica", EL SISTEMA redirigirá a la vista de creación completa (`/gestio/feines/crear`).
 
-### Bloque 2: Campana de Incidencias y Flujo de Audio Urgente
+### Bloque 2: Campana de Incidencias y Flujo de Audio / IA Local
 - **RF-06:** CUANDO un operario registra una incidencia de voz desde la PWA, EL SISTEMA conmutará instantáneamente el icono de la campana en la cabecera a color rojo de alerta prioritaria e incrementará el contador numérico de pendientes.
-- **RF-07:** CUANDO el usuario hace clic sobre la campana de alertas, EL SISTEMA abrirá una ventana modal superpuesta con la lista de incidencias sin resolver, reproductor de audio integrado, transcripción generada por el motor de lenguaje local y datos del operario y cliente afectados.
-- **RF-08:** DENTRO del modal de la campana, EL SISTEMA proporcionará un checklist interactivo que permitirá marcar la incidencia como "Solucionada" o "Pendiente de Presupuesto", actualizando de forma automática el historial en la ficha del operario y en la orden de trabajo correspondiente.
+- **RF-07:** CUANDO el usuario hace clic sobre la campana de alertas, EL SISTEMA desplegará una ventana modal ágil con: identificador de la orden, operario, cliente, reproductor de audio activable mediante botón de reproducción explícito del usuario y la transcripción textual generada por el motor de IA local.
+- **RF-08:** SI el nodo de IA local (LM Studio / Ollama) se encuentra saturado, apagado o excede el tiempo de espera, ENTONCES EL SISTEMA mantendrá el reproductor de audio plenamente accesible y presentará en el área de texto el mensaje informativo: *"Transcripció temporalment no disponible / En cua"*.
+- **RF-09:** DENTRO del modal de la campana, EL SISTEMA dispondrá de un checklist de resolución rápida (`Solucionada`, `Pendent de pressupost`); la opción "Pendent de pressupost" actuará como una marca informativa en la orden de trabajo para que el ingeniero elabore el presupuesto adicional desde el módulo de incidencias, junto con un botón de acceso directo a la orden para gestionar planos o fotos complementarias.
 
 ### Bloque 3: Nivel 1 — Pulso Operativo (Los 4 Kanbans en Tiempo Real)
-- **RF-09:** EL SISTEMA mostrará un primer bloque Kanban con los "Trabajos de Hoy" desglosados en *Pendientes, En Curso y Completados*.
-- **RF-10:** CUANDO el usuario pulsa sobre el Kanban de Trabajos de Hoy, EL SISTEMA abrirá la pantalla de seguimiento geográfico de trabajos (`/gestio/feines/mapa`).
-- **RF-11:** EL SISTEMA mostrará un segundo bloque Kanban con los "Operarios Activos" distribuidos en sus estados: *En Faena / Activo, En Camino (Desplazamiento), En Descanso y Desconectado / Sin Jornada*.
-- **RF-12:** EL SISTEMA mostrará un tercer bloque Kanban con las "Alertas e Incidencias" segmentadas por operario y por cliente, destacando incidencias con parada de obra o sobrecoste de material.
-- **RF-13:** MIENTRAS el usuario tenga rol `Boss`, EL SISTEMA mostrará un cuarto bloque Kanban con las métricas de "Facturación" (*Importe pendiente de facturar, facturado en el día y cobros pendientes*).
-- **RF-14:** SI el usuario autenticado tiene rol `Ingeniero`, ENTONCES EL SISTEMA ocultará completamente el cuarto bloque Kanban de Facturación sin romper la alineación visual del panel.
+- **RF-10:** EL SISTEMA mostrará un primer bloque Kanban con los "Trabajos de Hoy" desglosados en *Pendientes, En Curso y Completados*.
+- **RF-11:** CUANDO el usuario pulsa sobre el Kanban de Trabajos de Hoy, EL SISTEMA abrirá la pantalla de seguimiento geográfico de trabajos (`/gestio/feines/mapa`).
+- **RF-12:** EL SISTEMA mostrará un segundo bloque Kanban con los "Operarios Activos" distribuidos en sus estados: *En Faena / Activo, En Camino (Desplazamiento), En Descanso y Desconectado / Sin Jornada*.
+- **RF-13:** EL SISTEMA determinará automáticamente el estado "En Camino" para un operario con jornada activa en los siguientes supuestos:
+  1. *Inicio de Jornada:* Desde el fichaje de entrada hasta posicionarse a menos de **50 metros de tolerancia** de la primera tarea asignada.
+  2. *Entre Tareas:* Al marcar como `Completada` una orden y mientras se encuentre a más de 50 metros del destino de la siguiente tarea programada.
+  3. *Retorno a Base:* Tras completar la última orden de la jornada y mientras se desplaza de regreso a la sede/almacén antes de fichar la salida.
+- **RF-14:** EL SISTEMA reconocerá puntos GPS preconfigurados de la empresa (Almacén Central, Taller, Base de Retén); SI un operario en jornada activa no tiene órdenes externas programadas y se ubica dentro de un radio de 50 metros de dichas bases, ENTONCES EL SISTEMA lo mantendrá en estado "En Faena / Activo Interno", evitando asignarle erróneamente el estado de desplazamiento.
+- **RF-15:** EL SISTEMA mostrará un tercer bloque Kanban con las "Alertas e Incidencias" segmentadas por operario y por cliente, destacando incidencias con parada de obra o sobrecoste de material.
+- **RF-16:** MIENTRAS el usuario autenticado tenga rol `Boss` o `Secretaria / RRHH`, EL SISTEMA solicitará y mostrará el cuarto bloque Kanban con las métricas de "Facturación" operativa (*Importe pendiente de facturar, facturado en el día y cobros pendientes*).
+- **RF-17:** SI el usuario autenticado tiene rol `Ingeniero`, ENTONCES EL SISTEMA consumirá un endpoint segregado que omite las métricas globales de facturación y renderizará el panel sin el cuarto bloque Kanban, preservando intacta la capacidad del usuario para buscar y consultar facturas unitarias individuales de clientes.
 
-### Bloque 4: Nivel 2 — Centro de Operaciones (Órdenes y Mapa en Vivo)
-- **RF-15:** EL SISTEMA presentará un contenedor estructurado de "Órdenes de Trabajo" con pestañas o filtros directos para alternar entre *Activas, Completadas y Pendientes*, mostrando en cada tarjeta código, cliente, cuadrilla asignada y tiempo transcurrido.
-- **RF-16:** EL SISTEMA proyectará un Mapa de Seguimiento Geográfico en tiempo real renderizando las posiciones GPS de los operarios y la geolocalización de las incidencias activas.
-- **RF-17:** EL SISTEMA representará mediante iconos con formas y colores diferenciados a cada tipo de elemento en el mapa, incluyendo una leyenda fija explicativa y un distintivo especial para los Jefes de Cuadrilla.
-- **RF-18:** CUANDO el usuario hace clic sobre cualquier marcador en el mapa, EL SISTEMA desplegará una tarjeta emergente (*popup*) con: descripción del estado/tarea actual, nombre del operario a cargo con enlace a su ficha y nombre del cliente con enlace directo a su expediente.
-- **RF-19:** EL SISTEMA dispondrá en el mapa de un selector rápido de filtro que permita aislar la vista por estados operativos (ej. mostrar únicamente cuadrillas en camino o únicamente alertas críticas).
+### Bloque 4: Nivel 2 — Centro de Operaciones (Órdenes y Mapa con Marcadores Agrupados)
+- **RF-18:** EL SISTEMA presentará un contenedor estructurado de "Órdenes de Trabajo" con filtros directos para alternar entre *Activas, Completadas y Pendientes*, detallando código, cliente, cuadrilla y horas acumuladas.
+- **RF-19:** EL SISTEMA proyectará un Mapa de Seguimiento Geográfico en tiempo real renderizando las posiciones GPS de los operarios y la ubicación de las incidencias activas.
+- **RF-20:** CUANDO dos o más operarios coincidan en la misma ubicación geográfica o vehículo, EL SISTEMA renderizará en el mapa un marcador agrupado con un contador numérico visible; al hacer clic sobre dicho marcador, el mapa se expandirá desplegando los avatares individuales y nombres de todos los operarios presentes.
+- **RF-21:** CUANDO el usuario hace clic sobre cualquier marcador individual en el mapa, EL SISTEMA desplegará una tarjeta emergente (*popup*) con: tarea actual, operario con enlace a su ficha y cliente con enlace directo a su expediente.
+- **RF-22:** EL SISTEMA dispondrá en el mapa de un selector rápido de filtros por estado operativo (ej. aislar cuadrillas en camino, en faena o con incidencias).
 
-### Bloque 5: Nivel 3 — Alertas Preventivas de Mantenimiento y Stock
-- **RF-20:** EL SISTEMA agrupará en la sección inferior tres categorías de alertas preventivas:
-  1. *Flota de Vehículos:* Vencimiento de ITV próximo (<30 días), revisiones mecánicas por kilometraje excedido, seguros a renovar y estado de garantías vigentes de reparaciones anteriores.
-  2. *Herramientas de Trabajo:* Herramientas averiadas reportadas por el personal, herramientas no devueltas en el check-in diario, revisiones periódicas/calibración y vencimiento de garantías de compra.
-  3. *Almacén y Stock:* Materiales por debajo del umbral mínimo de seguridad o insuficientes para acometer las tareas programadas de la semana.
-- **RF-21:** CUANDO el usuario interactúa con una alerta de falta de stock, EL SISTEMA ofrecerá un botón para redactar un correo electrónico al proveedor habitual con el material, cantidad requerida y referencia técnica precargadas, requiriendo validación humana previa al envío.
-- **RF-22:** CUANDO el usuario pulsa sobre cualquier alerta de mantenimiento, EL SISTEMA lo redirigirá a la sección respectiva del menú lateral (`/gestio/flota`, `/gestio/magatzem`).
+### Bloque 5: Nivel 3 — Alertas Preventivas Inmediatas (Vehículos, Herramientas y Stock)
+- **RF-23:** EL SISTEMA presentará en la sección inferior la lista de alertas preventivas activas detallando el motivo del aviso y un enlace directo a la ficha del vehículo, herramienta o producto en `/gestio/flota` o `/gestio/magatzem`.
+- **RF-24:** CUANDO una herramienta sea reportada como averiada o perdida, EL SISTEMA asociará automáticamente el registro de dicha incidencia en el expediente personal del operario a cargo.
+- **RF-25:** EL SISTEMA mostrará en el área de stock exclusivamente aquellos materiales cuyas existencias registradas sean iguales o inferiores al stock mínimo de seguridad configurado en almacén, disponiendo de un acceso directo al producto para tramitar el pedido al proveedor (*Human-in-the-Loop*).
+- **RF-26:** EL SISTEMA registrará la resolución y control de alertas preventivas (ej. superación de ITV o calibración de herramientas) de manera manual por parte del personal de oficina técnica.
 
 ### Bloque 6: Casos Límite, Degradación de Red y "Día 0"
-- **RF-23:** SI el sistema se encuentra en estado "Día 0" (sin actividad registrada, sin operarios en ruta ni alertas), ENTONCES EL SISTEMA mostrará los paneles con contadores a 0 y estados vacíos (*Empty States*) contextuales con botones de invitación para crear la primera orden o dar de alta personal, sin inventar jamás datos ficticios o de muestra.
-- **RF-24:** SI un operario en campo pierde la señal GPS o entra en zona sin cobertura, ENTONCES EL SISTEMA mantendrá fijado en el mapa su último punto geográfico contrastado, atenuará su icono con un color específico de "Pérdida de Señal" y mostrará en su popup el tiempo transcurrido desde la última emisión de telemetría.
-- **RF-25:** SI la llamada al backend para actualizar los datos en tiempo real falla o se interrumpe la red en la oficina, ENTONCES EL SISTEMA exhibirá una barra discreta de advertencia ("Datos no sincronizados — Reintentando...") preservando en pantalla la última información recibida sin bloquear la navegación del usuario.
+- **RF-27:** SI el sistema se encuentra en estado "Día 0" (sin actividad previa ni operarios en ruta), ENTONCES EL SISTEMA mostrará paneles con contadores a 0 y estados vacíos (*Empty States*) reales con botones para dar de alta la primera orden o personal, sin inyectar jamás datos ficticios o simulados.
+- **RF-28:** SI el dispositivo de un operario con jornada abierta deja de emitir telemetría GPS durante **15 minutos consecutivos**, ENTONCES EL SISTEMA conmutará su estado en el Dashboard a "Pérdida de Señal / Desconectado", mantendrá fijada su última posición conocida y activará una alerta prioritaria para el supervisor técnico (con previsión de verificación vía SMS por fallo de batería o emergencia).
+- **RF-29:** MIENTRAS el Dashboard mantenga conexiones de refresco de telemetría o datos en tiempo real, EL SISTEMA renovará el token de acceso JWT de forma silenciosa e imperceptible mediante la cookie segura de refresco (`HttpOnly`), impidiendo bloqueos intempestivos de pantalla o redirecciones forzadas a login.
+- **RF-30:** SI la conexión entre el Dashboard y el backend se interrumpe, ENTONCES EL SISTEMA mostrará una barra de advertencia no bloqueante ("Sin sincronización — Reintentando...") conservando en pantalla la última información recibida.
 
 ---
 
 ## Requisitos No Funcionales
-- **Seguridad y Aislamiento:** Cumplimiento estricto de Row Level Security (RLS) en base de datos. Ninguna consulta del Dashboard devolverá datos pertenecientes a otra empresa cliente.
-- **Zero Mock Data:** Queda terminantemente prohibido utilizar nombres simulados, clientes de prueba o tareas artificiales para rellenar los componentes del dashboard.
-- **Diseño Camaleón:** La interfaz adaptará su paleta y logotipo corporativo a las variables CSS institucionales de la empresa sin hardcodear colores primarios fijos.
-- **Tiempo de Respuesta:** El meta-buscador debe ofrecer sugerencias en menos de 250 ms desde la introducción del segundo carácter.
+- **Almacenamiento Local Seguro:** Sin dependencia de AWS S3. Los archivos multimedia (fotos, audios, albaranes y planos) se gestionan directamente en volúmenes de almacenamiento del servidor/Mini PC donde corre la IA, con copias de seguridad semanales programadas cada domingo.
+- **Seguridad Zero-Trust y RLS:** La base de datos aplica Row Level Security mandatorio (`empresa_id`). La segregación de datos financieros entre roles se aplica estrictamente a nivel de endpoints en el backend.
+- **Procesamiento Asíncrono de Voz:** Las solicitudes de transcripción se procesan a través de una cola asíncrona (Celery + Redis) respetando el límite de concurrencia del motor local (LM Studio / Ollama).
+- **Diseño Camaleón:** Paleta y logotipos inyectados vía variables CSS dinámicas según la identidad de la empresa cliente.
+- **Rendimiento de Búsqueda:** El meta-buscador responderá con el listado acotado por filtro en menos de 250 ms.
 
 ---
 
 ## Fuera de Alcance (Lo que NO hace este Dashboard)
-- No permite la creación ni emisión directa de facturas oficiales en PDF ni registros Veri*factu (se delega a `/gestio/comptabilitat`).
-- No permite la edición de fichas de clientes, altas de vehículos o modificación de stocks mínimos (se gestionan en sus respectivas páginas maestras).
-- No realiza envíos automáticos de pedidos por email a proveedores sin supervisión y autorización humana expresa (*Human-in-the-Loop*).
-- No ejecuta recálculos de algoritmos de optimización de rutas de transporte (se delega al módulo específico de cuadrillas).
+- No emite facturas oficiales Veri*factu en PDF (se realiza en `/gestio/comptabilitat`).
+- No permite altas completas ni edición de datos maestros de clientes, vehículos o herramientas (se delega a sus pantallas maestras).
+- No realiza envíos desatendidos de pedidos a proveedores (el email se valida en `/gestio/magatzem`).
+- No incluye un módulo pesado de chat de planos/fotos en la cabecera (la edición y notas de planos se efectúan en la ficha de la orden de trabajo).
+- No muestra la pantalla de balances y KPIs macroeconómicos de la empresa a usuarios sin rol `Boss`.
+- No calcula roturas de stock de material asignado a órdenes futuras si las existencias físicas actuales superan el stock mínimo de seguridad de almacén.
 
 ---
 
 ## Criterios de Finalización (Definition of Done)
-1. Todos los requisitos funcionales (RF-01 al RF-25) redactados en sintaxis formal EARS y aprobados por el usuario.
-2. La jerarquía visual en 3 niveles (Pulso ➔ Centro de Mando ➔ Prevención) queda fijada sin duplicación de capas ni ventanas intrusivas.
-3. La matriz de permisos por roles (`Boss`, `Ingeniero`, `Secretaria/RRHH`) está formalizada con la regla de ocultación del bloque financiero.
-4. El tratamiento del operario desconectado (último punto GPS + color de alerta + tiempo transcurrido) queda normalizado.
-5. El estado "Día 0" cumple estrictamente el principio de Tolerancia Cero a Datos Ficticios (*Zero Mock Data*).
+1. Todos los requisitos funcionales (RF-01 al RF-30) redactados en sintaxis formal EARS, incorporando la resolución de las observaciones de QA.
+2. La arquitectura de almacenamiento refleja formalmente el uso de almacenamiento en disco duro local con backups semanales (sin S3).
+3. El radio de tolerancia perimetral de trabajo queda fijado en 50 metros y se reconocen bases fijas de taller/retén.
+4. El ciclo del estado "En Camino" cubre el trayecto inicial hacia la primera tarea, los trayectos intermedios y el retorno a base al culminar la jornada.
+5. El umbral de alerta por desconexión/pérdida de señal de telemetría de operarios queda normalizado en 15 minutos.
+6. Se aplica la política estricta de cero commits en el repositorio hasta solicitud explícita del usuario.
