@@ -72,6 +72,12 @@ El backend garantiza el aislamiento de datos por rol mediante endpoints específ
 - **RF-29:** MIENTRAS el Dashboard mantenga conexiones de refresco de telemetría o datos en tiempo real, EL SISTEMA renovará el token de acceso JWT de forma silenciosa e imperceptible mediante la cookie segura de refresco (`HttpOnly`), impidiendo bloqueos intempestivos de pantalla o redirecciones forzadas a login.
 - **RF-30:** SI la conexión entre el Dashboard y el backend se interrumpe, ENTONCES EL SISTEMA mostrará una barra de advertencia no bloqueante ("Sin sincronización — Reintentando...") conservando en pantalla la última información recibida.
 
+### Bloque 7: Previsión Futura — Chat Conversacional IA Local (RAG Documental Estricto)
+- **RF-31 [MARCA PARA ESPECIFICACIÓN COMPLETA FUTURA]:** EL SISTEMA incorporará en el Dashboard de Control un **punto de anclaje de interfaz para un Chat Conversacional asistido por Inteligencia Artificial en nodo local** (LLM ejecutado localmente en el servidor/Mini PC de la empresa, p. ej. vía LM Studio / Ollama, preservando el RGPD y la soberanía total del dato):
+  1. *Aislamiento y Veracidad Absoluta:* El LLM local **solo podrá responder preguntas basándose estricta y exclusivamente en la documentación presentada, datos corporativos o expedientes técnicos relacionados de la empresa** (RAG estricto sin alucinaciones ni asunciones externas).
+  2. *Segregación Zero-Trust:* Las respuestas del chat respetarán el rol del usuario conectado (`Boss`, `Secretaria`, `Ingeniero`), impidiendo la fuga de datos financieros o albaranes de coste a perfiles no autorizados.
+  3. *Postergación de Especificación Detallada:* Este requisito establece la reserva funcional y de arquitectura en el Dashboard; su especificación funcional completa (esquemas de contexto RAG, prompts de sistema, límites de tokens, gestión de memoria conversacional y casos de uso avanzados) **se redactará de forma exhaustiva en una fase/especificación posterior dedicada**.
+
 ---
 
 ## Requisitos No Funcionales
@@ -88,13 +94,14 @@ El backend garantiza el aislamiento de datos por rol mediante endpoints específ
 - No permite altas completas ni edición de datos maestros de clientes, vehículos o herramientas (se delega a sus pantallas maestras).
 - No realiza envíos desatendidos de pedidos a proveedores (el email se valida en `/gestio/magatzem`).
 - No incluye un módulo pesado de chat de planos/fotos en la cabecera (la edición y notas de planos se efectúan en la ficha de la orden de trabajo).
+- El Chat Conversacional con LLM local queda marcado como previsión arquitectónica (RF-31), difiriéndose su especificación y diseño detallado a una fase posterior.
 - No muestra la pantalla de balances y KPIs macroeconómicos de la empresa a usuarios sin rol `Boss`.
 - No calcula roturas de stock de material asignado a órdenes futuras si las existencias físicas actuales superan el stock mínimo de seguridad de almacén.
 
 ---
 
 ## Criterios de Finalización (Definition of Done)
-1. Todos los requisitos funcionales (RF-01 al RF-30) redactados en sintaxis formal EARS, incorporando la resolución de las observaciones de QA.
+1. Todos los requisitos funcionales (RF-01 al RF-31) redactados en sintaxis formal EARS, incorporando la resolución de las observaciones de QA.
 2. La arquitectura de almacenamiento refleja formalmente el uso de almacenamiento en disco duro local con backups semanales (sin S3).
 3. El radio de tolerancia perimetral de trabajo queda fijado en 50 metros y se reconocen bases fijas de taller/retén.
 4. El ciclo del estado "En Camino" cubre el trayecto inicial hacia la primera tarea, los trayectos intermedios y el retorno a base al culminar la jornada.
