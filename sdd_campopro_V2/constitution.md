@@ -50,7 +50,7 @@ El motor de facturación debe cumplir con los requisitos de la normativa españo
 ### 6. Arquitectura Asíncrona y Almacenamiento Local Seguro
 - **FastAPI Asíncrono (`asyncpg`)**: Ningún endpoint HTTP debe bloquear el event loop.
 - **Procesamiento en Segundo Plano**: Las tareas pesadas (generación de informes PDF con ReportLab, peticiones OCR a LM Studio, envíos al Bot de Telegram) se delegan obligatoriamente a **Celery + Redis**.
-- **Gestión de Archivos (Sin AWS S3):** Se elimina la dependencia de AWS S3. Todos los datos del cliente, facturas, órdenes de pedido, imágenes de incidencias, fotos de odómetros y planos técnicos versionados se almacenan directamente en discos duros locales vinculados al Mini PC donde reside la IA, implementando copias de seguridad semanales automáticas cada domingo. La base de datos almacena exclusivamente metadatos, rutas locales relativas y geolocalizaciones.
+- **Gestión de Archivos (Memoria Interna de la Empresa y Servidor Hetzner en Alemania):** Se elimina completamente cualquier dependencia de servicios cloud externos como AWS S3 para garantizar el estricto cumplimiento de protección de datos (RGPD) y máxima seguridad operativa. Todos los datos del cliente, facturas, órdenes de pedido, imágenes de incidencias, fotos de odómetros y planos técnicos versionados se almacenan directamente en la memoria interna y discos duros locales de la empresa y en el servidor Hetzner Cloud en Alemania (UE), implementando copias de seguridad semanales automáticas cada domingo. La base de datos almacena exclusivamente metadatos, rutas locales relativas y geolocalizaciones.
 
 ### 7. Gobernanza SDD (Spec-Driven Development)
 Ninguna línea de código de producción o refactorización se escribirá sin seguir el ciclo:

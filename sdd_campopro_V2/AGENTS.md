@@ -22,7 +22,7 @@
   5. `celery_worker` + `celery_beat`: Procesamiento en segundo plano (PDFs con ReportLab, OCR, webhooks).
   6. `bot` (aiogram 3.x): Servicio asíncrono para el canal de Telegram con el cliente final.
   7. `nginx`: Reverse Proxy con SSL automático (Let's Encrypt), cabeceras CSP y filtrado.
-- **Almacenamiento de Archivos:** **AWS S3** para fotos de obra (máx. 10MB) y planos técnicos (máx. 50MB) mediante **URLs prefirmadas** temporales (subida: 15 min, descarga: 1 h).
+- **Almacenamiento de Archivos:** **Memoria interna de la empresa y servidor Hetzner Cloud en Alemania** (volúmenes en disco local del servidor bajo `/data/<empresa_id>/...` y `/docs/<empresa_id>/...`, con copias de seguridad semanales automáticas cada domingo; eliminación total de AWS S3 para estricto cumplimiento del RGPD y soberanía de datos).
 
 ---
 
@@ -47,7 +47,7 @@
 | `passlib[bcrypt]` & `bcrypt` | `>=4.1.2` | Hashing seguro de contraseñas y PINs de operario |
 | `aiogram` | `>=3.4.1` | Framework asíncrono para el Bot de Telegram |
 | `reportlab` | `>=4.0.0` | Generación de facturas Veri*factu e informes en PDF |
-| `httpx` | `>=0.27.0` | Cliente HTTP asíncrono (comunicación con LM Studio y S3) |
+| `httpx` | `>=0.27.0` | Cliente HTTP asíncrono (comunicación con LM Studio y APIs internas) |
 | `bleach` | `>=6.1.0` | Sanitización HTML contra ataques XSS e inyecciones |
 | `filetype` | `>=1.2.0` | Detección real de MIME types por Magic Bytes |
 | `tenacity` | `>=8.2.3` | Reintentos exponenciales para conexiones a BD e IA local |
