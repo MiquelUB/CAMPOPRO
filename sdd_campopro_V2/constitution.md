@@ -10,7 +10,7 @@
 
 No es un simple software agrícola: es una suite de gestión de campo adaptable que conecta en tiempo real a **4 actores clave**:
 1. **Operario en Campo (`/operari`)**: Utiliza una PWA móvil ultrarrápida, 100% offline-first, gobernada por el **"Flujo de los 30 segundos"** (fichaje, fotos geolocalizadas, check-in/out de herramientas con QR, kilometraje de vehículos y reporte por voz).
-2. **Ingeniero / Oficina Técnica (`/gestio`)**: Dashboard web para planificar obras, versionar planos técnicos, controlar stock de almacén, auditar garantías y facturar con Veri*factu.
+2. **Ingeniero / Oficina Técnica (`/gestio`)**: Dashboard web para planificar obras, versionar planos técnicos, controlar stock de almacén, auditar garantías, elaborar presupuestos y facturas proforma técnicas, y consultar facturas y albaranes asociados a sus clientes (la emisión de facturas legales definitivas con Veri*factu y el acceso a `/gestio/comptabilitat` quedan estrictamente reservados a Secretaría y Boss; el menú de contabilidad/facturación no se muestra al rol Ingeniero y la API bloquea su acceso con 403 Forbidden).
 3. **Cliente Final (Canal Telegram Bot)**: Sin necesidad de instalar aplicaciones ni registrarse, el cliente recibe notificaciones de llegada de la cuadrilla, aprueba presupuestos de imprevistos con 1 clic y valida firmas de entrega.
 4. **Superadmin Propietario (`/superadmin`)**: Centro de mando para el dueño del software: control de contratos SaaS (MRR), facturación B2B, licencias por cuadrilla y monitorización en tiempo real de los Nodos de IA locales.
 
@@ -40,7 +40,7 @@ Para evitar alucinaciones críticas (como aplicar fórmulas de caudal de agua al
    - *Nivel Sectorial (Compartido por vertical):* Normativas técnicas y tablas de cálculo del oficio (`/knowledge/<vertical>/`: REBT de baja tensión, diámetros de tuberías PE, tablas de presión y caudales).
    - *Nivel Empresa (Privado por cliente):* Ingesta de documentación y protocolos internos de la empresa (normas de seguridad laboral, manuales de procedimientos operativos, listas de verificación de calidad y guías de actuación ante incidencias específicas de su plantilla).
 3. **Historial de Obras Aislado:** `/data/historial/<vertical>/` para evitar comparaciones absurdas entre sectores distintos y preservar la privacidad entre empresas.
-4. **Mandato Human-in-the-Loop:** La IA audita desviaciones, transcribe incidencias de voz, busca garantías, aplica los protocolos internos y propone pedidos de stock, pero **NUNCA** emite una factura o pedido a proveedor sin la confirmación explícita del ingeniero.
+4. **Mandato Human-in-the-Loop:** La IA audita desviaciones, transcribe incidencias de voz, busca garantías, aplica los protocolos internos y propone pedidos de stock, pero **NUNCA** emite una factura legal (requiere confirmación y emisión explícita de Secretaría o Boss) ni un pedido a proveedor o presupuesto vinculante (requiere confirmación del ingeniero u oficina técnica).
 
 ### 5. Facturación Inmutable y Legal (RD 1007/2023 Veri*factu)
 El motor de facturación debe cumplir con los requisitos de la normativa española:
