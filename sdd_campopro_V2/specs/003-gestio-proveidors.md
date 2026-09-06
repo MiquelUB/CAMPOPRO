@@ -1,129 +1,168 @@
 # Spec 003 — Módulo de Gestión de Proveedores (/gestio/proveidors)
 
-## Contexto y objetivo
+## 1. Contexto y objetivo
 El módulo de Gestión de Proveedores es el registro maestro de los distribuidores de suministros técnicos (materiales, herramientas, maquinaria/vehículos) y de las empresas prestadoras de servicios externos y subcontratas (grúas, transportes, instaladores especializados).
 
-Resuelve la necesidad de gestionar con rigor comercial, técnico, legal y fiscal tanto la adquisición de materiales de obra como la contratación de servicios externos. Incorpora la ingesta automatizada de fichas mediante IA/OCR a partir de facturas o albaranes (*Human-in-the-Loop*), la custodia de políticas contractuales de devolución y garantías por proveedor, la verificación inteligente por IA de pólizas de Responsabilidad Civil (RC) para subcontratas con bloqueo de la subcontrata afectada (garantizando cumplimiento del RD 171/2004 y Ley 31/1995 de PRL), condiciones financieras con salvaguarda de retención del 60% por buena ejecución, triple conciliación automatizada por IA (*Three-Way Matching*: Pedido ➔ Albarán ➔ Factura con soporte de facturas recapitulativas mensuales) para blindar la empresa contra precios abiertos, material discrepante aparcado en cuarentena, validación en campo 100% offline-first con sincronización en segundo plano, trazabilidad 360º de incidencias RMA con volante físico y justificación documental de mermas fiscales (Veri*factu / RD 1007/2023) en `/docs/<empresa_id>/incidencias`, y el historial completo de compras enlazado punto a punto.
+Resuelve la necesidad de gestionar con rigor comercial, técnico, legal y fiscal tanto la adquisición de materiales de obra como la contratación de servicios externos. Incorpora la ingesta automatizada de fichas mediante IA/OCR a partir de facturas o albaranes (*Human-in-the-Loop*), la custodia de políticas contractuales de devolución (RMA), la verificación inteligente de pólizas de Responsabilidad Civil (RC) para subcontratas (cumplimiento RD 171/2004), la retención paramétrica por salvaguarda de buena ejecución, y la triple conciliación automatizada (*Three-Way Matching*) con soporte nativo para entregas parciales (*Backorders*). Además, se adapta a las obligaciones tributarias integrando indicadores paramétricos como el Criterio de Caja (RECC) y la Inversión del Sujeto Pasivo (ISP).
 
-Queda expresamente descartada la importación masiva de catálogos teóricos por CSV para evitar obsolescencia de referencias y precios; los productos del proveedor se incorporan al sistema única y exclusivamente a través de albaranes o facturas de compras reales previa validación del NIF.
-
----
-
-## Usuarios / actores y Matriz de Acceso (Zero-Trust)
-El backend garantiza el aislamiento multi-inquilino (RLS) y la segregación estricta de permisos por rol:
-
-- **Boss (Gerencia / Propietario):** Acceso total e irrestricto a la consulta y edición de proveedores, alta manual, alta asistida por OCR de facturas, gestión de pedidos de compra, resolución de discrepancias de precio bloqueadas, **condiciones comerciales de pago, IBAN de abono, retenciones de salvaguarda por buena ejecución, descuentos pactados y analítica económico-contable de compras (volumen acumulado, artículos más comprados y stock estancado sin rotación)**.
-- **Secretaria / RRHH:** Acceso total al directorio de proveedores, altas manuales y por OCR, **gestión de condiciones comerciales y datos bancarios (IBAN, plazos de crédito, retenciones y descuentos)**, gestión de incidencias de proveedor, tramitación de pedidos de compra, resolución administrativa de discrepancias de facturación, emisión de pagos confirmados y consulta del historial vinculado a albaranes y facturas.
-- **Ingeniero / Supervisor Técnico:** Acceso a la consulta y búsqueda de proveedores en el directorio (ordenados por frecuencia de uso/volumen para agilidad operativa, pero **sin exposición del dato monetario ni columnas financieras**), visualización de datos de contacto comercial, auditoría de capacidades (suministros vs subcontratas), consulta de políticas de garantía/RMA y vigencia de seguros PRL/RC para subcontratas, confirmación técnica de trabajos ejecutados, tramitación técnica de incidencias por piezas defectuosas y redacción de pedidos de reposición supervisados; **bloqueo estricto a nivel de API** sobre el IBAN del proveedor, condiciones de pago, descuentos comerciales y métricas económicas agregadas de compra.
+Queda expresamente descartada la importación masiva de catálogos teóricos por CSV para evitar obsolescencia de referencias y precios; los productos se incorporan única y exclusivamente a través de albaranes o facturas reales.
 
 ---
 
-## Historias de usuario
-- **H1:** Como *Ingeniero o Secretaria*, quiero consultar el listado de proveedores en una tabla minimalista sin KPIs superiores y buscar en tiempo real por coincidencia flexible en Nombre Comercial, Razón Social o Municipio, o por NIF exacto, obteniendo los resultados ordenados por volumen/frecuencia de uso para agilizar la operativa con los distribuidores habituales sin exponer importes monetarios al personal técnico.
-- **H2:** Como *Secretaria*, quiero subir una factura o albarán en PDF o foto para que la IA local extraiga automáticamente los datos fiscales y de contacto, presentando un formulario con los campos dudosos para su revisión y confirmación humana obligatoria.
-- **H3:** Como *Ingeniero*, quiero que la IA verifique automáticamente la vigencia de la póliza de Responsabilidad Civil (RC) de una subcontrata; si está caducada o incorrecta, que bloquee taxativamente su asignación, redacte el borrador de reclamación por email (dejándolo listo para confirmación humana) y me sugiera de inmediato otra empresa homologada en regla para evitar cualquier riesgo legal de responsabilidad solidaria en prevención de riesgos (PRL).
-- **H4:** Como *Ingeniero en campo*, quiero registrar fotográficamente el albarán en papel y la descarga directa de tuberías pesadas en la finca del cliente desde mi móvil (/operari) incluso sin cobertura (offline-first), para certificar la recepción física antes de que administración pague la factura.
-- **H5:** Como *Secretaria o Boss*, quiero que la IA compare automáticamente el pedido cotizado con el albarán de entrega y la factura final, bloqueando el pago y aparcando en cuarentena el stock si hay discrepancias económicas o productos sustitutivos no pactados.
-- **H6:** Como *Ingeniero*, quiero tramitar la devolución de una pieza defectuosa generando un volante formal físico de RMA para adjuntar al paquete, registrando el estado "En revisión" y, si la garantía es denegada por el fabricante, emitiendo un Certificado de Merma con el informe técnico custodiado en `/docs/<empresa_id>/incidencias` para justificar fiscalmente la pérdida ante Hacienda.
+## 2. Usuarios / actores y Matriz de Acceso (Zero-Trust)
+El backend garantiza el aislamiento multi-inquilino (RLS) y la segregación estricta de permisos por rol a nivel de API:
+
+- **Boss (Gerencia / Propietario):** Acceso total e irrestricto. Gestión de pedidos, resolución de discrepancias en precios, configuración manual de retenciones de salvaguarda, acceso a datos bancarios (IBAN), auditoría SIF de cambios de cuenta, y analítica económica completa de compras.
+- **Secretaria / RRHH:** Gestión administrativa completa. Altas, gestión de condiciones comerciales, IBAN, tramitación de pedidos, resolución de incidencias logísticas (*Three-Way Matching* / *Backorders*), autorización de pagos y custodia documental.
+- **Ingeniero / Supervisor Técnico:** Acceso técnico al directorio, búsqueda ágil, auditoría de capacidades y validación de pólizas (PRL/RC). Dispone de **bloqueo estricto a nivel de API** (`403 Forbidden`) sobre datos bancarios, condiciones de pago, descuentos y cualquier métrica económica agregada.
+- **Operari / Capataz (`/operari`):** Acceso restringido a la PWA móvil para el registro fotográfico offline-first de albaranes en campo.
+
+### Matriz de Acceso por Rol
+| Entidad / Función | Boss | Secretaria / RRHH | Ingeniero | Operario (`/operari`) |
+|---|---|---|---|---|
+| **Directorio y Búsqueda (PRV-XXXX)** | Lectura / Escritura | Lectura / Escritura | Solo Lectura | Sin acceso |
+| **Datos Fiscales, RECC e ISP** | Lectura / Escritura | Lectura / Escritura | Solo Lectura | Sin acceso |
+| **Condiciones Pago e IBAN** | Lectura / Escritura | Lectura / Escritura | **Bloqueo Total (403)** | Sin acceso |
+| **Control de Pólizas (PRL/RC)** | Lectura / Escritura | Lectura / Escritura | Lectura / Validación | Sin acceso |
+| **Pedidos, RMA y Entregas Parciales** | Lectura / Escritura | Lectura / Escritura | Lectura / Escritura | Sin acceso |
+| **Captura de Albaranes en Campo** | Sin acceso | Sin acceso | Sin acceso | **Escritura (PWA)** |
+| **Métricas Contables de Compra** | Lectura completa | Lectura completa | **Bloqueo Total (403)** | Sin acceso |
 
 ---
 
-## Requisitos Funcionales (Criterios de Aceptación en EARS)
+## 3. Historias de usuario
+- **H1:** Como *Ingeniero*, quiero consultar el listado ordenado por volumen de uso y buscar por NIF o Razón Social sin que la interfaz me exponga importes monetarios.
+- **H2:** Como *Secretaria*, quiero subir un PDF para que la IA extraiga los datos fiscales automáticamente, alertándome de cualquier discrepancia de IBAN para prevenir fraude BEC y dejando un registro de auditoría (*Human-in-the-Loop*).
+- **H3:** Como *Ingeniero*, quiero que la IA bloquee taxativamente la asignación de una subcontrata si su póliza RC está caducada, sugiriéndome otra homologada y redactando un borrador de correo de reclamación.
+- **H4:** Como *Operario*, quiero registrar la descarga del material con mi móvil sin cobertura (offline-first), para certificar la recepción física antes de que administración pague la factura.
+- **H5:** Como *Secretaria*, quiero que el *Three-Way Matching* gestione inteligentemente las entregas parciales permitiendo la entrada del material recibido y generando un Backorder para el resto, bloqueando solo si hay sobrecostes no pactados o materiales erróneos.
+- **H6:** Como *Ingeniero*, quiero tramitar una merma fiscal justificada generando un volante de RMA, distinguiendo si la pieza estaba en almacén o ya instalada en cliente para no descuadrar el inventario físico, custodiando el dictamen en `/docs`.
+
+---
+
+## 4. Requisitos Funcionales (Criterios de Aceptación en EARS)
 
 ### Bloque 1: Directorio Principal (`/gestio/proveidors`) y Estado "Día 0"
-- **RF-01:** EL SISTEMA presentará en `/gestio/proveidors` un listado tabular limpio **sin bloques de KPIs superiores**, mostrando por cada registro exclusivamente: *Nombre Comercial o Razón Social, Persona de contacto (compras/ventas), Teléfono directo y Email directo*.
-- **RF-02:** CUANDO el usuario introduce texto en el buscador de la lista, EL SISTEMA filtrará en tiempo real aplicando **búsqueda de subcadena flexible e insensible a mayúsculas/acentos sobre Nombre Comercial, Razón Social y Municipio, y coincidencia exacta sobre NIF/CIF**, **ordenando los resultados de forma descendente según el volumen total acumulado de compras** (frecuencia de uso histórico); para el rol `Ingeniero`, el payload y la interfaz omitirán por completo cualquier cifra monetaria o columna de volumen financiero.
-- **RF-03:** SI el sistema se encuentra en estado "Día 0" (cero proveedores registrados en la empresa), ENTONCES EL SISTEMA mostrará la pantalla completamente limpia, exhibiendo exclusivamente los botones de acción: *"Alta nuevo proveedor (manual)"* y *"Alta asistida por IA (Factura/Albarán)"*, sin datos ficticios ni métricas simuladas (*Zero Mock Data*).
-- **RF-04:** CUANDO el usuario hace clic sobre el nombre comercial de un proveedor en el listado, EL SISTEMA abrirá la ficha completa detallada del proveedor (`/gestio/proveidors/[id]`).
+- **RF-01 (Ubiquitous):** EL SISTEMA presentará en `/gestio/proveidors` un listado tabular limpio **con paginación del lado del servidor (*Server-Side Pagination*)**, mostrando el código visual `PRV-XXXX`, Razón Social, Persona de contacto y Teléfono.
+- **RF-02 (Ubiquitous):** CUANDO el usuario filtre el listado, EL SISTEMA aplicará búsqueda reactiva sobre `PRV-XXXX`, Nombre, Razón Social, NIF y Municipio, ordenando los resultados por volumen de compras acumulado; ocultando las cifras monetarias si el rol es `Ingeniero`.
+- **RF-03 (State-driven):** SI el sistema está en "Día 0", ENTONCES mostrará una UI vacía sin datos simulados (*Zero Mock Data*).
+- **RF-04 (Event-driven):** CUANDO se haga clic en un proveedor, EL SISTEMA abrirá la ficha detallada (`/gestio/proveidors/[id]`).
 
-### Bloque 2: Alta de Proveedores, Catálogo Real, Edición e Inmutabilidad Fiscal
-- **RF-05:** CUANDO el usuario pulsa "Alta nuevo proveedor (manual)", EL SISTEMA desplegará un formulario solicitando: *Nombre comercial / Razón Social, NIF/CIF (o NIF-IVA intracomunitario VIES / identificación fiscal internacional), Teléfono directo, Email directo, Dirección fiscal y Persona de contacto (nombre, teléfono y email)*, junto con la selección modular de sus capacidades (*Materiales, Herramientas, Maquinaria/Vehículos, Servicios/Subcontratas*).
-- **RF-06:** CUANDO se intenta guardar un nuevo proveedor (manualmente o mediante ingesta por IA), EL SISTEMA validará la unicidad estricta del **NIF/CIF** dentro de la empresa; SI el NIF/CIF ya existe registrado en otro proveedor de la misma empresa, ENTONCES EL SISTEMA rechazará el guardado, no creará registros duplicados y mostrará el mensaje de error: *"El NIF/CIF ya se encuentra registrado para otro proveedor"*.
-- **RF-07:** EL SISTEMA permitirá la **edición de los datos de la ficha del proveedor** sujeta a la siguiente regla de inmutabilidad fiscal:
-  1. *Proveedor sin histórico:* Si el proveedor no cuenta con albaranes, facturas ni pedidos formalizados, cualquier campo (incluido NIF/CIF y Razón Social por error tipográfico) será editable libremente.
-  2. *Proveedor con histórico comercial:* Si el proveedor ya tiene vinculados pedidos, albaranes o facturas en el sistema, **EL SISTEMA bloqueará de forma permanente la modificación del NIF/CIF**, garantizando la inmutabilidad tributaria exigida por la normativa contable y antifraude.
-- **RF-08:** CUANDO el usuario selecciona "Alta asistida por IA (Factura/Albarán)", EL SISTEMA procesará el documento (PDF o imagen) mediante el motor local de OCR e inferencia IA, extrayendo de forma preliminar: *Razón Social, NIF/CIF, Dirección, Teléfono, Email e IBAN*.
-- **RF-09:** TRAS la extracción por IA, EL SISTEMA desplegará un formulario de previsualización (*Human-in-the-Loop*) marcando de forma visual los campos que la IA no haya podido determinar con certeza para que el usuario humano los complete y valide expresamente antes de insertar el proveedor en la base de datos.
-- **RF-10:** EL SISTEMA incorporará artículos y materiales suministrados al catálogo del proveedor **única y exclusivamente a través de albaranes o facturas de compras reales recibidas**, previa validación del NIF/CIF del proveedor, impidiendo la carga masiva descontextualizada de catálogos teóricos por CSV para evitar referencias obsoletas y desajustes de precios.
+### Bloque 2: Alta, OCR, Campos Fiscales e Inmutabilidad
+- **RF-05 (Event-driven):** CUANDO se proceda al alta manual, EL SISTEMA generará el código secuencial `PRV-XXXX` y solicitará: Datos Fiscales, Contacto, Capacidades, e indicadores booleanos tributarios (`es_recc` para Criterio de Caja, `aplica_isp_defecte` para Inversión del Sujeto Pasivo).
+- **RF-06 (Unwanted behavior):** CUANDO se guarde el registro, EL SISTEMA validará la unicidad estricta del NIF/CIF por tenant, bloqueando y alertando ante duplicados.
+- **RF-07 (State-driven):** MIENTRAS el proveedor tenga histórico comercial (albaranes/facturas), EL SISTEMA bloqueará permanentemente la edición de su NIF/CIF para garantizar la inmutabilidad tributaria.
+- **RF-08 (Event-driven):** CUANDO se utilice "Alta por IA", el motor OCR local extraerá Razón Social, NIF, Dirección e IBAN.
+- **RF-09 (Ubiquitous):** EL SISTEMA desplegará el formulario marcando los campos de baja confianza para validación humana obligatoria (*Human-in-the-Loop*).
+- **RF-09.1 (Event-driven):** SI la IA detecta un cambio de IBAN en una factura respecto al registrado, EL SISTEMA emitirá una alerta crítica (Prevención Fraude BEC) requiriendo autorización de `Boss`. Tras su aprobación, generará automáticamente un evento de trazabilidad en el Registro SIF de la Spec 007 documentando la cuenta anterior y la nueva.
+- **RF-10 (Ubiquitous):** EL SISTEMA incorporará artículos al catálogo única y exclusivamente a través de la ingesta de albaranes o facturas reales, bloqueando importaciones CSV de catálogos teóricos.
 
-### Bloque 3: Subcontratas, Blindaje Legal PRL/RC (RD 171/2004) y Retención de Salvaguarda
-- **RF-11:** EL SISTEMA estructurará la ficha del proveedor en dos secciones independientes: **Información Comercial y Operativa** (accesible por todo el personal técnico) y **Datos Económico-Contables** (confidencial).
-- **RF-12:** DENTRO de la Información Comercial, EL SISTEMA mostrará los datos fiscales completos, dirección física, contactos directos de ventas/compras y la selección de capacidades suministradas (*Materiales, Herramientas, Vehículos/Maquinaria, Servicios/Subcontratas*).
-- **RF-13:** CUANDO un proveedor esté categorizado con la capacidad de *Servicios / Subcontratas*, EL SISTEMA dispondrá de un repositorio documental específico para adjuntar la **Póliza de Seguro de Responsabilidad Civil (RC)** y certificados de Coordinación de Actividades Empresariales (CAE) y Prevención de Riesgos Laborales (PRL), registrando la fecha de vigencia de cada documento.
-- **RF-14:** CUANDO la oficina técnica solicite o asigne los servicios de una subcontrata para una orden de trabajo, EL SISTEMA ejecutará una **verificación automática mediante IA del repositorio documental**; SI la póliza de Responsabilidad Civil (RC) o cualquier otro requisito de CAE/PRL presenta irregularidades, caducidad o ausencia, ENTONCES EL SISTEMA:
-  1. Detallará el motivo específico de la no conformidad documental.
-  2. Redactará un **borrador de correo electrónico formal** requiriendo la subsanación urgente, depositándolo en la bandeja de salida/borradores para su confirmación y envío manual por un usuario humano (*Human-in-the-Loop* estricto).
-  3. **Bloqueará taxativamente la asignación de dicha subcontrata a la tarea**, sin paralizar las demás tareas independientes de la obra ejecutadas por personal propio u otras subcontratas en regla.
-  4. Si las tareas requieren estrictamente los medios técnicos de la subcontrata bloqueada (p. ej. grúa pesada), EL SISTEMA permitirá su reprogramación o reasignación.
-- **RF-15:** SI la tarea bloqueada por falta de seguro en la subcontrata es de carácter urgente, ENTONCES EL SISTEMA **asistirá de inmediato al personal técnico sugiriendo la selección de otra empresa homologada del directorio de proveedores que cumpla estrictamente con todos los requisitos legales y pólizas en vigor**.
-- **RF-16:** EN las condiciones comerciales de proveedores de servicios/subcontratas, EL SISTEMA establecerá por defecto una política de liquidación financiera de salvaguarda donde **no se adelantará más del 40% del valor de la obra antes de su ejecución**, quedando retenido el 60% diferido hasta que el rol `Secretaria` proceda a la emisión del pago una vez recibida la confirmación técnica de buena ejecución por parte del equipo de supervisión.
+### Bloque 3: Subcontratas, Bloqueo Legal (RD 171/2004) y Salvaguarda
+- **RF-11 (Ubiquitous):** EL SISTEMA estructurará la ficha en: *Información Operativa* (pública) y *Datos Económico-Contables* (confidencial).
+- **RF-12 (Ubiquitous):** La información operativa incluirá capacidades (Materiales, Maquinaria, Subcontratas), indicadores `es_recc` / `aplica_isp_defecte`, y datos de contacto.
+- **RF-13 (State-driven):** SI la capacidad es *Subcontrata*, EL SISTEMA exigirá la custodia de la Póliza RC y certificados CAE/PRL, monitorizando sus fechas de caducidad.
+- **RF-14 (Event-driven):** CUANDO se intente asignar una subcontrata con póliza RC caducada a una orden, EL SISTEMA bloqueará taxativamente su asignación y generará un borrador de correo de requerimiento.
+- **RF-15 (Event-driven):** SI se bloquea la subcontrata, EL SISTEMA sugerirá automáticamente alternativas homologadas en regla.
+- **RF-16 (Ubiquitous):** EN las condiciones comerciales de subcontratas, EL SISTEMA aplicará por defecto una retención de salvaguarda del 60%, bloqueando la liquidación contable del importe restante hasta la confirmación de buena ejecución. **Este porcentaje de retención será editable y parametrizable de forma unitaria exclusivamente por el rol `Boss`** (0% a 100%).
 
-### Bloque 4: Ficha Detallada — Parte Económico-Contable Confidencial (Zero-Trust)
-- **RF-17:** MIENTRAS el usuario autenticado posea rol `Boss` o `Secretaria / RRHH`, EL SISTEMA mostrará el bloque confidencial de **Datos Económico-Contables**, que integrará:
-  1. *Condiciones de Pago:* Plazos acordados (días de crédito), forma de pago (transferencia, pagaré, giro) e IBAN del proveedor para abonos.
-  2. *Descuentos Comerciales:* Porcentaje de descuento comercial general y tabla de descuentos específicos por familia o artículo si existieran.
-  3. *Analítica de Compras:* Métricas agregadas y gráficas de volumen total de compra acumulado, desglose por fecha, identificación del artículo más comprado y lista de artículos comprados estancados (sin rotación en almacén).
-- **RF-18:** SI el usuario autenticado tiene rol `Ingeniero`, ENTONCES EL SISTEMA consumirá un endpoint segregado que omitirá por completo en el payload los datos del Bloque Económico-Contable (IBAN, plazos, descuentos y analíticas de rentabilidad de compra).
+### Bloque 4: Ficha Confidencial (Zero-Trust)
+- **RF-17 (State-driven):** MIENTRAS el rol sea `Boss` o `Secretaria`, EL SISTEMA mostrará IBAN, condiciones de pago, descuentos comerciales y KPIs de compra (stock estancado, volumen).
+- **RF-18 (Ubiquitous):** SI el rol es `Ingeniero`, EL SISTEMA consumirá un endpoint que purgará y ocultará todo el bloque económico-contable (`403 Forbidden` sobre el payload directo).
 
-### Bloque 5: Gestión de Garantías, Devoluciones RMA y Mermas Fiscales Justificadas (Veri*factu)
-- **RF-19:** EL SISTEMA dispondrá en la ficha del proveedor de un repositorio documental donde se registrará la **Política Contractual de Devoluciones y Garantías** emitida por el proveedor, que actuará como guía operativa de referencia para devoluciones y sustituciones vinculadas por código de material.
-- **RF-20:** CUANDO un material instalado en una obra sea consultado por el personal técnico (enlace desde la hoja de trabajo del cliente), EL SISTEMA mostrará la trazabilidad completa del artículo: *Código de referencia del proveedor, Lote de fabricación, Fecha de compra y Condiciones de garantía legal y del fabricante*.
-- **RF-21:** CUANDO se tramita una reclamación por material defectuoso desde el módulo de incidencias hacia el proveedor, EL SISTEMA:
-  1. Establecerá el estado intermedio del artículo como **"En revisión"** mientras se gestiona con el fabricante o distribuidor.
-  2. Generará un documento físico formal de **Devolución / Reparación (RMA)** con el motivo detallado de la avería/defecto para acompañar físicamente a la pieza enviada.
-  3. Archivará todos los dictámenes técnicos y documentación aportada por el proveedor o fabricante en la ruta local aislada por tenant: `/docs/<empresa_id>/incidencias`.
-  4. SI la garantía es desestimada o denegada por el fabricante (p. ej. por sobretensión o mal uso alegado), EL SISTEMA generará un **Certificado Interno de Merma / Baja Técnica** exigiendo adjuntar el dictamen de rechazo en `/docs/<empresa_id>/incidencias` para justificar fiscal y contablemente la deducibilidad de la pérdida (Veri*factu / RD 1007/2023), fijando a continuación el stock del artículo en **0**.
-  5. SI el proveedor sustituye o repara satisfactoriamente la pieza, al registrar en el sistema el nuevo albarán o factura de entrega con el concepto "Sustitución", EL SISTEMA incrementará automáticamente las existencias (**stock +1**).
-  6. SI el proveedor resuelve la incidencia mediante compensación económica, EL SISTEMA registrará la correspondiente **Factura Rectificativa / Nota de Abono**, vinculándola a la incidencia y minorando el saldo contable pendiente con el proveedor.
-- **RF-22:** EL SISTEMA registrará la incidencia por material defectuoso de forma simultánea en 4 entidades para garantizar trazabilidad en 360 grados: en el *Parte de Obra*, en el *Historial de la Obra del Cliente*, en la *Ficha del Operario responsable* y en el *Expediente del Proveedor* (para contrastar su idoneidad de homologación).
+### Bloque 5: Garantías, Devoluciones y Mermas (Veri*factu)
+- **RF-19 (Ubiquitous):** EL SISTEMA custodiará en `/docs/<empresa_id>` la Política de Devoluciones (RMA).
+- **RF-20 (Event-driven):** CUANDO se consulte un material en la obra, EL SISTEMA trazará el Lote, Fecha y Garantía vinculada al proveedor.
+- **RF-21 (Event-driven):** CUANDO se tramite una pieza defectuosa, EL SISTEMA generará el volante RMA y asignará el estado "En revisión".
+- **RF-21.4 (Event-driven):** SI la garantía es denegada, EL SISTEMA generará el Certificado Interno de Merma (justificación Veri*factu). Per a artículos en inventario, minorará el stock exacto (`Stock = Stock - N`); para artículos ya instalados en obras, el stock de almacén se mantendrá intacto y la pérdida se imputará financieramente contra la rentabilidad del Parte de Obra original para prevenir stocks negativos.
+- **RF-22 (Ubiquitous):** EL SISTEMA trazará la incidencia en 360º (Ficha Proveedor, Cliente, Operario y Parte de Obra).
 
-### Bloque 6: Pedidos de Compra, Three-Way Matching Asistido por IA y Recepción en Campo
-- **RF-23:** EL SISTEMA dispondrá en la ficha del proveedor de un enlace o botón para acceder al **Historial de Pedidos de Compra Emitidos**, que abrirá un popup modal con buscador y filtros por *Artículo, Referencia y Fecha*, enlazando cada pedido punto a punto con sus albaranes y facturas asociadas.
-- **RF-24:** EL SISTEMA permitirá desde la ficha del proveedor redactar una nueva **Propuesta de Pedido de Compra / Reposición**, permitiendo seleccionar múltiples materiales de dicho proveedor con sus referencias precargadas.
-- **RF-25:** CUANDO se genera la orden de pedido de compra formal, EL SISTEMA estampará obligatoriamente la **Cláusula Contractual de Precio Firme y Producto Cerrado**, advirtiendo de forma vinculante que cualquier cambio de precio unitario, sobrecoste de transporte o propuesta de producto sustitutorio deberá comunicarse y validarse por escrito antes de la expedición del material.
-- **RF-26:** CUANDO se reciben los albaranes y facturas de los proveedores (incluyendo facturas recapitulativas que consolidan múltiples albaranes del mes), EL SISTEMA ejecutará una **Triple Conciliación Automatizada por IA (*Three-Way Matching*)**:
-  1. *Fase 1 (Pedido ➔ Albarán):* Comprobará referencias y unidades entregadas; si existe una discrepancia, unidades faltantes o producto alternativo no avisado, EL SISTEMA marcará el albarán en **"Alerta de Descuadre / Sustitución"** y **dejará la entrada física del material en estado aparcado (Cuarentena / Stock no disponible)**, registrando la incidencia y requiriendo interacción y resolución humana antes de ingresar el stock en almacén.
-  2. *Fase 2 (Albarán(es) ➔ Factura):* Contrastará precios unitarios, descuentos comerciales pactados e importes totales cruzando uno o múltiples albaranes asociados; si detecta un incremento de precio unitario o una omisión de descuento, marcará la factura en estado **"Discrepancia Económica"** y **bloqueará de forma preventiva el pase a contabilidad para pago** hasta la resolución y autorización expresa de `Boss` o `Secretaria`.
-- **RF-27:** CUANDO un pedido sea entregado directamente por el proveedor en la obra o finca del cliente (sin paso previo por almacén central), EL SISTEMA operará bajo la siguiente disciplina:
-  1. El operario en campo es el responsable de verificar que la documentación física o albarán concuerda con el material descargado.
-  2. Mediante la PWA (`/operari`), el operario capturará la fotografía del albarán y de los bultos en parcela; en zonas sin cobertura, **el registro fotográfico y metadatos se almacenarán de forma cifrada localmente en el dispositivo (IndexedDB, Offline-First)**, sincronizándose automáticamente en segundo plano en cuanto se recupere la conexión de red.
-  3. El operario deberá entregar físicamente el albarán en papel en base al finalizar la jornada laboral.
-  4. En caso de que el transportista no entregue albarán físico en papel (envío puramente telemático por email), el operario fotografiará la descarga y matrícula del vehículo seleccionando en la PWA *"Albarán remitido por email"*, sin bloquear la jornada de trabajo.
+### Bloque 6: Three-Way Matching y Recepción Offline PWA
+- **RF-23 (Ubiquitous):** EL SISTEMA proveerá un historial de Pedidos con trazabilidad punto a punto hacia albaranes y facturas.
+- **RF-24 (Event-driven):** EL SISTEMA permitirá redactar Pedidos de Reposición cruzando referencias internas.
+- **RF-25 (Ubiquitous):** EL SISTEMA estampará obligatoriamente la Cláusula de Precio Ferme en todos los pedidos generados.
+- **RF-26 (Event-driven):** CUANDO se reciban documentos, EL SISTEMA ejecutará el *Three-Way Matching*: Fase 1 (Pedido ➔ Albarán) validará referencias. Fase 2 (Albarán ➔ Factura) bloqueará el pase a contabilidad si el precio aumenta.
+- **RF-26.1 (Ubiquitous):** EL SISTEMA aplicará un margen paramétrico de tolerancia del $\pm2\%$ para diferencias de medición exclusivamente en familias de productos "A Granel" (áridos, cables, tuberías al corte).
+- **RF-26.2 (State-driven):** En la Fase 1 del *Three-Way Matching*, si se entrega una cantidad inferior a la demandada (sin productos erróneos), EL SISTEMA ingresará el material recibido al almacén de forma inmediata, conmutando el estado del pedido a `ENTREGA_PARCIAL` y generando un *Backorder* automático por las unidades pendientes, sin bloquear el flujo logístico a cuarentena.
+- **RF-27 (Ubiquitous):** CUANDO el operario reciba el material en campo, utilizará la PWA (`/operari`) para fotografiar el albarán y los bultos; en ausencia de red, los metadatos y fotos se cifrarán en `IndexedDB` (Offline-First) y se sincronizarán en segundo plano al recuperar conexión.
 
-### Bloque 7: Inmutabilidad, Estados de Operatividad y Prohibición de Borrado Físico
-- **RF-28:** EL SISTEMA **bloqueará de forma absoluta la eliminación física (`DELETE`)** de cualquier proveedor en la base de datos una vez creado; el registro base y su histórico de compras, garantías e incidencias permanecerán inmutables para garantizar la auditoría legal y operativa.
-- **RF-29:** EL SISTEMA dispondrá de un interruptor de estado operativo **"Activo / Inactivo (Inhabilitado)"** en la ficha del proveedor; CUANDO un proveedor sea marcado como *Inactivo*, EL SISTEMA lo excluirá automáticamente de los selectores para nuevos pedidos de compra y de las sugerencias inteligentes de sustitución en urgencias, manteniendo intacto todo su historial histórico.
+### Bloque 7: Inmutabilidad y RGPD
+- **RF-28 (Unwanted behavior):** EL SISTEMA bloqueará de forma absoluta el `DELETE` físico de proveedores con historial comercial o técnico.
+- **RF-28.1 (Event-driven):** SI un proveedor autónomo exige el Derecho de Supresión RGPD, EL SISTEMA ejecutará el Bloqueo Legal (Art. 32 LOPDGDD), anonimizando contactos pero manteniendo inmutable el NIF e IBAN contable asociado a facturas del período de prescripción.
+- **RF-29 (State-driven):** CUANDO un proveedor sea inhabilitado (`actiu = FALSE`), EL SISTEMA lo excluirá de los selectores operativos de la UI.
 
 ---
 
-## Requisitos No Funcionales
-- **Almacenamiento Local Seguro Multi-Tenant:** Todos los documentos de pólizas de seguro RC, contratos de política de garantía, facturas, albaranes de compra, fotografías de validación en campo y expedientes de incidencias con dictámenes técnicos de merma se almacenan directamente en los discos locales del Mini PC/servidor, organizados en carpetas estrictamente aisladas por inquilino (`/docs/<empresa_id>/...`), con copias de seguridad semanales programadas cada domingo (sin dependencia de AWS S3).
-- **Seguridad Multi-Tenant (RLS):** Cada consulta y actualización sobre proveedores, pedidos y pólizas aplica Row Level Security mandatorio mediante `app.current_empresa_id`.
-- **Protección de Datos Bancarios (Zero-Trust):** El IBAN del proveedor y los descuentos comerciales confidenciales solo se transmiten en respuestas autenticadas para `Boss` y `Secretaria / RRHH`.
-- **Tolerancia Cero a Datos Ficticios (Zero Mock Data):** La UI nunca generará proveedores simulados si la base de datos está vacía.
-- **Diseño Camaleón:** La interfaz adaptará colores de marca y tipografías sin incorporar sesgos terminológicos de un sector específico (marca blanca universal).
+## 5. Casos Límite y Resiliencia (EDGE-01 a EDGE-22)
+
+| Código | Tipo EARS | Módulo | Vector de Falla / Escenario Límite | Comportamiento del Sistema |
+|---|---|---|---|---|
+| **EDGE-01** | *Event-driven* | OCR | IBAN extraído difiere del IBAN histórico registrado en la base de datos (Fraude BEC). | Bloquea actualización automática; levanta alerta roja que requiere autorización explícita de `Boss`. |
+| **EDGE-02** | *Unwanted* | Seguridad | Usuario `Ingeniero` intenta forzar petición a `/proveidors/{id}/financiero`. | El backend intercepta y retorna `403 Forbidden`, registrando el intento en el Audit Log. |
+| **EDGE-03** | *Event-driven* | PRL | Caducidad de la póliza RC de una subcontrata detectada en mitad de una obra en ejecución. | Cronjob diario detecta la caducidad, lanza alerta crítica a oficina técnica y pausa pagos pendientes. |
+| **EDGE-04** | *Unwanted* | Stock | Se intenta tramitar un Certificado de Merma de almacén por una cantidad `N` superior al stock actual. | Bloquea la merma matemática para evitar stock negativo, requiriendo regularización de inventario previa. |
+| **EDGE-05** | *State-driven* | 3-Way Match | Administración intenta validar la Fase 2 (Factura) antes de recibir confirmación del albarán físico. | Mantiene el *Matching* en estado "Pendiente Sincronización Campo" hasta que la PWA vacíe su `IndexedDB`. |
+| **EDGE-06** | *Event-driven* | RGPD | Petición formal de borrado de un proveedor persona física (Autónomo) con facturas vigentes. | Ejecuta `BLOQUEO_LEGAL_RGPD`: elimina teléfonos/emails pero preserva NIF y apuntes contables inmutables. |
+| **EDGE-07** | *Event-driven* | Compras | Factura recapitulativa difiere del sumatorio de albaranes parciales validados. | Detiene el pase a pagos, aísla la diferencia y requiere autorización administrativa. |
+| **EDGE-08** | *Unwanted* | Fiscal | Introducción de NIF/CIF o NIF-IVA intracomunitario con formato erróneo. | Bloquea inserción en formulario o CSV mediante validación algorítmica y VIES de la UE. |
+| **EDGE-09** | *Unwanted* | Concurrencia | Dos usuarios editan simultáneamente las condiciones de pago del mismo proveedor. | Aplica control optimista (`version_id`); rechaza la segunda petición forzando actualización. |
+| **EDGE-10** | *Unwanted* | CSV | Importación de listado masivo con un NIF duplicado repetido en múltiples filas del mismo fichero. | Ingresa la primera fila válida y deposita el resto en la tabla visual de errores del proceso de ingesta. |
+| **EDGE-11** | *Unwanted* | CSV | Archivo de importación delimitado con caracteres inconsistentes o codificación exótica. | *Sniffer* local intercepta la anomalía, autodetecta UTF-8 o rechaza el bloque antes de escritura. |
+| **EDGE-12** | *Unwanted* | Integridad | Intento de modificación de CIF a un proveedor tras haberle registrado una factura en firme. | Bloqueo inmutable de base de datos para preservar la trazabilidad fiscal. |
+| **EDGE-13** | *Unwanted* | Catálogo | Intento de cargar un CSV con miles de referencias y precios de proveedor al vacío. | Sistema rechaza la ingesta directa; exige un albarán/pedido asociado para popular el catálogo maestro. |
+| **EDGE-14** | *Event-driven* | 3-Way Match | Entrega de grava (A Granel) difiere en un 1,5% respecto al volumen del pedido. | El algoritmo acepta el descuadre al estar dentro de la tolerancia paramétrica ($\pm2\%$), liquidando el pago. |
+| **EDGE-15** | *Unwanted* | Pagos | Intento de emitir pago del 100% de una subcontrata (salvaguarda) sin la firma de cierre de obra. | Tesorería bloquea la remesa de la retención hasta disponer del evento de confirmación técnica. |
+| **EDGE-16** | *State-driven* | PWA | Pérdida de cobertura de red (Offline) en el instante de hacer la fotografía del albarán en parcela. | Los metadatos y la imagen se cifran en local (Service Worker) y se reintentan automáticamente al reconectar. |
+| **EDGE-17** | *Unwanted* | DB | Solicitud HTTP directa enviando un `DELETE` sobre el ID de un proveedor histórico. | PostgreSQL rechaza la orden emitiendo error `RESTRICT` por violaciones de clave foránea. |
+| **EDGE-18** | *Event-driven* | Estados | Intento de vincular un proveedor inhabilitado (`actiu=FALSE`) a una nueva orden de compra. | Interfaz oculta al proveedor de los selectores y la API rechaza el enlace emitiendo error 400. |
+| **EDGE-19** | *Unwanted* | Merma Obra | Intento de aplicar fórmula de merma de almacén a una pieza defectuosa ya instalada en el cliente. | El sistema bloquea la deducción de inventario, redirigiendo la merma fiscal exclusivamente al costo de la obra originaria. |
+| **EDGE-20** | *Event-driven* | Entregas | Proveedor entrega 50 unidades de una orden de 100 (entrega parcial de material exacto). | Sistema aprueba el albarán de las 50 unidades sin aislar en cuarentena y genera *Backorder* para las restantes. |
+| **EDGE-21** | *Event-driven* | Auditoría | El `Boss` autoriza el cambio de IBAN modificado de un proveedor histórico. | Sistema ejecuta la actualización y lanza asiento inalterable al SIF guardando IBAN antiguo, nuevo y timestamp. |
+| **EDGE-22** | *Unwanted* | Facturación | Subcontrata envía factura exigiendo el 100% sin deducir el importe de retención de salvaguarda. | Módulo contable bloquea el pago del excedent y notifica requerimiento de factura rectificativa al proveedor. |
 
 ---
 
-## Fuera de Alcance (Lo que NO hace este módulo)
-- No realiza la gestión de inventario físico ni asignación de ubicaciones de estanterías en nave (pertenece a `/gestio/magatzem`).
-- No permite la importación masiva de catálogos completos de fabricantes por CSV (solo se incorporan productos comprados mediante albaranes y facturas reales).
-- No emite transferencias bancarias directas ni asientos contables oficiales de cierre fiscal (pertenece a `/gestio/comptabilitat`).
-- No realiza envíos de correos de pedido a proveedores de forma desatendida o automática (siempre bajo supervisión humana).
-- No expone datos bancarios ni márgenes de compra al rol `Ingeniero`.
+## 6. Requisitos No Funcionales (RNF)
+- **Almacenamiento Local Soberano:** Documentos (Pólizas RC, Garantías, Facturas y Mermas) se almacenan en los discos locales y servidor Hetzner Alemania bajo partición tenant (`/docs/<empresa_id>/...`), con backup dominical (Cero AWS S3).
+- **Seguridad Multi-Tenant (RLS):** Toda consulta a tablas del módulo se aísla criptográficamente mediante la directiva de PostgreSQL `FORCE ROW LEVEL SECURITY` e inyección de contexto.
+- **Protección Zero-Trust:** El IBAN y condiciones de crédito se sirven exclusivamente a `Boss` y `Secretaria`, cifrados en reposo (AES-256-GCM).
+- **Tolerancia Cero a Mock Data:** Ausencia total de registros falsos (Día 0 Real).
+- **UX Camaleónica:** Adaptabilidad total a variables CSS de marca sin sesgo de sector.
 
 ---
 
-## Criterios de Finalización (Definition of Done)
-1. Todos los requisitos funcionales (RF-01 al RF-29) redactados en sintaxis formal EARS y consolidados tras la resolución exhaustiva de la auditoría QA.
-2. El listado principal `/gestio/proveidors` se presenta en formato tabular limpio sin bloques de KPIs superiores, con buscador flexible/NIF exacto ordenado por volumen de uso sin exponer cifras económicas al Ingeniero.
-3. El alta de proveedores contempla el flujo asistido por IA (OCR de facturas/albaranes) con revisión humana obligatoria (*Human-in-the-Loop*).
-4. El NIF/CIF es editable únicamente antes de existir histórico comercial; con albaranes o facturas vinculadas queda fiscalmente inmutable (prohibición de `DELETE` en todos los casos).
-5. Se incorpora el estado operativo "Activo / Inactivo (Inhabilitado)" para excluir proveedores descartados de nuevos pedidos y sugerencias.
-6. La ficha `/gestio/proveidors/[id]` está dividida en Información Comercial (pública técnica) y Datos Económico-Contables (restringida a Boss y Secretaria).
-7. Blindaje en PRL (RD 171/2004): bloqueo de la subcontrata sin seguro y sugerencia de alternativa en regla, con redacción de email en borrador (*Human-in-the-Loop*).
-8. Política de anticipos de salvaguarda (máx 40% adelantado, 60% diferido hasta confirmación técnica de buena ejecución por secretaría).
-9. Blindaje Three-Way Matching (con soporte de facturas recapitulativas y notas de abono) y material en cuarentena/aparcado ante descuadres.
-10. Protocolo de entrega en campo 100% offline-first con soporte para albaranes físicos y telemáticos.
-11. Repositorio documental local estructurado por tenant (`/docs/<empresa_id>/incidencias`).
-12. Se respeta estrictamente la política de no realizar commits sin solicitud explícita del usuario.
+## 7. Fuera de Alcance
+- Gestión de inventario físico y picking en estanterías (Spec 004).
+- Importación masiva de catálogos teóricos CSV no respaldados por albarán.
+- Ejecución oficial de transferencias SEPA / asientos de cierre fiscal (Spec 007).
+- Automatización de envíos de email sin confirmación humana previa (*Human-in-the-Loop*).
+
+---
+
+## 8. Matriz de Trazabilidad 1:1 de la Definition of Done (DoD)
+
+Para certificar el cierre de la Spec 003, la suite de pruebas automatizadas (*Zero-Mock Data*, PostgreSQL real con RLS) deberá cumplir de forma unívoca la siguiente tabla (31 RFs x 22 EDGEs):
+
+| Código RF | Objetivo Técnico Verificable | Caso Límite Vinculado | Assert / Criterio de Aprobación DoD |
+|---|---|---|---|
+| **RF-01 / RF-02** | Directorio paginado, código visual `PRV-XXXX` y búsqueda reactiva. | **EDGE-02** | *Server-Side Pagination* activa. Ingeniero no recibe JSON con facturación agregada. |
+| **RF-03 / RF-04** | Día 0 real y apertura de ficha de proveedor. | - | UI en blanco real, renderizado `/proveidors/[id]` libre de mocks. |
+| **RF-05 / RF-06** | Alta, validación algorítmica de NIF y generación de `PRV`. | **EDGE-08 / EDGE-10** | Inserción de duplicados en BD rechazada; DNI inválido lanza excepción `400 Bad Request`. |
+| **RF-07** | Inmutabilidad fiscal del NIF y concurrencia optimista. | **EDGE-09 / EDGE-12** | Edición de NIF bloqueada con histórico; control optimista (`version_id`) ante colisiones concurrentes. |
+| **RF-08 / RF-09** | Extracción IA/OCR y confirmación humana (*HITL*). | **EDGE-11** | Detección inteligente; despliegue de UI modal de confirmación antes del `INSERT`. |
+| **RF-09.1** | Prevención de fraude BEC (Alteración IBAN por OCR) y SIF. | **EDGE-01 / EDGE-21** | Discrepancia bloquea actualización, exige firma del `Boss` y emite evento al SIF. |
+| **RF-10** | Poblar catálogo únicamente mediante documentos reales. | **EDGE-13** | Intento de inserción CSV masiva de productos huérfanos rechazada (`405`). |
+| **RF-11 / RF-12** | Estructura bidivisional e indicadores tributarios (RECC/ISP). | - | Inserción correcta de `es_recc` y `aplica_isp_defecte`. |
+| **RF-13 / RF-14** | Bloqueo taxativo de asignación sin seguro RC en regla. | **EDGE-03** | Subcontrata con póliza caducada lanza excepción en la asignación de tarea. |
+| **RF-15** | Sugerencia inteligente de proveedor alternativo en regla. | - | Retorno de lista de subcontratas con RC válido para el mismo sector. |
+| **RF-16** | Retención paramétrica por salvaguarda de ejecución. | **EDGE-15 / EDGE-22** | Pagos bloqueados por retención excedente hasta firma de certificación técnica. |
+| **RF-17 / RF-18** | Confidencialidad del bloque Económico-Contable (Zero-Trust). | **EDGE-02** | `GET /proveidors/{id}/financiero` retorna `403 Forbidden` si el rol es Ingeniero. |
+| **RF-19 / RF-20** | Trazabilidad de Garantías/RMA desde el material instalado. | - | Historial del artículo resuelve el proveedor y lote de fabricación correctos. |
+| **RF-21 / RF-21.4** | Gestión RMA, emisión de Certificado de Merma y Bifurcación. | **EDGE-04 / EDGE-19** | Certificado exige justificante `/docs/`; la merma no genera stock negativo (diferencia instalación vs almacén). |
+| **RF-22** | Trazabilidad en 360 grados de incidencias operativas. | - | Reflejo interrelacionado en tablas de Obra, Proveedor, Operario y Parte. |
+| **RF-23 / RF-24** | Historial de compras y redacción de pedidos de reposición. | - | Popup modal muestra el linaje completo: Pedido ➔ Albarán ➔ Factura. |
+| **RF-25** | Cláusula de precio firme inmutable en pedidos. | - | PDF y metadatos del pedido incluyen la constante de inmutabilidad de condiciones. |
+| **RF-26 / RF-26.1** | *Three-Way Matching* con tolerancia de $\pm2\%$ en granel. | **EDGE-07 / EDGE-14** | Factura recapitulativa discrepante genera alerta; variaciones < 2% en áridos aprueban. |
+| **RF-26.2** | Gestión logística de Entregas Parciales (*Backorders*). | **EDGE-20** | Recepción de unidades menores a lo pedido genera *Backorder* automático sin cuarentena. |
+| **RF-27** | Recepción en campo offline-first mediante PWA y validación. | **EDGE-05 / EDGE-16** | Fase de Facturación queda en "Pendiente de Campo" hasta vaciado de `IndexedDB`. |
+| **RF-28 / RF-28.1** | Prohibición de borrado físico (`DELETE`) y Bloqueo RGPD. | **EDGE-06 / EDGE-17** | `DELETE` directo retorna `RESTRICT`; Autónomos reciben anonimización selectiva. |
+| **RF-29** | Estado inactivo de proveedor (`actiu = FALSE`). | **EDGE-18** | API rechaza (`400`) vincular proveedor inhabilitado a nuevas órdenes de compra. |
