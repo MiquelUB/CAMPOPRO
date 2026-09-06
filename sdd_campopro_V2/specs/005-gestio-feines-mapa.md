@@ -1,5 +1,8 @@
 # Spec 005 — Seguiment Feines / Mapa (/gestio/feines/mapa)
 
+> **AVISO DE CONSOLIDACIÓN ARQUITECTÓNICA:**  
+> Esta especificación ha sido **fusionada e integrada en su totalidad dentro de `001-gestio-dashboard.md` (Spec 001 — Dashboard i Torre de Control Operativa /gestio)**, que asume el rol de Cockpit Único y Torre de Control Geográfica en tiempo real. Todas las rutas `/gestio/feines/mapa` e `/gestio/incidencies` quedan unificadas en `/gestio`.
+
 ## Contexto y objetivo
 La pantalla de Seguimiento de Trabajos y Mapa (`/gestio/feines/mapa`) es la **Torre de Control Geográfica en Tiempo Real** y el **Centro Operativo de Resolución de Incidencias** de la empresa técnica. Conecta la actividad diaria de las cuadrillas en campo con el equipo de supervisión y gestión en oficina técnica.
 
