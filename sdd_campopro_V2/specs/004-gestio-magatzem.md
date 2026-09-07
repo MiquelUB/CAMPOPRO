@@ -1,185 +1,395 @@
 # Spec 004 — Módulo de Magatzem i Inventari (/gestio/magatzem)
 
-## Contexto y objetivo
+## 1. Contexto y objetivo
+
 El módulo de Magatzem i Inventari es el pulmón operativo y logístico de la empresa técnica. Conecta la entrada de materiales desde los albaranes y facturas de compra de los proveedores (Spec 003) con la preparación matinal de suministros para las cuadrillas y su consumo e imputación exacta en cada orden de trabajo ejecutada en campo (PWA `/operari`).
 
-Resuelve con rigor la gestión multialmacén simultánea (Almacén Central en nave física, stock rodante en furgonetas tratadas como **talleres móviles con dotación base bajo la custodia del Responsable de Cuadrilla**, y asignaciones directas a operarios), la codificación individual de maquinaria por número de serie (`[Herramienta] [Nº Ejemplar] = [Número de Serie]`) con **inhabilitación permanente de activos dados de baja**, el modelado de atributos técnicos normalizados por vertical, la ubicación física dual (Gaveta principal y Palé secundario), la gestión de materiales continuos con distinción de **Formato de Suministro (Bobina/Rollo continuo vs. Barra rígida)** y check de retal "Parcial", el bloqueo transaccional concurrente en base de datos (**`SELECT ... FOR UPDATE` en PostgreSQL**) para reservas de stock, el control inteligente de compras por IA con soporte para **entregas parciales (backorders) y albaranes multi-pedido**, la estricta segregación *Zero-Trust* donde el Ingeniero solo accede a precios de venta finales para presupuestar (bloqueando albaranes de compra y costes de proveedor), la disciplina de **una hoja de picking y devolución por cada orden de trabajo**, la sustitución de herramientas averiadas a mitad de turno con pausa del temporizador de obra, el relevo de mando de cuadrilla desde base, el tratamiento de mermas en material en depósito respaldadas por seguros, la gestión del slot de **"Residuos / Chatarra"** con cumplimiento documental RAEE y Ley de Residuos, el criterio FEFO para caducidades, la alerta de cuota en PWA, y el blindaje fiscal de anticipos devengados formalmente (mínimo 45% o 100% de materiales con Veri*factu).
+Resuelve con rigor la gestión multialmacén simultánea (Almacén Central en nave física, stock rodante en furgonetas tratadas como talleres móviles con dotación base bajo la custodia del Responsable de Cuadrilla, y asignaciones directas a operarios). Incorpora la codificación individual de maquinaria por número de serie (`[Herramienta] [Nº Ejemplar] = [Número de Serie]`) con inhabilitación permanente de activos dados de baja, la ubicación física dual (Gaveta principal y Palé secundario), y la gestión de materiales continuos con distinción de Formato de Suministro (Bobina/Rollo continuo vs. Barra rígida) y check de retal "Parcial".
 
-Toda la arquitectura respeta el principio de Tolerancia Cero a Datos Ficticios (*Zero Mock Data* con Estado Día 0 real), almacenamiento de expedientes en discos locales del Mini PC (sin AWS S3), aislamiento multi-inquilino mandatorio (RLS) y segregación *Zero-Trust* absoluta.
+A nivel arquitectónico, implementa el bloqueo transaccional concurrente en base de datos (`SELECT ... FOR UPDATE` en PostgreSQL) para reservas de stock, el control inteligente de compras por IA con soporte para entregas parciales (*backorders*), la estricta segregación *Zero-Trust* donde el Ingeniero solo accede a precios de venta finales, la disciplina de una hoja de picking y devolución por cada orden de trabajo, y la gestión del slot de "Residuos / Chatarra" con cumplimiento documental RAEE.
+
+Toda la arquitectura respeta el principio de Tolerancia Cero a Datos Ficticios (*Zero Mock Data* con Estado Día 0 real), almacenamiento de expedientes en discos locales aislados (sin AWS S3), y aislamiento multi-inquilino mandatorio (RLS).
 
 ---
 
-## Usuarios / actores y Matriz de Acceso (Zero-Trust)
+## 2. Usuarios / actores y Matriz de Acceso (Zero-Trust)
+
 El backend garantiza el aislamiento multi-inquilino (RLS) y la segregación estricta de permisos por rol:
 
-- **Boss (Gerencia / Propietario):** Acceso total e irrestricto a la gestión de almacén, altas manuales y por OCR, configuración de umbrales (mínimo/óptimo), aprobación de compras consolidadas por IA, resolución de incidencias y no conformidades con proveedores, liquidación de depósitos/consignaciones y siniestros con aseguradoras, emisión y cobro de facturas finales a clientes, calendario de calibraciones, **valoración económica total del inventario en euros (€) basada en el último precio de compra y acceso al panel macroeconómico confidencial de la empresa**.
-- **Secretaria / RRHH:** Acceso total operativo al directorio de inventario, altas manuales y por OCR de albaranes/facturas de compra, conciliación de entregas parciales y albaranes multi-pedido, **emisión exclusiva de facturas a clientes** (facturas de anticipo por aceptación de presupuesto y facturas finales tras validación técnica del presupuesto aprobado), liquidación de material en depósito y control de siniestros, tramitación de facturas de venta de chatarra/residuos con inversión de sujeto pasivo de IVA y custodia de certificados RAEE, **consulta de costes de compra y valoración contable del stock**, y tramitación de pedidos consolidados.
-- **Ingeniero / Supervisor Técnico:** Planificación de órdenes de trabajo con reserva de stock bajo bloqueo transaccional (`SELECT ... FOR UPDATE`), consulta de existencias físicas y stock en tránsito con desglose de entregas parciales pendientes, ubicación física detallada (gaveta y palé), confección de presupuestos utilizando exclusivamente los **precios finales de venta** (sin acceso a costes de adquisición ni a albaranes de entrega/compra de proveedores), consulta de facturas finales de sus obras para defenderlas técnicamente ante el cliente o gerencia; **bloqueo estricto a nivel de API sobre los albaranes de compra de proveedores, costes unitarios de adquisición y el cuadro de mando macroeconómico de la empresa**.
-- **Responsable de Cuadrilla (Capataz / Jefe de Equipo):** Titular formal y responsable directo de la custodia de la furgoneta asignada, herramientas con número de serie, validación de hojas de picking (siguiendo lotes FEFO y formato de barras/bobinas) y devolución por tarea (marcando check parcial en tubos cortados), registro de traspasos entre furgonetas en campo y comunicación de averías intermedias con pausa de temporizador.
-- **Operario de Cuadrilla (`/operari`):** Acceso a la PWA móvil para consultar y validar la hoja de picking matinal de cada orden de trabajo (1 tarea = 1 picking list), registrar salidas de urgencia justificadas, ejecutar tareas sin bloqueos offline por traspasos, uso de sobrantes entre tareas consecutivas con reingreso en nave al cierre de turno, recepción de alertas de cuota de almacenamiento local excedida, y foto del cuentakilómetros al cerrar jornada de flota.
+* **Boss (Gerencia / Propietario):** Acceso total e irrestricto a la gestión de almacén, configuración de umbrales, aprobación de compras por IA, liquidación de depósitos y siniestros con aseguradoras, valoración económica total del inventario en euros (€) basada en el último precio de compra y acceso al panel macroeconómico confidencial.
+
+
+* **Secretaria / RRHH:** Acceso operativo al directorio, altas manuales y por OCR de albaranes de compra, conciliación de entregas parciales, emisión exclusiva de facturas de venta de clientes y tramitación de facturas de venta de chatarra/residuos, y consulta de costes de compra y valoración contable del stock.
+
+
+* **Ingeniero / Supervisor Técnico:** Planificación de órdenes con reserva de stock, consulta de existencias físicas y ubicaciones detalladas. Confección de presupuestos utilizando exclusivamente precios finales de venta. **Bloqueo estricto a nivel de API sobre los albaranes de compra de proveedores, costes unitarios de adquisición y el cuadro de mando macroeconómico**.
+
+
+* **Responsable de Cuadrilla (Capataz):** Titular formal de la custodia de la furgoneta asignada, validación de hojas de picking (siguiendo lotes FEFO) y devolución por tarea (check "Parcial" en tubos), y registro de traspasos entre furgonetas en campo.
+
+
+* **Operario de Cuadrilla (`/operari`):** Acceso a la PWA móvil para consultar la hoja de picking matinal (1 tarea = 1 picking list), ejecutar tareas offline, reportar urgencias o averías, y foto del cuentakilómetros al cerrar jornada.
+
+
+
+### Matriz de Acceso por Rol
+
+| Entidad / Función | Boss | Secretaria / RRHH | Ingeniero | Responsable / Operario |
+| --- | --- | --- | --- | --- |
+| **Directorio, Stock Físico y Ubicaciones** | Lectura / Escritura | Lectura / Escritura | Solo Lectura | Lectura (PWA) |
+| **Planificación y Reserva Transaccional** | Lectura / Escritura | Lectura / Escritura | Lectura / Escritura | Sin acceso |
+| **Hoja de Picking y Devolución Parcial** | Lectura / Escritura | Lectura / Escritura | Solo Lectura | **Escritura (Validación)** |
+| **Precios de Venta a Cliente Final** | Lectura completa | Lectura completa | Lectura completa | Sin acceso |
+| **Costes de Compra y Facturas Proveedor** | Lectura completa | Lectura completa | **Bloqueo Total (403)** | Sin acceso |
+| **Valoración Económica Total Inventario** | Lectura completa | Lectura completa | **Bloqueo Total (403)** | Sin acceso |
 
 ---
 
-## Historias de usuario
-- **H1:** Como *Ingeniero*, quiero que al guardar la planificación de una obra, el sistema bloquee transaccionalmente las filas en base de datos para garantizar que si otro compañero planifica a la vez, no se asigne material inexistente.
-- **H2:** Como *Ingeniero*, quiero ver en el catálogo de almacén los precios de venta finales para elaborar mis presupuestos técnicos con margen, teniendo acceso a las facturas finales emitidas de mis obras para defenderlas ante el cliente, sin tener que ver ni gestionar albaranes de compra de proveedores que competen a administración.
-- **H3:** Como *Ingeniero*, quiero que si planifico una obra con material pedido pero pendiente de entrega, la IA me informe con precisión: *"Pedido con recepción parcial: X unidades disponibles, Y unidades en tránsito del pedido SUM-00#0142"*, sabiendo que dicho pedido puede llegar repartido en varios albaranes o en un albarán que agrupe varios pedidos.
-- **H4:** Como *Responsable de Cuadrilla*, quiero que en materiales continuos la hoja de picking me especifique si debo coger una bobina continua o barras rígidas, y si devuelvo 3m de una barra de 6m, marcar el check "Parcial" para que el inventario registre que se trata de un retal aprovechable.
-- **H5:** Como *Operario*, quiero que la PWA me alerte si el almacenamiento local de mi móvil se aproxima al límite de cuota, asegurando que las fotos de odómetro y devoluciones se sincronicen sin pérdida de datos.
-- **H6:** Como *Boss o Secretaria*, quiero que cuando una herramienta sea dada de baja definitiva por robo o siniestro irreparable, su número de serie quede desactivado e inhabilitado de por vida en el histórico, impidiendo su reactivación accidental.
-- **H7:** Como *Secretaria*, quiero emitir las facturas de anticipo (mín. 45% o 100% de materiales con Veri*factu) tras la aceptación del presupuesto por el cliente, y emitir la factura final una vez que el ingeniero valide los trabajos e incidencias de obra.
+## 3. Historias de usuario
+
+* **H1:** Como *Ingeniero*, quiero que al guardar la planificación de una obra, el sistema bloquee transaccionalmente las filas en base de datos para garantizar que si otro compañero planifica a la vez, no se asigne material inexistente.
+
+
+* **H2:** Como *Ingeniero*, quiero ver en el catálogo de almacén los precios de venta finales para elaborar mis presupuestos técnicos con margen, sin tener acceso a los costes de adquisición de proveedores que competen a administración.
+
+
+* **H3:** Como *Ingeniero*, quiero que si planifico una obra con material pendiente de entrega, la IA me informe con precisión del material disponible frente al que está en tránsito (*backorders*).
+
+
+* **H4:** Como *Responsable de Cuadrilla*, quiero que en materiales continuos la hoja de picking me especifique si debo coger una bobina o barras rígidas, y si devuelvo 3m de una barra de 6m, marcar el check "Parcial" para registrar el retal aprovechable.
+
+
+* **H5:** Como *Operario*, quiero que la PWA me alerte si el almacenamiento local de mi móvil se aproxima al límite de cuota, asegurando que las fotos offline se sincronicen sin pérdida de datos.
+
+
+* **H6:** Como *Boss o Secretaria*, quiero que cuando una herramienta sea dada de baja definitiva por robo o siniestro, su número de serie quede desactivado e inhabilitado de por vida en el histórico.
+
+
+* **H7:** Como *Secretaria*, quiero emitir las facturas de anticipo (mín. 45% o 100% de materiales con Veri*factu) tras la aceptación del presupuesto por el cliente, y la factura final una vez que el ingeniero valide los trabajos.
+
+
 
 ---
 
-## Requisitos Funcionales (Criterios de Aceptación en EARS)
+## 4. Requisitos Funcionales (Criterios de Aceptación en EARS)
 
 ### Bloque 1: Directorio Principal (`/gestio/magatzem`) y Estado "Día 0"
-- **RF-01:** EL SISTEMA presentará en `/gestio/magatzem` un listado tabular limpio **sin bloques de KPIs superiores**, mostrando por cada registro exclusivamente las siguientes 7 columnas: *Referencia, Nombre / Descripción del artículo, Proveedor habitual, Ubicación física en nave (Gaveta principal y Palé si existe), Stock Total Actual, Stock Mínimo y Estado de pedido* (p. ej. *Óptimo, Bajo Mínimos, Pedido en Curso con código de pedido y desglose de unidades en tránsito*).
-- **RF-02:** CUANDO el usuario introduce texto en el buscador de la lista, EL SISTEMA filtrará en tiempo real por coincidencia sobre: *Referencia, Nombre/Descripción, Proveedor y Ubicación física*.
-- **RF-03:** EL SISTEMA dispondrá de filtros operativos en el panel de control para segmentar la vista por familias y categorías internas de producto, stock bajo mínimos, herramientas/maquinaria, stock asignado a vehículos, material en tránsito (desglosando pedidos parciales), material en depósito / consignación, **slot de residuos/chatarra** y **envases retornables con fianza**.
-- **RF-04:** SI el sistema se encuentra en estado "Día 0" (cero artículos registrados en el almacén de la empresa), ENTONCES EL SISTEMA mostrará la pantalla completamente limpia, exhibiendo exclusivamente el buscador y los botones de acción: *"Alta manual de artículo"* y *"Entrada asistida por IA (Albarán/Factura)"*, sin datos ficticios ni métricas simuladas (*Zero Mock Data*).
+
+* **RF-01 (Ubiquitous):** EL SISTEMA presentará en `/gestio/magatzem` un listado tabular limpio con paginación del lado del servidor (*Server-Side Pagination*) y sin bloques de KPIs superiores, mostrando por cada registro: *Referencia, Nombre/Descripción, Proveedor habitual, Ubicación física (Gaveta/Palé), Stock Total Actual, Stock Mínimo y Estado de pedido*.
+
+
+* **RF-02 (Ubiquitous):** CUANDO el usuario introduce texto en el buscador, EL SISTEMA filtrará en tiempo real por coincidencia sobre: *Referencia, Nombre, Proveedor y Ubicación*.
+
+
+* **RF-03 (Ubiquitous):** EL SISTEMA dispondrá de filtros operativos para segmentar la vista por familias, stock bajo mínimos, maquinaria, stock rodante, material en tránsito, material en depósito, slot de residuos/chatarra y envases retornables con fianza.
+
+
+* **RF-04 (State-driven):** SI el sistema se encuentra en estado "Día 0", ENTONCES EL SISTEMA mostrará la pantalla completamente limpia, exhibiendo exclusivamente los botones *"Alta manual de artículo"* y *"Entrada asistida por IA"*, sin datos ficticios (*Zero Mock Data*).
+
+
 
 ### Bloque 2: Altas de Material, Formato Continuo, Atributos y Recepción
-- **RF-05:** CUANDO el usuario pulsa "Alta manual de artículo", EL SISTEMA desplegará un formulario solicitando los datos maestros generales (*Referencia interna, Nombre/Descripción, Tipología, Familia/Categoría interna, Proveedor habitual, Ubicación Principal en Gaveta, Ubicación Secundaria opcional en Palé, Stock Inicial, Stock Mínimo y Stock Óptimo*), e incorporará dinámicamente los **atributos técnicos normalizados según la vertical** (DN, PN, caudal en riego/fontanería; sección, tensión, CPR en electricidad; resistencia en edificación).
-- **RF-06:** EN materiales lineales continuos (tuberías, cables, mangueras), EL SISTEMA registrará en albarán/factura las unidades según la descripción del proveedor en **unidades enteras originales** (p. ej. *36 tubos, diámetro 40mm, 6m*), tipificando el **Formato de Suministro**:
-  1. *Bobina / Rollo continuo:* Para tiradas largas sin cortes prefijados.
-  2. *Barra rígida de longitud fija:* Especificando la longitud estándar de cada barra original (p. ej. barras de 6 metros).
-  Asimismo, EL SISTEMA mantendrá en el inventario una **diferenciación estricta entre unidades enteras estándar del proveedor y retales parciales aprovechables** (p. ej. sobrantes devueltos de 1m o 2m), calculando su coste proporcional por metro lineal a partir de la barra original para su valoración en existencias y posterior aprovechamiento sostenible. CUANDO la longitud requerida en una orden de trabajo sea inferior a la barra entera original (p. ej. 1,5m), **la política de picking del sistema obligará a buscar y prescribir prioritariamente entre los retales parciales disponibles** antes de autorizar el corte de una barra completa nueva; el sub-recorte resultante (p. ej. 0,5m) se registrará como nuevo retal o, si por su corta dimensión el responsable de almacén lo considera no aprovechable, se derivará directamente a reciclaje (RF-37).
-- **RF-07:** EN herramientas y maquinaria retornable, EL SISTEMA asignará un identificador unívoco de activo estructurado en formato **[Nombre Herramienta] [Nº Ejemplar] = [Número de Serie / Código de Activo]** (p. ej. *Grupo electrógeno 1 = SN-98421*), vinculándolo a la custodia legal del Responsable de Cuadrilla cuando se encuentre asignado a un vehículo.
-- **RF-08:** Queda terminantemente **prohibida la recepción de material físico en nave sin documentación oficial** (albarán de entrega, ticket de compra o factura del transportista/proveedor). CUANDO el usuario selecciona "Entrada asistida por IA (Albarán/Factura)", EL SISTEMA procesará el documento mediante OCR/IA, admitiendo que **un albarán de entrega responda a múltiples órdenes de pedido pendientes del mismo proveedor**, actualizando las unidades de cada pedido en curso y creando el proveedor si no existe (Spec 003).
-- **RF-09:** SI durante la descarga y recepción física de mercancía en nave se detecta que el material viene roto, defectuoso o no coincide con el albarán, EL SISTEMA permitirá al receptor registrar una **Incidencia de Recepción con Proveedor**, bloqueando la entrada de los bultos defectuosos en el stock activo y derivando el caso a `Secretaria` para reclamar al distribuidor.
-- **RF-10:** SI un material almacenado en la nave central se detecta defectuoso de fábrica antes de salir a obra, EL SISTEMA permitirá tramitar un **RMA Directo desde Almacén Central hacia Proveedor** (integrado con Spec 003), generando el volante físico de devolución y custodiando el expediente técnico en `/docs/<empresa_id>/incidencias`.
-- **RF-11:** EL SISTEMA permitirá registrar entradas de **Material en Depósito / Consignación de Proveedor**, custodiando físicamente las existencias en nave sin computarlas como compra en firme; dicho material se consumirá e imputará normalmente al cliente final (según precio y margen presupuestado) y se liquidará periódicamente al distribuidor en función del consumo real reportado. SI se produce una rescisión de contrato o litigio con el distribuidor, el material ya consumido y abonado no se devolverá, mientras que todo el stock remanente en depósito se devolverá al proveedor **dejando las existencias de dicho depósito a cero (0)**, obligando a los ingenieros a prescribir materiales sustitutorios o un nuevo proveedor.
-- **RF-12:** SI un material en depósito sufre un siniestro o rotura accidental en nave, EL SISTEMA tramitará la baja asumiendo la empresa el coste del material frente al distribuidor y canalizando la indemnización a través de la **póliza de seguros de la empresa**.
+
+* **RF-05 (Event-driven):** CUANDO se pulsa "Alta manual", EL SISTEMA solicitará los datos maestros (Referencia, Ubicación en Gaveta/Palé, Stock Óptimo) e incorporará dinámicamente atributos técnicos normalizados según la vertical (DN, PN, sección eléctrica, resistencia).
+
+
+* **RF-06 (Ubiquitous) — Formato Continuo y Retales:** EN materiales lineales continuos (tuberías, cables), EL SISTEMA registrará las unidades en unidades enteras originales (Barra rígida o Bobina). Mantendrá una diferenciación estricta entre barras estándar y retales parciales aprovechables, calculando su coste proporcional por metro lineal. CUANDO se prescriba un material continuo, la política de picking obligará a agotar prioritariamente los retales antes de autorizar el corte de una barra nueva.
+
+
+* **RF-07 (Ubiquitous):** EN herramientas y maquinaria, EL SISTEMA asignará un identificador unívoco **`[Nombre Herramienta] [Nº Ejemplar] = [Número de Serie]`** vinculándolo a la custodia legal de la entidad asignada (Responsable de cuadrilla o almacén central).
+
+
+* **RF-08 (Unwanted behavior):** Queda prohibida la recepción física sin documentación oficial. CUANDO se selecciona "Entrada asistida por IA", EL SISTEMA procesará el albarán/factura mediante OCR, admitiendo albaranes multi-pedido que actualicen simultáneamente las líneas de varias órdenes de compra.
+
+
+* **RF-09 (Event-driven):** SI durante la descarga se detecta material roto o discrepante, EL SISTEMA permitirá registrar una Incidencia de Recepción, bloqueando la entrada del lote al stock activo (Cuarentena) y derivando el caso a `Secretaria`.
+
+
+* **RF-10 (Event-driven):** SI un material en nave central se detecta defectuoso, EL SISTEMA tramitará un RMA Directo hacia Proveedor generando un volante físico y custodiando el expediente en `/docs/<empresa_id>/incidencias`.
+
+
+* **RF-11 (State-driven) — Material en Depósito:** EL SISTEMA permitirá registrar entradas en Depósito/Consignación. El stock se consumirá normalmente, pero se liquidará periódicamente al proveedor. SI hay litigio con el proveedor, la devolución de existencias no consumidas dejará el depósito a cero (0).
+
+
+* **RF-12 (Event-driven):** SI un material en depósito sufre un siniestro en nave, EL SISTEMA tramitará la baja asumiendo la empresa el coste frente al distribuidor mediante la póliza de seguros.
+
+
 
 ### Bloque 3: Estructura Multialmacén, Ubicación Dual y Dotación de Furgonetas
-- **RF-13:** EL SISTEMA gestionará una arquitectura de inventario multialmacén estructurada en:
-  1. *Almacén Central:* Nave física principal de la empresa con doble nivel de ubicación física: **Ubicación Principal en Gaveta de picking** (`P01-E03-G12`) y **Ubicación Secundaria opcional en Palé de almacén/reserva** (`ALT-PAL-04`).
-  2. *Talleres Móviles (Furgonetas):* Stock rodante permanente de fungibles básicos bajo custodia del Responsable de Cuadrilla.
-  3. *Asignaciones a Operarios:* Herramientas y materiales entregados en custodia directa a un trabajador.
-- **RF-14:** EL SISTEMA mantendrá un **Checklist de Dotación Base por Furgoneta** compuesto estrictamente por material fungible de uso frecuente y bajo coste (tornillería, teflón, racorería estándar, juntas), habilitando cada lunes una **Revisión Ágil de Material por Excepción** para que el Responsable de Cuadrilla verifique visualmente y reponga en nave exclusivamente los consumibles faltantes.
-- **RF-15:** SI un operario necesita reponer consumibles básicos de la furgoneta durante la semana (ej. miércoles), EL SISTEMA permitirá registrar la retirada de nave mediante la **"Hoja de Reposición de Furgoneta"**, actualizando el traspaso del Almacén Central al vehículo sin esperar al lunes.
-- **RF-16:** EL SISTEMA tratará toda la maquinaria o herramienta en régimen de **alquiler temporal externo como un servicio de subcontrata** (gobernado por la Spec 003), requiriendo la acreditación de la póliza de Responsabilidad Civil (RC) del arrendador y excluyéndola del catálogo de activos propios del inventario.
+
+* **RF-13 (Ubiquitous):** EL SISTEMA gestionará una arquitectura multialmacén: Almacén Central (doble nivel de ubicación: Gaveta y Palé), Talleres Móviles (furgonetas con stock rodante), y Asignaciones a Operarios.
+
+
+* **RF-14 (Ubiquitous):** EL SISTEMA mantendrá un Checklist de Dotación Base por Furgoneta compuesto por material fungible básico, habilitando una Revisión Ágil por Excepción semanal para reponer exclusivamente los faltantes.
+
+
+* **RF-15 (Event-driven):** SI un operario necesita reposición urgente entre semana, EL SISTEMA permitirá la "Hoja de Reposición de Furgoneta" transfiriendo stock de nave al vehículo inmediatamente.
+
+
+* **RF-16 (State-driven):** EL SISTEMA tratará la maquinaria en alquiler temporal como un servicio de subcontrata (Spec 003), exigiendo póliza RC y excluyéndola del catálogo de activos propios.
+
+
 
 ### Bloque 4: Planificación Transaccional, Picking FEFO y Ejecución en Campo
-- **RF-17:** CUANDO el ingeniero guarda la planificación de una orden de trabajo para el día en curso, EL SISTEMA ejecutará un **bloqueo transaccional a nivel de base de datos (`SELECT ... FOR UPDATE` en PostgreSQL)** sobre los registros de stock de los materiales prescritos, garantizando que no se produzcan condiciones de carrera entre planificaciones concurrentes y reservando las unidades con certeza matemática. SI una orden planificada se **reprograma a una fecha posterior** antes de ejecutar el picking matinal, la orden se traslada a dicho día sin descuadre de stock físico en nave, permitiendo al Ingeniero o Boss reasignar una nueva tarea urgente hoy; SI la orden se suspende **"sine die"**, pasará a estado pendiente en la ficha del cliente y EL SISTEMA **liberará inmediatamente la reserva física de stock** en base de datos para que quede disponible para otras cuadrillas.
-- **RF-18:** CUANDO el ingeniero planifica una orden de trabajo para una fecha futura y faltan materiales pedidos pero no recepcionados, la IA informará en pantalla: *"Pedido con recepción parcial: [X] unidades disponibles, [Y] unidades en tránsito del pedido [Código Pedido]"*, y disparará la propuesta de compra si la necesidad supera las unidades comprometidas.
-- **RF-19:** CUANDO la orden de trabajo incluya productos con caducidad (adhesivos, resinas, químicos), la hoja de picking **prescribirá obligatoriamente el lote con fecha de vencimiento más próxima según criterio FEFO (First Expired, First Out)** sobre envases íntegros precintados. Los botes y envases con caducidad **se facturarán en su totalidad a la obra del cliente**, y cualquier merma o sobrante de botes abiertos **se derivará al reciclaje según los estándares ambientales de la empresa** en el slot de residuos, impidiendo el almacenamiento de envases desprecintados que degraden la calidad técnica.
-- **RF-20:** CUANDO se asigna una orden de trabajo a una cuadrilla, EL SISTEMA generará una **Hoja de Carga y Devolución específica e independiente para dicha orden de trabajo** (cumpliendo la regla: *1 Tarea = 1 Hoja de Picking/Devolución*), garantizando la imputación exacta y la facturación limpia al cliente final.
-- **RF-21:** CUANDO una o varias órdenes de trabajo de una misma jornada tienen asignada la misma cuadrilla y vehículo, EL SISTEMA mantendrá el vehículo en estado **"Reservado / Ocupado" por dicha cuadrilla durante toda la jornada completa**, sin disparar alertas de conflicto por tareas sucesivas.
-- **RF-22:** DENTRO de la PWA (`/operari`), EL SISTEMA presentará la hoja de picking en una **pantalla única** con tres casillas de control por elemento:
-  1. *Casilla 1: Retirada de material / herramienta:* Permite editar las unidades recogidas en nave mientras la lista permanezca en edición.
-  2. *Casilla 2: Devolución de sobrantes:* Conteo de unidades no utilizadas atribuibles estrictamente a esa orden; en barras rígidas cortadas, el operario activará la casilla **"Parcial"** indicando los metros devueltos (p. ej. *Parcial: 3m de barra de 6m*).
-  3. *Casilla 3: Incidencias:* Espacio para reportar anomalías de picking o averías.
-- **RF-23:** CUANDO el Responsable de Cuadrilla pulsa "Validar Recogida" en la PWA, EL SISTEMA descontará inmediatamente las unidades del Almacén Central y **bloqueará de forma definitiva e inmutable los valores recogidos**, requiriendo una Incidencia de Picking si se detecta un error posterior.
-- **RF-24:** SI se produce una salida de material por urgencia técnica sin albarán grabado previamente, EL SISTEMA exigirá que la retirada esté **respaldada por una incidencia previa registrada en la orden de trabajo** (*"Falta material X para finalizar la tarea"*); dicha operación se registrará como **"Incidencia de Salida de Urgencia"**, descontando el stock físico de inmediato para que la IA matinal compute la rotura sin desfase, y aplazando la conciliación del albarán por secretaría al final del día. SI la urgencia requiere una compra puntual en comercio minorista local con ticket de caja, dicha operación se imputará exclusivamente como gasto de la incidencia de obra; **EN NINGÚN CASO un ticket de compra puntual modificará ni actualizará los costes o Precios de Referencia del catálogo de almacén** (un ticket es un justificante de incidencia, no un proveedor oficial de material con referencia).
-- **RF-25:** CUANDO dos cuadrillas intercambian material o maquinaria en el terreno (Furgoneta A ➔ Furgoneta B), EL SISTEMA garantizará la **ejecución ininterrumpida de la tarea en campo**:
-  1. El traspaso se tramitará mediante una **incidencia bilateral**: la Cuadrilla A registrará la incidencia de entrega y la Cuadrilla B registrará la incidencia de recepción en `incidencias-furgonetas` (IndexedDB, AES-GCM).
-  2. SI el traspaso incluye **herramientas o maquinaria con Número de Serie**, los datos del activo y su **custodia legal pasarán de forma inmediata a la Cuadrilla B desde el momento físico de la transferencia**, siendo la Cuadrilla B la responsable directa del activo.
-  3. **La cuadrilla receptora podrá utilizar e instalar inmediatamente el material o máquina en la obra sin esperar a tener cobertura ni a la sincronización con el servidor**.
-  4. El volcado, reconciliación contable y cuadre en el servidor se formalizarán automáticamente en cuanto los dispositivos recuperen la cobertura o al llegar a base.
-- **RF-26:** CUANDO un cliente acepta un presupuesto para una obra que requiera corte de tuberías/cables o apertura de botes, EL SISTEMA devengará formalmente una **Factura de Anticipo (por el 100% de los materiales o un mínimo del 45% del valor presupuestado)** emitida exclusivamente por `Secretaria` o `Boss` conforme a la normativa Veri*factu:
-  1. SI el cliente cancela la obra tras el picking, los materiales cortados quedan cubiertos por dicho anticipo y el sobrante no manipulado se reincorpora al inventario mediante *"Devolución Total por Cancelación"*.
-  2. SI una obra concluye con éxito y retornan a base unidades o piezas completas intactas no manipuladas (exceso de previsión técnica): manteniendo la división estricta entre facturación y stock físico, **el material intacto reingresará físicamente en nave como stock disponible en Almacén Central**, y la persona responsable (`Boss` o `Secretaria`) **validará en la liquidación de la factura final si procede o no el abono/descuento al cliente** según la modalidad contractual (precio cerrado llave en mano vs. administración), asumiendo operativamente la variación económica menor entre lo facturado y el stock físico real.
-- **RF-27:** CUANDO el operario finaliza una orden de trabajo y registra sobrantes devueltos en su hoja de picking:
-  1. EL SISTEMA **diferenciará estrictamente el stock físico del circuito contable de facturación**: si para una obra se cortan y consumen 4m de una barra rígida de 6m (tamaño original del proveedor), se computará en la propuesta de liquidación al cliente la **barra entera original**, mientras que el retal sobrante (2m) se ingresará en almacén como retal parcial aprovechable para futuras reparaciones.
-  2. Dichos materiales sobrantes **quedarán disponibles al instante en el stock de la furgoneta**; si una tarea posterior de la jornada necesita dicho material, se sumará a su correspondiente hoja de picking manteniendo la trazabilidad íntegra.
-  3. Al finalizar la jornada laboral en base, el operario **reingresará físicamente en sus gavetas de nave todo el material que exceda la dotación base del vehículo**, y cerrará su turno de flota mediante la fotografía del cuentakilómetros.
-  4. Aunque las propuestas de presupuestos y facturas se elaboren automáticamente a partir de los partes de trabajo de los operarios, **su emisión requerirá obligatoriamente la revisión humana (*Human-in-the-Loop*) de `Boss` o `Secretaria`**, quien según la política comercial y la modalidad contractual (precio cerrado llave en mano vs. administración / precio unitario) validará el ajuste definitivo de partidas y sobrantes.
-- **RF-28:** CUANDO una herramienta o máquina retornable especial sea devuelta a base al cierre de jornada y registrada en la hoja de devolución sin incidencias, EL SISTEMA **liberará automáticamente su custodia y la marcará como disponible en nave central**, lista para ser asignada a otra cuadrilla al día siguiente.
-- **RF-29:** SI una herramienta se avería en obra a mitad de jornada, EL SISTEMA permitirá al operario en la PWA **pausar el temporizador de tiempo en obra de la tarea**, registrar la incidencia de avería y acudir a la base central para sustituirla por otra herramienta disponible registrada en la incidencia, reanudando a continuación el trabajo sin falsear la mano de obra imputada al cliente.
-- **RF-30:** SI el Responsable de Cuadrilla sufre una incapacidad o baja médica sobrevenida, EL SISTEMA permitirá a la oficina técnica (`Ingeniero`, `Secretaria` o `Boss`) tramitar una **Incidencia de Relevo de Responsable**, traspasando formalmente en el sistema la titularidad y custodia del vehículo, herramientas y picking al técnico sustituto.
-- **RF-31:** LA PWA emitirá una **Alerta Preventiva de Límite de Almacenamiento Excedido** si la memoria ocupada por fotografías y datos locales en IndexedDB se aproxima a la cuota permitida por el navegador, requiriendo la sincronización para liberar espacio.
+
+* **RF-17 (Event-driven) — Bloqueo Transaccional Híbrido:** CUANDO el ingeniero planifica una orden, EL SISTEMA empleará control de concurrencia optimista (`version_id`) en la interfaz. Al guardar, ejecutará un bloqueo pesimista estricto mediante la apertura de una transacción SQL y la instrucción `SELECT ... FOR UPDATE` sobre los registros de stock. Tras validar la disponibilidad real frente a concurrencias, ejecutará el `COMMIT` que confirmará la deducción virtual y liberará los bloqueos. SI la orden se suspende "sine die", se liberará inmediatamente la reserva virtual de stock.
+* **RF-18 (Event-driven):** CUANDO se planifica con material pendiente de recepción, la IA informará: *"Pedido con recepción parcial: X unidades disponibles, Y en tránsito del pedido [Código]"*, disparando alerta de compra si procede.
+
+
+* **RF-19 (Ubiquitous) — Criterio FEFO y Residuos:** CUANDO el material tenga caducidad (químicos, resinas), la hoja de picking prescribirá obligatoriamente el lote más próximo a vencer (FEFO). Los botes caducados o abiertos mermados se derivarán obligatoriamente al slot de residuos/reciclaje.
+
+
+* **RF-20 (Ubiquitous):** CUANDO se asigne una orden, EL SISTEMA generará una Hoja de Carga y Devolución unívoca (Regla: *1 Tarea = 1 Hoja de Picking/Devolución*).
+
+
+* **RF-21 (State-driven):** CUANDO múltiples órdenes se asignan a un mismo vehículo en un día, EL SISTEMA mantendrá el vehículo "Reservado" para toda la jornada completa.
+
+
+* **RF-22 (Ubiquitous) — PWA Operario:** DENTRO de la PWA (`/operari`), la hoja de picking tendrá 3 casillas: (1) Retirada de material, (2) Devolución de sobrantes (con check "Parcial" para retales), y (3) Incidencias.
+
+
+* **RF-23 (Event-driven):** CUANDO el Capataz pulsa "Validar Recogida", EL SISTEMA descontará el stock del Almacén Central y bloqueará inmutablemente los valores; cualquier error posterior exigirá una Incidencia de Picking.
+
+
+* **RF-24 (Event-driven) — Salidas de Urgencia:** SI se extrae material por urgencia sin albarán previo, se exigirá registrar una *"Incidencia de Salida de Urgencia"* en la orden activa, descontando el stock físico instantáneamente para que la IA matinal detecte la rotura.
+
+
+* **RF-25 (Event-driven) — Traspaso Offline Furgonetas:** CUANDO dos cuadrillas intercambian material en campo (A ➔ B), registrarán una incidencia bilateral en `IndexedDB`. La Cuadrilla B asumirá la custodia legal instantáneamente en modo offline y podrá utilizar el material en la obra. El cuadre en el servidor se formalizará automáticamente al recuperar cobertura de red.
+
+
+* **RF-26 (Event-driven) — Facturas de Anticipo vs. Cierre:** CUANDO un cliente acepta un presupuesto, se devengará la Factura de Anticipo oficial Veri*factu (mín. 45%). Al finalizar la obra, el material intacto retornado ingresará como stock físico disponible, y la persona responsable (`Boss/Secretaria`) ajustará la factura de cierre según la modalidad contractual (precio cerrado vs. administración).
+
+
+* **RF-27 (Ubiquitous):** EL SISTEMA diferenciará estrictamente el stock físico del circuito contable: si se devuelven 2m de un tubo de 6m, el sobrante se ingresa como retal parcial aprovechable, aunque se haya facturado la barra entera al cliente original.
+
+
+* **RF-28 (State-driven):** CUANDO una herramienta especial sea devuelta sin incidencias al cierre de jornada, EL SISTEMA liberará automáticamente su custodia haciéndola disponible en nave central.
+
+
+* **RF-29 (Event-driven):** SI una herramienta se avería en obra a mitad de jornada, EL SISTEMA permitirá pausar el temporizador de la tarea en la PWA, registrar la incidencia de avería, acudir a la base a sustituirla y reanudar el trabajo sin falsear la mano de obra.
+
+
+* **RF-30 (Event-driven):** SI el Capataz sufre una baja sobrevenida, la oficina técnica tramitará una "Incidencia de Relevo de Responsable", traspasando la custodia formal del vehículo y picking al técnico sustituto.
+
+
+* **RF-31 (State-driven):** LA PWA emitirá una Alerta Preventiva de Cuota Excedida si la memoria de IndexedDB se aproxima al límite del navegador, requiriendo sincronización inmediata.
+
+
 
 ### Bloque 5: Filtro Anti-Duplicidad, Entregas Parciales y Reposición por IA
-- **RF-32:** EL SISTEMA asignará a cada propuesta/orden de pedido de compra un código identificativo unívoco estructurado en formato: **[Iniciales Nombre Proveedor] + 00# + [Correlativo Numérico]** (p. ej. *SUM-00#0142*).
-- **RF-33:** AL FINALIZAR la franja horaria de picking matinal (cierre de salida de cuadrillas), EL SISTEMA ejecutará el análisis mediante IA de las roturas de stock; SI uno o varios artículos descienden por debajo de su Stock Mínimo:
-  1. La IA verificará si ya existe un pedido formal enviado en estado de tránsito con el código `[Iniciales]+00#[Correlativo]` contemplando entregas parciales pendientes; SI dicho pedido en curso cubre la necesidad de reposición, **la IA detendrá la generación de un nuevo pedido para evitar duplicidades innecesarias**.
-  2. SI el pedido en curso supera los **7 días naturales sin haber sido recepcionado en nave**, la IA generará una **Alerta de Incidencia de Pedido Pendiente de Entrega** dirigida a `Secretaria` y `Boss`.
-  3. SI no existe pedido previo o el saldo pendiente de entrega es insuficiente, la IA calculará la diferencia necesaria hacia el Stock Óptimo, consolidará las referencias por proveedor habitual y redactará el borrador del pedido (*Human-in-the-Loop*).
-- **RF-34:** EL SISTEMA soportará que un pedido formal de compra se recepcione a través de **múltiples albaranes parciales de entrega sucesivos**, manteniendo vivo el saldo pendiente en tránsito hasta la liquidación total de la orden; SI el proveedor emite una **factura mensual parcial** correspondiente a los albaranes de entrega recepcionados en dicho mes mientras el resto del pedido continúa en tránsito, EL SISTEMA conciliará mediante *Three-Way Matching* exclusivamente los albaranes físicos de entrega recepcionados con la factura presentada, liquidando el pago parcial sin cerrar la orden de compra pendiente.
 
-### Bloque 6: Inventarios, Slot de Residuos/Chatarra (RAEE) y Actualización de Precios
-- **RF-35:** EL SISTEMA dispondrá de un módulo de **Inventario General Periódico** para soportar auditorías físicas completas de almacén planificadas formalmente **una o dos veces al año** según la demanda de la empresa.
-- **RF-36:** DURANTE la jornada formal fijada para la auditoría de inventario, **todos los operarios y personal de base destinarán el tiempo establecido al conteo coordinado y simultáneo tanto del almacén físico en Nave Central como del stock rodante de las furgonetas**, paralizando los movimientos ordinarios para introducir los conteos físicos reales y cuadrar de forma limpia e integral el stock del sistema sin descuadres por vehículos en ruta.
-- **RF-37:** EL SISTEMA permitirá tramitar en cualquier momento una **Baja Directa por Merma / Siniestro en Nave** ante roturas accidentales o deterioro de consumibles (p. ej. saco mojado, bobina aplastada), así como la **declaración de retales acumulados obsoletos o de longitud inviable como desecho técnico no aprovechable**, facultando al responsable de almacén/desechos a iniciar la tarea de reciclaje y su traspaso al slot de **"Residuos / Chatarra"** con la documentación ambiental preceptiva para vaciar y optimizar gavetas.
-- **RF-38:** EL SISTEMA dispondrá de un slot modular de almacén denominado **"Residuos / Chatarra"**, adaptable a la tipología sectorial y jurídica de la empresa que contrata el SaaS (empresa instaladora, constructora, agrícola, fontanería, etc.), donde se registrarán las mermas metálicas (cobre de cables retirados, latón, chatarra de tuberías) y componentes eléctricos/electrónicos fuera de uso (RAEE - Real Decreto 110/2015):
-  1. EL SISTEMA dispondrá de un **slot de subida documental flexible** según la actividad de la empresa, donde **la IA procesará y analizará los documentos adjuntados** (NIMA propio de instalador o NIMA del promotor/cliente como titular inicial del residuo, libro LER, DIT, autorización ambiental) para clasificar automáticamente el régimen aplicable y verificar la titularidad legal.
-  2. Al entregar los residuos a la empresa de reciclaje o gestor de chatarra autorizado, EL SISTEMA registrará la **Factura de Venta con Inversión del Sujeto Pasivo de IVA** (Art. 84.Uno.2º.c Ley de IVA) como ingreso extraordinario; el motor de facturación Veri*factu **automatizará íntegramente la parametrización fiscal sin intervención manual del usuario**:
-     a) Fijará la cuota de IVA al 0,00 € e insertará obligatoriamente en el PDF la leyenda legal: *"Operación con inversión del sujeto pasivo conforme al Art. 84.Uno.2º.c de la Ley 37/1992 del IVA"*.
-     b) En el registro de alta XML/JSON de Veri*factu remitido a la AEAT, codificará automáticamente la operación bajo la clave de Inversión del Sujeto Pasivo (`TipoNoExenta = 'S2'`), validando el NIF del gestor autorizado para garantizar la aceptación tributaria sin errores de validación.
-  3. EL SISTEMA custodiará en `/docs/<empresa_id>/almacen/residuos/` toda la documentación acreditativa y el Certificado Oficial de Tratamiento y Destino Final de Residuos.
-- **RF-39:** EL SISTEMA permitirá registrar salidas de material para **"Banco de Ensayo Técnico / Uso Interno de Taller"**, imputando el coste a gastos operativos internos de taller sin requerir la creación de clientes ni obras simuladas.
-- **RF-40:** EN consumibles fungibles menores (siliconas, pegamentos, tornillería, selladores), EL SISTEMA computará la salida por unidad completa o envase menor imputado a obra, asumiendo la merma técnica natural de uso en la liquidación del trabajo.
-- **RF-41:** CUANDO se registre un nuevo albarán de compra con variación de precio unitario:
-  1. SI la variación vulnera una orden de compra con precio pactado firme (Spec 003) o incumple los protocolos de compras, **EL SISTEMA emitirá una Alerta de No Conformidad y no contabilizará ni el stock físico ni el nuevo precio en el catálogo de almacén** hasta que la incidencia sea resuelta mediante un albarán corregido del distribuidor o la autorización expresa de `Boss` o `Secretaria`.
-  2. SI la variación de precio es legítima y autorizada (dentro del protocolo de compras), EL SISTEMA **actualizará todos los costes y el Precio de Referencia de Almacén al último precio de compra registrado para los artículos asociados a dicha referencia de proveedor habitual**, rigiendo dicho valor tanto para la valoración económica del inventario como para presupuestos y nuevas órdenes de compra (manteniendo inalterables los presupuestos ya emitidos previamente); SI la empresa cambia de proveedor para un mismo material genérico, EL SISTEMA **requerirá crear una entrada de artículo con referencia vinculada al nuevo distribuidor**, preservando la trazabilidad estricta e impidiendo la contaminación de costes entre distintos canales de suministro.
+* **RF-32 (Ubiquitous):** EL SISTEMA asignará a cada pedido un código unívoco `[Iniciales]+00#[Correlativo]`.
 
-### Bloque 7: Ficha Detallada del Artículo (`/gestio/magatzem/[id]`), Taller, Calibración e Inhabilitación de Bajas
-- **RF-42:** CUANDO el usuario hace clic sobre un artículo en el listado, EL SISTEMA abrirá su ficha completa (`/gestio/magatzem/[id]`), mostrando:
-  1. Datos maestros: Referencia, Nombre, Tipología, Familia interna, Ubicación Principal en Gaveta, Ubicación Secundaria en Palé y Formato de suministro (Bobina vs. Barra).
-  2. Atributos técnicos normalizados según la vertical (DN, PN, sección, tensión, etc.).
-  3. En maquinaria: Listado de ejemplares individuales con su **Número de Serie / Código de Activo** y estado actual (*Disponible, Asignado a furgoneta X bajo custodia del Responsable Y, En Taller, Calibración agendada, Inhabilitado por baja*).
-  4. Proveedor habitual asociado con enlace directo a su ficha de proveedor (Spec 003).
-  5. Desglose de existencias: Stock físico en Nave Central, Stock en furgonetas, Stock en depósito/consignación y **Stock en tránsito con desglose de entregas parciales pendientes**.
-  6. Botón manual de acción rápida: **"Redactar Pedido de Compra"**, que abre la propuesta de reposición precargando el artículo y su proveedor.
-  7. Histórico cronológico de movimientos (entradas, salidas de obra, regularizaciones y devoluciones), **omitiendo estrictamente los costes unitarios de compra para el rol `Ingeniero`**.
-- **RF-43:** CUANDO un operario o responsable reporta una herramienta o máquina como averiada (desde la casilla de incidencias de la hoja de picking o desde la ficha de almacén), EL SISTEMA cambiará automáticamente el estado del ejemplar específico a **"En reparación / Taller externo"**, **bloqueando de forma infranqueable su asignación en futuras hojas de picking** mientras permanezca en dicho estado.
-- **RF-44:** SI una herramienta averiada es declarada irreparable por el servicio técnico:
-  1. SI la herramienta se encuentra en periodo de garantía legal o comercial, **el fabricante procederá a su sustitución por una unidad nueva**; EL SISTEMA dará de baja el número de serie defectuoso original y registrará la nueva herramienta con su nuevo Número de Serie vinculando el expediente de compra y garantía original, haciendo constar en el historial cronológico del activo: *"Sustituida por garantía en fecha [DD/MM/AAAA], nuevo SN [SN-XXXXX]"* (o en reparaciones: *"Reparada por motivo [X] en fecha [DD/MM/AAAA]"*), preservando el histórico completo de intervenciones.
-  2. SI la herramienta carece de garantía o es sustraída mediante robo acreditado con atestado policial, EL SISTEMA tramitará su **Baja Definitiva del Inventario**, registrando el motivo técnico/policial y **desactivando e inhabilitando de forma permanente su Número de Serie en la base de datos**, impidiendo que dicho identificador pueda volver a activarse o reasignarse en el sistema.
-- **RF-45:** EL SISTEMA permitirá calendarizar fechas obligatorias de **Mantenimiento Preventivo e Inspección / Calibración Periódica** para herramientas y equipos técnicos; DURANTE las fechas o periodos agendados para revisión, EL SISTEMA **bloqueará automáticamente la disponibilidad y asignación del ejemplar específico en las hojas de picking**, garantizando que ninguna cuadrilla utilice herramientas con certificación o mantenimiento vencido.
 
-### Bloque 8: Segregación Financiera del Inventario (Zero-Trust) y Circuito de Facturación
-- **RF-46:** MIENTRAS el usuario autenticado posea rol `Boss` o `Secretaria / RRHH`, EL SISTEMA mostrará la **valoración económica total del inventario en euros (€)** según el último precio de compra, los costes unitarios de compra (incluyendo la valoración proporcional del metro lineal en retales parciales según `coste_barra / longitud_original`) y los márgenes comerciales de proveedor.
-- **RF-47:** EL USUARIO con rol `Ingeniero` tendrá acceso exclusivo a los **precios finales de venta** para elaborar presupuestos y a las **facturas finales emitidas a clientes de sus obras** (para defender los trabajos ejecutados ante el cliente o gerencia); no obstante, **EL SISTEMA bloqueará estrictamente a nivel de API el acceso del rol `Ingeniero` a los albaranes de entrega/compra de proveedores, costes unitarios de adquisición y al cuadro de mando macroeconómico de la empresa**.
-- **RF-48:** LA EMISIÓN de facturas oficiales a clientes (tanto de anticipo como finales) se realizará **única y exclusivamente desde los perfiles `Secretaria` o `Boss`**, recibiendo el presupuesto técnico aprobado por el cliente con las incidencias de obra liquidadas por el ingeniero.
-- **RF-49:** CUANDO la orden de trabajo incluya el suministro e instalación de equipos técnicos o maquinaria vendida al cliente (inversores solares, variadores, bombas, calderas, contadores), EL INSTALADOR fotografiará desde la PWA la placa del fabricante con el código de referencia y **Número de Serie de fábrica del equipo instalado**; EL SISTEMA vinculará automáticamente dicha fotografía y datos al expediente de obra y los reflejará en la **documentación final de obra que acompaña a la factura del cliente**, garantizando la cobertura de garantía oficial ante el servicio técnico del fabricante (SAT) y la tramitación de legalizaciones técnicas y memorias oficiales ante Industria.
-- **RF-50:** EL SISTEMA **prohibirá el borrado físico de cualquier artículo del catálogo en la base de datos** para preservar la trazabilidad histórica y la integridad de los registros contables y fiscales Veri*factu; CUANDO un artículo quede obsoleto o descatalogado por los proveedores, EL SISTEMA permitirá exclusivamente su **baja del catálogo de almacén (borrado lógico / soft-delete con estado inactivo `actiu = false`)**, excluyéndolo de los selectores de búsqueda para nuevas obras pero preservando intacto su histórico en albaranes, partes de trabajo e inventarios anteriores.
-- **RF-51:** EL SISTEMA dispondrá de un apartado específico denominado **"Retornables / Envases con Fianza"**, donde se gestionará el balance de envases industriales de proveedores (palés homologados EPAL/europeos, bobinas de madera de cableado, botellas de gas técnico):
-  1. Al recepcionar un albarán de compra, se registrarán las unidades de envases con fianza económica cargada por el distribuidor.
-  2. Al retirar el transportista los envases vacíos en nave, el almacenero registrará el volante de salida por devolución de retornables.
-  3. EL SISTEMA mantendrá el saldo vivo de envases pendientes de retorno por proveedor, permitiendo a `Secretaria` conciliar y exigir el abono de las fianzas monetarias en las facturas de compra.
-  4. SI un envase retornable (palé, bobina) se rompe en obra, se deteriora en transporte o es rechazado por el proveedor perdiendo el derecho a reembolso, EL SISTEMA habilitará el procedimiento de **"Baja de Retornable por Deterioro / Pérdida de Fianza"**, cancelando formalmente el saldo pendiente con el distribuidor e imputando la pérdida económica a gasto operativo (de la orden de trabajo si ocurrió en tajo, o de almacén si ocurrió en nave).
-- **RF-52:** EL SISTEMA regulará la recepción física y custodia temporal en Almacén Central de **equipos y maquinarias de clientes averiados para su tramitación en garantía posventa o reparación técnica** (inversores, bombas de pozo, variadores, cuadros desmontados en campo), sin requerir albarán de compra mercantil ni computar como existencias propias vendibles:
-  1. La recepción en nave generará un **"Ticket de Reparación / RMA de Cliente"** vinculado a la ficha del cliente y a la obra primigenia, registrando: fecha de instalación original, parcela/ubicación, operario instalador, factura previa asociada y Número de Serie de fábrica (RF-49).
-  2. EL SISTEMA verificará automáticamente si el equipo se encuentra dentro del plazo de garantía oficial del fabricante o si se halla fuera de garantía.
-  3. En equipos en garantía, EL SISTEMA gestionará la entrega al SAT oficial del distribuidor/fabricante, custodiando la orden de peritaje y la posterior devolución de la unidad reparada o sustituida sin coste para el cliente; la posterior reinstalación en la finca del cliente **se tramitará como una nueva orden de trabajo de garantía vinculada al expediente original**, siguiendo el mismo protocolo estándar: el instalador fotografiará desde la PWA la placa del nuevo equipo registrando el nuevo Número de Serie de fábrica (RF-49), actualizando automáticamente la ficha técnica de la instalación del cliente para futuras garantías y legalizaciones.
-  4. En equipos fuera de garantía, EL SISTEMA canalizará el presupuesto técnico del taller o SAT, emitirá la propuesta de presupuesto de reparación para el cliente y requerirá la **aceptación previa explícita del cliente** antes de autorizar la intervención técnica o facturar el trabajo final.
+* **RF-33 (Event-driven):** AL FINALIZAR el picking matinal, la IA analizará las roturas de stock. SI hay un pedido en tránsito que ya cubre la necesidad mediante entregas parciales (*backorders*), la IA detendrá la generación de un nuevo pedido para evitar duplicidades. SI supera los 7 días sin entrega, emitirá una Alerta de Pedido Pendiente.
+
+
+* **RF-34 (State-driven):** EL SISTEMA soportará la recepción de un pedido mediante múltiples albaranes parciales de entrega (*backorders*). El *Three-Way Matching* conciliará exclusivamente los albaranes físicos recepcionados con las facturas mensuales parciales correspondientes, manteniendo vivo el saldo del pedido en tránsito.
+
+
+
+### Bloque 6: Inventarios, Slot de Residuos (RAEE) y Actualización de Precios
+
+* **RF-35 (Ubiquitous):** EL SISTEMA dispondrá de un módulo de Inventario General Periódico para soportar auditorías físicas totales.
+
+
+* **RF-36 (Event-driven):** DURANTE la auditoría general, EL SISTEMA paralizará los movimientos ordinarios para que todo el personal realice el conteo simultáneo en nave y furgonetas. Quedarán exceptuadas las salidas catalogadas como "Urgencia Nivel 1", las cuales se registrarán en una cola paralela para ser regularizadas automáticamente al cierre del inventario.
+* **RF-37 (Event-driven):** EL SISTEMA permitirá tramitar una "Baja Directa por Merma/Siniestro" para consumibles deteriorados o retales inviables, traspasándolos al slot de "Residuos / Chatarra".
+
+
+* **RF-38 (Event-driven) — Gestión RAEE e Inversión Sujeto Pasivo:** EL SISTEMA gestionará el slot de Residuos analizando los documentos ambientales (NIMA, LER) mediante IA. Al vender la chatarra, el motor de facturación automatizará la Inversión del Sujeto Pasivo de IVA (Art. 84.Uno.2º.c), fijando cuota a 0,00€ e insertando la leyenda legal en PDF/Veri*factu sin intervención manual, custodiando los Certificados de Destino Final.
+
+
+* **RF-39 (Event-driven):** EL SISTEMA permitirá salidas para "Banco de Ensayo Técnico", imputando el coste a gastos operativos del taller sin crear clientes simulados.
+
+
+* **RF-40 (Ubiquitous):** EN consumibles menores (siliconas, tornillería), EL SISTEMA permitirá el reingreso al stock únicamente de los envases que retornen intactos y precintados. Los envases desprecintados o empezados se considerarán merma natural y se imputarán al 100% como gasto a la obra.
+* **RF-41 (Event-driven):** CUANDO un nuevo albarán registre variación de precios:
+1. SI vulnera el pacto de pedido firme, se emitirá Alerta de No Conformidad, bloqueando la actualización contable del stock.
+2. SI es legítimo, EL SISTEMA actualizará el Precio de Referencia de Almacén al último coste de compra para nuevos presupuestos y recalculará el Precio Medio Ponderado (PMP) para la valoración contable de existencias y coste de obras (Spec 007), manteniendo inmutables los presupuestos emitidos en el pasado.
+
+
+
+
+
+### Bloque 7: Ficha de Artículo, Taller y Baja de Seriales
+
+* **RF-42 (Ubiquitous):** La ficha del artículo mostrará atributos técnicos, lista de ejemplares con Número de Serie, proveedor asociado, desglose multialmacén, botón rápido de pedido y cronología de movimientos (omitiendo los costes unitarios al Ingeniero).
+
+
+* **RF-43 (State-driven):** SI una herramienta se reporta averiada, EL SISTEMA la marcará "En Taller", bloqueando infranqueablemente su asignación en picking.
+
+
+* **RF-44 (Event-driven):** SI la herramienta es irreparable, será dada de baja. Si se sustituye por garantía, conservará el historial vinculando el nuevo SN. Si es sustraída (robo acreditado), tramitará la Baja Definitiva, inhabilitando permanentemente su Número de Serie en la base de datos para impedir reactivaciones.
+
+
+* **RF-45 (State-driven):** EL SISTEMA calendarizará Mantenimientos/Calibraciones, bloqueando la asignación de las herramientas durante los días agendados de revisión.
+
+
+
+### Bloque 8: Segregación Financiera, Facturación a Clientes y Retornables
+
+* **RF-46 (Ubiquitous):** MIENTRAS el rol sea `Boss` o `Secretaria`, EL SISTEMA mostrará la valoración económica total del inventario en euros (€) calculada mediante el Precio Medio Ponderado (PMP) según el Plan General Contable (Spec 007), utilizando el último precio de compra exclusivamente como coste de referencia para el cálculo de márgenes en nuevos presupuestos, y excluyendo matemáticamente el material en depósito/consignación cuya titularidad pertenece al proveedor.
+
+
+* **RF-47 (Ubiquitous):** EL ROL `Ingeniero` tendrá acceso exclusivo a los precios finales de venta y facturas finales de sus obras para defender los trabajos. Bloqueo a nivel API (`403`) sobre albaranes de compra, costes unitarios y cuadro macroeconómico.
+
+
+* **RF-48 (Event-driven):** LA EMISIÓN de facturas oficiales de cliente será exclusiva de `Secretaria` o `Boss`.
+
+
+* **RF-49 (Event-driven):** CUANDO se instale equipo técnico (inversores, calderas), el operario fotografiará la placa desde PWA. EL SISTEMA vinculará el Número de Serie de fábrica al expediente final del cliente para tramitar legalizaciones y garantías oficiales.
+
+
+* **RF-50 (Unwanted behavior):** EL SISTEMA prohibirá el borrado físico (`DELETE`) de cualquier artículo del catálogo. CUANDO un artículo quede obsoleto, se permitirá su baja lógica (`actiu = false`) únicamente si su stock físico y en tránsito es estrictamente cero (0).
+
+
+* **RF-51 (State-driven) — Envases Retornables:** EL SISTEMA gestionará el saldo de "Retornables / Envases con Fianza" (palés EPAL, bobinas). En caso de rotura en obra, se habilitará la "Baja de Retornable por Pérdida de Fianza", imputando la pérdida como gasto operativo de la orden de trabajo.
+
+
+* **RF-52 (Event-driven) — Custodia Temporal (RMA Cliente):** EL SISTEMA regulará la recepción física en Almacén de equipos de clientes averiados para garantía (RMA Cliente) mediante un "Ticket de Reparación", verificando si está en garantía oficial y tramitando el SAT sin computar como existencias propias.
+
+
 
 ---
 
-## Requisitos No Funcionales
-- **Almacenamiento Local Seguro Multi-Tenant:** Todos los albaranes de almacén escaneados, fotografías de devolución en vehículo/parcela, fotos de odómetros, denuncias policiales por robo de herramientas, informes técnicos de avería de herramientas, certificados medioambientales de gestores de residuos RAEE y actas de regularización de inventario se almacenan directamente en los discos locales del Mini PC/servidor aislados por inquilino (`/docs/<empresa_id>/almacen/...`), con copias de seguridad semanales automáticas cada domingo (sin dependencia de AWS S3).
-- **Seguridad Multi-Tenant (RLS):** Cada consulta, inserción, regularización y movimiento de almacén aplica Row Level Security mandatorio mediante `app.current_empresa_id`.
-- **Protección de Datos Macroeconómicos (Zero-Trust):** El cuadro macroeconómico global de la empresa y los albaranes de compra de proveedores quedan restringidos a `Boss` y `Secretaria / RRHH`.
-- **Tolerancia Cero a Datos Ficticios (Zero Mock Data):** Si no existen artículos en la base de datos de la empresa, la interfaz muestra el estado Día 0 completamente limpio, sin artículos simulados ni métricas falsas.
-- **Diseño Camaleón:** La interfaz respetará las variables dinámicas de diseño de marca blanca corporativa sin sesgos terminológicos específicos de vertical.
+## 5. Casos Límite y Resiliencia (EDGE-01 a EDGE-20)
+
+| Código | Tipo EARS | Módulo | Vector de Falla / Escenario Límite | Comportamiento del Sistema |
+| --- | --- | --- | --- | --- |
+| **EDGE-01** | *Unwanted* | Concurrencia | Dos ingenieros intentan planificar reservas sobre la última unidad de un material en el mismo milisegundo. | PostgreSQL aplica `SELECT FOR UPDATE` encapsulado en la transacción; el segundo request queda en cola y aborta con alerta de *Stock insuficiente* si la transacción 1 agota el stock. |
+| **EDGE-02** | *Event-driven* | PWA Sync | Cuadrilla A traspasa material a B offline. Sincronizan datos con cantidades o artículos diferentes. | El sistema detecta asimetría en la base local (IndexedDB) de cada PWA; aísla el material levantando un estado `CONFLICTO_TRASPÀS` que requiere resolución manual por Secretaría. |
+| **EDGE-03** | *Unwanted* | Picking | Operario intenta registrar la devolución de una herramienta con Número de Serie ajena a su vehículo. | El sistema bloquea el escaneo en PWA, emitiendo alerta *"Herramienta ajena. Solicite traspaso formal desde el titular actual"*. |
+| **EDGE-04** | *Event-driven* | RMA Cliente | Cliente rechaza el presupuesto de reparación de un equipo fuera de garantía ingresado temporalmente en almacén. | Sistema cierra el Ticket RMA, exige la devolución física del equipo al cliente y purga el asiento temporal del inventario central. |
+| **EDGE-05** | *Unwanted* | PWA Quota | El almacenamiento en `IndexedDB` alcanza la cuota máxima del navegador mientras se escanean albaranes offline. | PWA detiene nuevas capturas fotográficas, prioriza el guardado de metadatos de texto y lanza alarma crítica *"Conectar a red para purgar fotos locales"*. |
+| **EDGE-06** | *Event-driven* | FEFO | La política prescribió un lote FEFO antiguo, pero en la gaveta física dicho lote presenta fuga de líquidos o rotura de envase. | Capataz marca lote como "Siniestro" en la PWA, el sistema lo deriva a Residuos y autoriza automáticamente extraer el siguiente lote viable. |
+| **EDGE-07** | *Unwanted* | Inventario | Intento de realizar Baja Lógica (`actiu = false`) de un artículo que actualmente cuenta con stock positivo en una furgoneta. | El sistema bloquea el borrado lógico emitiendo alerta: *"Imposible descatalogar: Existen N unidades en el vehículo X"*. |
+| **EDGE-08** | *Unwanted* | Picking | Operario escanea un retal (ej. tubo 2m) pero el sistema indica que el stock de retales aprovechables es 0 (descuadre físico). | Requiere registrar incidencia de inventario express desde la PWA, autorizando excepcionalmente la extracción de una barra rígida entera. |
+| **EDGE-09** | *Event-driven* | Compras | Se recibe un albarán multi-pedido que entrega 5 unidades del Pedido 1 y 5 unidades del Pedido 2 de la misma referencia. | El motor de consolidación actualiza ambas órdenes proporcionalmente y unifica las 10 unidades en el inventario disponible. |
+| **EDGE-10** | *Event-driven* | Avería Obra | Herramienta especial se avería en tajo; se pausa temporizador, pero al llegar a base no hay ejemplares de repuesto disponibles. | El estado de la herramienta pasa a "Taller", pero la pausa de la obra se debe convertir administrativamente en "Obra Paralizada - Causa de Fuerza Mayor". |
+| **EDGE-11** | *Unwanted* | Depósitos | Se intenta devolver material en depósito al proveedor por rescisión, pero el stock físico es menor al esperado contablemente. | Sistema bloquea la rescisión automática; requiere liquidación económica (`Factura de Venta por Faltante`) pagando a proveedor las piezas extraviadas. |
+| **EDGE-12** | *Event-driven* | Reprogramación | Una orden planificada y con reserva transaccional ejecutada se suspende indefinidamente por orden del cliente. | El sistema libera inmediatamente los bloqueos de stock virtual en BD, reincorporando el material a la bolsa de disponibilidad. |
+| **EDGE-13** | *Unwanted* | Herramientas | Se intenta asignar una herramienta con fecha de calibración agendada para hoy a una hoja de picking matinal. | Bloqueo estricto del sistema que impide la asignación en la UI de carga del Capataz. |
+| **EDGE-14** | *Event-driven* | Residuos ISP | Venta de residuos RAEE a un gestor extranjero sin NIF español válido para la Inversión del Sujeto Pasivo. | Sistema fuerza validación del NIF-IVA intracomunitario a través del VIES; si falla, bloquea la automatización del IVA a 0,00€. |
+| **EDGE-15** | *Unwanted* | Precios | Albarán nuevo introduce un coste unitario un 300% superior por un error de entrada tipográfica del usuario. | Motor de alertas de compras retiene la actualización del *Precio de Referencia* detectando anomalía de desviación estadística. |
+| **EDGE-16** | *Unwanted* | Fianza | Proveedor rechaza retornar fianza de un palé EPAL argumentando daños estructurales. | Secretaría ejecuta baja "Pérdida de Fianza"; el coste se imputa al CC de almacén (si dañó en base) o a la obra (si dañó en campo). |
+| **EDGE-17** | *Unwanted* | Seguridad RLS | Trabajador autenticado intenta forzar mediante POSTman la visualización del stock del almacén de otra delegación (tenant distinto). | PostgreSQL rechaza la lectura vía RLS (`app.current_empresa_id`); API devuelve conjunto vacío `[]` sin advertir existencia de otros tenants. |
+| **EDGE-18** | *Unwanted* | Facturación | Secretaria intenta facturar un anticipo presupuestario inferior al 45% exigido por la política financiera. | Sistema genera *Warning Administrativo* que requiere confirmación explícita del `Boss` para sobrepasar el umbral mínimo de seguridad de caja. |
+| **EDGE-19** | *Event-driven* | Urgencia Base | Cuadrilla sale sin orden asignada por rotura de tubería principal en vía pública (Urgencia Nivel 1). | Registro en PWA como "Salida Blanca de Urgencia"; descarga stock físico y fuerza conciliación administrativa al retornar a la base. |
+| **EDGE-20** | *Event-driven* | Consumibles | Operario registra la devolución de 3 tubos de silicona. Dos están precintados y uno está empezado a la mitad. | El sistema reingresa los dos envases cerrados sumando `+2` al inventario, y asume el bote abierto íntegramente como coste de la orden de trabajo. |
 
 ---
 
-## Fuera de Alcance (Lo que NO hace este módulo)
-- No gestiona el mantenimiento mecánico, seguros ni revisiones periódicas/ITV de los vehículos (pertenece a `/gestio/flota`).
-- No gestiona la contratación de maquinaria o grúas de alquiler externo (se gestiona como subcontrata en `/gestio/proveidors`).
-- No realiza cobros bancarios directos por TPV físico en nave ni transferencias bancarias de cierre contable (pertenece a `/gestio/comptabilitat`).
-- No realiza envíos de pedidos de reposición de forma desatendida a proveedores sin confirmación humana (*Human-in-the-Loop*).
-- No expone albaranes de compra ni costes de adquisición de proveedores al rol `Ingeniero`.
+## 6. Requisitos No Funcionales (RNF)
+
+* **Almacenamiento Local Seguro Multi-Tenant:** Todos los albaranes de almacén escaneados, fotografías de devolución en vehículo/parcela, fotos de odómetros, denuncias por robo, certificados RAEE y actas de inventario se almacenan en los discos locales aislados por inquilino (`/docs/<empresa_id>/almacen/...`), con copias de seguridad semanales automáticas cada domingo (cero dependencia de AWS S3).
+
+
+* **Seguridad Multi-Tenant (RLS):** Cada consulta, inserción y movimiento aplica Row Level Security mandatorio mediante `app.current_empresa_id` con `FORCE ROW LEVEL SECURITY` en la base de datos.
+
+
+* **Protección de Datos Macroeconómicos (Zero-Trust):** El cuadro macroeconómico global y los albaranes de compra quedan restringidos a `Boss` y `Secretaria`. Rol `Ingeniero` responde con `403 Forbidden` a dichas rutas de API.
+
+
+* **Tolerancia Cero a Datos Ficticios (Zero Mock Data):** Si no hay artículos, la interfaz muestra el estado Día 0 completamente limpio.
+
+
+* **Diseño Camaleón:** Adaptación total a variables CSS dinámicas de marca blanca corporativa sin sesgos de sector.
+
+
 
 ---
 
-## Criterios de Finalización (Definition of Done)
-1. Todos los requisitos funcionales (RF-01 al RF-52) redactados en sintaxis formal EARS y consolidados tras ocho rondas de rigurosa auditoría QA.
-2. Bloqueo transaccional `SELECT ... FOR UPDATE` en PostgreSQL para evitar condiciones de carrera en reservas concurrentes de stock.
-3. Segregación estricta de precios para el Ingeniero: acceso a precios finales de venta y facturas de cliente para presupuestar y defender obras, con bloqueo absoluto de albaranes de compra y costes de proveedor (facturación reservada a Boss y Secretaria).
-4. Formato de suministro continuo (Bobina vs. Barra rígida con check de retal "Parcial" en devoluciones).
-5. Filtro inteligente de IA para entregas parciales (backorders) y soporte de albaranes que consolidan múltiples pedidos de compra.
-6. Inhabilitación y desactivación permanente de Números de Serie dados de baja en el histórico de herramientas.
-7. Alerta preventiva de cuota de almacenamiento en la PWA para fotos locales.
+## 7. Fuera de Alcance
+
+* No gestiona el mantenimiento mecánico, seguros ni revisiones periódicas/ITV de los vehículos (pertenece a `/gestio/flota`).
+
+
+* No gestiona la contratación de maquinaria o grúas de alquiler externo (se gestiona en `/gestio/proveidors`).
+
+
+* No realiza cobros bancarios directos por TPV físico en nave ni transferencias de cierre contable (`/gestio/comptabilitat`).
+
+
+* No realiza envíos de pedidos de reposición desatendidos sin confirmación humana (*Human-in-the-Loop*).
+
+
+* No expone albaranes de compra ni costes de adquisición al rol `Ingeniero` bajo ningún concepto técnico.
+
+
+
+---
+
+## 8. Criterios de Finalización (Definition of Done)
+
+1. Requisitos funcionales (RF-01 a RF-52) y matriz de casos límite superados en entorno de pruebas (*Zero Mock*).
+2. Implementación del bloqueo transaccional `SELECT ... FOR UPDATE` embebido dentro de la transacción de base de datos previniendo condiciones de carrera.
+3. Segregación estricta de precios para el Ingeniero: acceso a precios finales de venta para presupuestar, con bloqueo absoluto de costes de compra y facturación de proveedores (reservada a Boss y Secretaria).
+
+
+4. Soporte pleno de Formato Continuo (Bobinas/Barras) prescribiendo el check "Parcial", separando envases intactos de mermas consumidas.
+5. Filtro IA para entregas parciales (*backorders*) y conciliación de albaranes multi-pedido.
+
+
+6. Inhabilitación lógica de Números de Serie dados de baja por robo/siniestro en histórico de herramientas.
+
+
+7. Alarma de cuota PWA IndexedDB (*StorageManager API*) y resolución de conflictos offline en traspasos (`CONFLICTO_TRASPÀS`).
+
+
 8. Atributos técnicos normalizados según la vertical activa (DN, PN, sección, tensión, resistencia).
-9. Ubicación física dual: Gaveta principal de picking y Palé secundario de reserva.
-10. Sustitución de herramientas averiadas a mitad de jornada con pausa del temporizador de obra en PWA.
-11. Relevo de Responsable de Cuadrilla desde base ante incapacidad sobrevenida.
-12. Régimen de material en depósito con resolución de siniestros respaldada por aseguradoras.
-13. Gestión integral del slot de "Residuos / Chatarra" con trazabilidad documental legal y medioambiental RAEE/Ley de Residuos e inversión de sujeto pasivo de IVA.
-14. Actualización del Precio de Referencia de Almacén ante nuevos albaranes para futuros presupuestos.
-15. Se respeta estrictamente la política de no realizar commits sin solicitud explícita del usuario.
+
+
+9. Ubicación física dual (Gaveta/Palé) y gestión de envases retornables con fianza.
+
+
+10. Sustitución de herramientas averiadas a mitad de jornada con pausa/reanudación del temporizador de obra en PWA.
+
+
+11. Relevo de Capataz desde base transfiriendo la custodia de vehículo y picking a un sustituto.
+
+
+12. Tratamiento económico segregado para material en consignación y liquidación de siniestros.
+
+
+13. Ciclo integral de "Residuos/Chatarra" RAEE con inversión de sujeto pasivo IVA Veri*factu.
+
+
+14. Excepciones operativas (Urgencia Nivel 1) modeladas mediante cola paralela para no detener la empresa durante inventarios anuales.
+
+---
+
+## 9. Matriz de Trazabilidad 1:1 de la Definition of Done (DoD)
+
+Para certificar el cierre de la Spec 004, la suite de pruebas automatizadas (*Zero-Mock Data*, PostgreSQL real con RLS activo) deberá cumplir de forma unívoca la siguiente tabla:
+
+| Código RF | Objetivo Técnico Verificable | Caso Límite Vinculado | Assert / Criterio de Aprobación DoD |
+| --- | --- | --- | --- |
+| **RF-01 / RF-02** | Directorio paginado (*Server-Side*) y búsqueda reactiva. | **EDGE-17** | `LIMIT`/`OFFSET` actúan correctamente. Test de intrusión RLS devuelve `[]` en tenants cruzados. |
+| **RF-03 / RF-04** | Día 0 real, sin mock data. UI limpia. | - | BD con 0 artículos levanta UI con cero arrays poblados. |
+| **RF-05 / RF-06** | Alta, atributos normalizados y formato continuo (Retales). | **EDGE-08** | Inserción de devolución parcial fragmenta la unidad pero exige trazabilidad de longitud. |
+| **RF-07 / RF-08** | Nº de Serie de Herramientas y Recepción OCR multi-pedido. | **EDGE-09** | Actualización de N líneas de órdenes de compra distintas procesando un único albarán PDF. |
+| **RF-09 / RF-10** | Incidencia en recepción física y tramitación RMA Directo. | - | Stock defectuoso es forzado a cuarentena; se bloquea venta. |
+| **RF-11 / RF-12** | Material Consignación y exclusión de valoración total. | **EDGE-11** | Liquidación por rescisión exige 100% o factura por faltante económico. |
+| **RF-13 / RF-14** | Ubicación Dual y Checklist dotación furgoneta. | - | Reposición por excepción completa solo diferencias contra el array base del vehículo. |
+| **RF-15 / RF-16** | Traspaso urgente y alquiler temporal (Subcontrata). | - | Alquiler hereda validación de póliza RC de Spec 003. |
+| **RF-17** | Bloqueo Transaccional DB (`SELECT FOR UPDATE`). | **EDGE-01 / EDGE-12** | `SELECT FOR UPDATE` asegura exclusividad; el rechazo bloquea doble reserva y la cancelación libera la virtualización instantáneamente. |
+| **RF-18 / RF-19** | Backorder UI Inform y Priorización FEFO. | **EDGE-06** | Hoja de Picking asigna mandatoriamente el `batch_id` con `expiry_date` menor. |
+| **RF-20 / RF-21** | 1 Tarea = 1 Picking. Reserva íntegra de furgoneta diaria. | - | Asignar orden extra al mismo vehículo en mismo día no levanta conflicto de overlap de recursos. |
+| **RF-22 / RF-23** | Check `Parcial` PWA, validación y commit de almacén. | **EDGE-03** | Escaneo de código de barras SN ajeno emite error en PWA y aborta push de `IndexedDB`. |
+| **RF-24 / RF-25** | Salidas Blanca/Urgencia y Traspaso Bilateral Offline. | **EDGE-02 / EDGE-19** | Sincronización asimétrica lanza alarma `CONFLICTO_TRASPÀS` en lugar de sobreescribir sin trazabilidad. |
+| **RF-26 / RF-27** | Anticipos (45%) y partición físico/contable retales. | **EDGE-18** | Facturación de Anticipo por `<45%` genera alerta administrativa obligando firma del Gerente. |
+| **RF-28 / RF-29** | Custodia retornable y Avería a mitad de obra con pausa. | **EDGE-10** | Pausa PWA inserta timestamp; avería en base redirige activo a estado `Taller`. |
+| **RF-30 / RF-31** | Relevo Responsable y Alarma de Cuota de Storage PWA. | **EDGE-05** | API `navigator.storage` detecta `>80%`; deshabilita botón cámara en DOM offline. |
+| **RF-32 / RF-33** | Código Único PO y Consolidación Preventiva por IA. | - | Tarea Celery detecta PO previo en tránsito para el artículo X y cancela generación del nuevo PO duplicado. |
+| **RF-34** | Recepción parcial (*Backorders*) y Three-Way Matching. | **EDGE-09** | Conciliación de albaranes parciales sin cerrar el pedido matriz; saldo en tránsito vivo. |
+| **RF-35 / RF-36** | Auditoría General de Inventario (Nave + Furgonetas). | **EDGE-19** | Activación del módulo detiene operativa base; permite flujo paralelo para incidencias de Nivel 1. |
+| **RF-37 / RF-38** | Merma a Residuos, Análisis RAEE e ISP automático (0€). | **EDGE-14** | Venta a gestor sin VIES válido aborta el bypass de IVA a `0,00€`. |
+| **RF-39 / RF-40** | Consumibles menores, intactos vs empezados. | **EDGE-20** | Solo el stock precintado reingresa en inventario; envases mermados actúan como coste íntegro. |
+| **RF-41** | Alerta no conformidad de precio en nueva compra. | **EDGE-15** | Desviación estadística (`z-score` precio unitario) pausa la reescritura del Precio Medio Ponderado (PMP). |
+| **RF-42** | Ficha de artículo detallada y trazabilidad multialmacén. | **EDGE-17** | Desglose de existencias por nave y vehículo; omisión de costes de compra al Ingeniero. |
+| **RF-43 / RF-44** | Reparación y Baja de Activo (Inhabilitación permanente). | - | SN inhabilitado levanta `ConstraintViolation` si se intenta readmitir en un Alta posterior. |
+| **RF-45 / RF-46** | Bloqueo por Mantenimiento y Valoración Excluida (Depósitos). | **EDGE-13** | Picking list remueve visualmente el SN agendado para calibración en el día `CURRENT_DATE`. |
+| **RF-47 / RF-48** | Zero-Trust (Ingenieros no ven compra, solo venta/final). | **EDGE-17** | Peticiones HTTP a métricas de costes retornan `403 Forbidden` a Ingenieros. |
+| **RF-49 / RF-50** | Foto de SN Instalado y `Soft-Delete` validado (Stock = 0). | **EDGE-07** | Intento de `Soft-Delete` falla si `stock_actual > 0` o `stock_en_transito > 0`. |
+| **RF-51 / RF-52** | Retornables con fianza y Custodia temporal de RMA Cliente. | **EDGE-04 / EDGE-16** | Fianza rechazada deriva en gasto de almacén. Cliente rechaza peritaje exige purga del RMA temporal en nave. |
